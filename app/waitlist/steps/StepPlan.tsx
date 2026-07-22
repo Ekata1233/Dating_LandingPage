@@ -27,6 +27,66 @@ interface Props {
 const WAITLIST_API =
   "https://dating-app-backend-plum.vercel.app/api/user/waitlist/get";
 
+/* ---- Payment order API (founding spot) ---- */
+const PAYMENT_API =
+  "https://dating-app-backend-plum.vercel.app/api/payments/create-order";
+
+/* === SET THIS ONCE ===
+   Put the exact localStorage/sessionStorage key that holds YOUR app's login
+   token (find it with the console snippet: the key whose decoded payload's
+   phone/id matches your logged-in user). Once set, we use ONLY this key and
+   stop scanning — no more grabbing the wrong JWT.
+   Leave it "" to fall back to auto-scan (less reliable). */
+const TOKEN_KEY = "welvors_token";
+
+const strip = (v: string) => v.replace(/^"|"$/g, "").trim();
+const looksLikeJwt = (v: string) =>
+  /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(v);
+
+const getAuthToken = (): string => {
+  if (typeof window === "undefined") return ""; // SSR guard
+
+  // Preferred: read the exact key you configured.
+  if (TOKEN_KEY) {
+    const raw = strip(
+      window.localStorage.getItem(TOKEN_KEY) ||
+        window.sessionStorage.getItem(TOKEN_KEY) ||
+        ""
+    );
+    if (raw) {
+      // token may be nested inside a JSON blob under that key
+      if (looksLikeJwt(raw)) return raw;
+      try {
+        const obj = JSON.parse(
+          window.localStorage.getItem(TOKEN_KEY) ||
+            window.sessionStorage.getItem(TOKEN_KEY) ||
+            ""
+        );
+        const nested = obj?.token || obj?.accessToken || obj?.authToken || obj?.jwt;
+        if (typeof nested === "string") return strip(nested);
+      } catch {}
+      return raw;
+    }
+    return "";
+  }
+
+  // Fallback auto-scan (only if TOKEN_KEY is left empty).
+  for (const store of [window.localStorage, window.sessionStorage]) {
+    for (let i = 0; i < store.length; i++) {
+      const key = store.key(i);
+      if (!key) continue;
+      const raw = strip(store.getItem(key) || "");
+      if (looksLikeJwt(raw)) return raw;
+    }
+  }
+  for (const k of ["token", "accessToken", "authToken", "access_token", "jwt"]) {
+    const v =
+      window.localStorage.getItem(k) || window.sessionStorage.getItem(k);
+    if (v) return strip(v);
+  }
+  return "";
+};
+
 interface ApiPerk {
   title: string;
   value: number;
@@ -73,6 +133,65 @@ export default function StepPlan({
 }: Props) {
   const [cfg, setCfg] = useState<WaitlistConfig | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+
+  /* ---- Founding-spot payment state ---- */
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  const handleFoundingPay = async () => {
+    setPayError("");
+    setPaying(true);
+    try {
+      const token = getAuthToken();
+
+      // DEBUG: see who the token maps to (remove once working).
+      try {
+        if (token) {
+          console.log("Sending token payload:", JSON.parse(atob(token.split(".")[1])));
+        } else {
+          console.log("No token found in browser storage.");
+        }
+      } catch {}
+
+      // If we found a token → send it as Bearer.
+      // If not → fall back to cookie auth (credentials:include) in case the
+      // token lives in an httpOnly cookie the JS can't read.
+      const res = await fetch(PAYMENT_API, {
+        method: "POST",
+        headers: token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" },
+        credentials: token ? "same-origin" : "include",
+        body: JSON.stringify({
+          description: "join waitlist",
+          purpose: "WAITLIST",
+        }),
+      });
+
+      const json = await res.json();
+      const link = json?.data?.result?.paymentLink;
+      if (json?.success && link) {
+        // Full-page redirect to PayU — survives popup blockers.
+        window.location.href = link;
+        return; // leaving the page — don't reset `paying`
+      }
+
+      // Surface the real server message (it comes back at the top level).
+      const serverMsg = json?.message || json?.data?.message || "";
+      if (/token|auth|login|unauthor/i.test(serverMsg) || !token) {
+        setPayError(
+          "You need to be logged in to reserve a founding spot. Please log in, then try again."
+        );
+      } else {
+        setPayError(serverMsg || "Couldn't start payment. Please try again.");
+      }
+      setPaying(false);
+    } catch (err) {
+      console.error("Payment order failed:", err);
+      setPayError("Network error. Please try again.");
+      setPaying(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -385,18 +504,20 @@ export default function StepPlan({
         </div>
       )}
 
-      <ErrorNote message={status === "error" ? errorMsg : ""} />
+      <ErrorNote message={payError || (status === "error" ? errorMsg : "")} />
 
       <PrimaryButton
-        onClick={onConfirm}
-        disabled={status === "sending" || (founding && !priceReady)}
+        onClick={founding ? handleFoundingPay : onConfirm}
+        disabled={status === "sending" || paying || (founding && !priceReady)}
       >
-        {status === "sending"
-          ? "Please wait…"
-          : founding
-          ? priceReady
+        {founding
+          ? paying
+            ? "Redirecting to payment…"
+            : priceReady
             ? `Reserve my spot — Pay ${price}`
             : "Loading…"
+          : status === "sending"
+          ? "Please wait…"
           : "Join the free waitlist"}
       </PrimaryButton>
 

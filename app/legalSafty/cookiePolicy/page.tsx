@@ -252,9 +252,10 @@ export default function CookiePolicyPage() {
 
       {/* ==================== Body + TOC ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
+        <div className="flex justify-center">
           {/* -------------------- Main content -------------------- */}
-          <div className="max-w-3xl">
+          <div className="max-w-7xl">
             {/* Intro */}
             <p
               className="text-[13.5px] leading-relaxed"
@@ -486,8 +487,7 @@ export default function CookiePolicyPage() {
           </div>
 
           {/* -------------------- On this page (TOC) -------------------- */}
-          <aside className="order-first lg:order-none">
-            {/* sticky — parent chain me kahin overflow-hidden nahi hona chahiye */}
+          {/* <aside className="order-first lg:order-none">
             <div className="lg:sticky lg:top-[90px] lg:self-start">
               <p
                 className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
@@ -516,7 +516,7 @@ export default function CookiePolicyPage() {
                 })}
               </ul>
             </div>
-          </aside>
+          </aside> */}
         </div>
       </div>
     </main>
