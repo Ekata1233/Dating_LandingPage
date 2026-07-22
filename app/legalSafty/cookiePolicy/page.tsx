@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -29,20 +29,6 @@ const POLICY_META = {
   privacyEmail: "privacy@welvors.com",
   supportEmail: "help@welvors.com",
 };
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "1. What cookies are", id: "what-cookies-are" },
-  { label: "2. Types of cookies we use", id: "types" },
-  { label: "3. Third-party cookies", id: "third-party" },
-  { label: "4. How to manage cookies", id: "manage" },
-  { label: "5. Your consent", id: "consent" },
-  { label: "6. Changes to this policy", id: "changes" },
-  { label: "7. Contact", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Cookie categories table                                            */
@@ -88,35 +74,6 @@ const MANAGE: React.ReactNode[] = [
     limit your advertising identifier in your phone&apos;s privacy settings.
   </>,
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -187,8 +144,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function CookiePolicyPage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -250,273 +205,235 @@ export default function CookiePolicyPage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
-        <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
-            <p
-              className="text-[13.5px] leading-relaxed"
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          This Cookie Policy explains how Welvors uses cookies and similar
+          technologies on our app and website — what they are, which ones we
+          use, and how you stay in control. It should be read alongside our{" "}
+          <Link
+            href="/privacy"
+            className="underline hover:opacity-70"
+            style={{ color: C.pink }}
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
+        {/* 1 */}
+        <div className="mt-10">
+          <SectionHeading id="what-cookies-are">
+            1. What cookies are
+          </SectionHeading>
+          <Para>
+            Cookies are small text files stored on your device when you visit
+            a site or use an app. Similar technologies include{" "}
+            <strong style={{ color: C.pink }}>SDKs</strong>,{" "}
+            <strong style={{ color: C.pink }}>local storage</strong>,{" "}
+            <strong style={{ color: C.pink }}>pixels</strong>, and{" "}
+            <strong style={{ color: C.pink }}>device identifiers</strong>.
+            Together they help us keep you logged in, remember your choices,
+            and understand how Welvors is used. In this policy, we refer to
+            all of them as &ldquo;cookies&rdquo;.
+          </Para>
+        </div>
+
+        {/* 2 */}
+        <div className="mt-10">
+          <SectionHeading id="types">
+            2. Types of cookies we use
+          </SectionHeading>
+
+          <div className="mt-5 overflow-x-auto">
+            <table
+              className="w-full min-w-[560px] border-collapse text-left"
               style={{ color: C.body }}
             >
-              This Cookie Policy explains how Welvors uses cookies and similar
-              technologies on our app and website — what they are, which ones we
-              use, and how you stay in control. It should be read alongside our{" "}
-              <Link
-                href="/privacy"
-                className="underline hover:opacity-70"
-                style={{ color: C.pink }}
-              >
-                Privacy Policy
-              </Link>
-              .
-            </p>
-
-            {/* 1 */}
-            <div className="mt-10">
-              <SectionHeading id="what-cookies-are">
-                1. What cookies are
-              </SectionHeading>
-              <Para>
-                Cookies are small text files stored on your device when you visit
-                a site or use an app. Similar technologies include{" "}
-                <strong style={{ color: C.pink }}>SDKs</strong>,{" "}
-                <strong style={{ color: C.pink }}>local storage</strong>,{" "}
-                <strong style={{ color: C.pink }}>pixels</strong>, and{" "}
-                <strong style={{ color: C.pink }}>device identifiers</strong>.
-                Together they help us keep you logged in, remember your choices,
-                and understand how Welvors is used. In this policy, we refer to
-                all of them as &ldquo;cookies&rdquo;.
-              </Para>
-            </div>
-
-            {/* 2 */}
-            <div className="mt-10">
-              <SectionHeading id="types">
-                2. Types of cookies we use
-              </SectionHeading>
-
-              <div className="mt-5 overflow-x-auto">
-                <table
-                  className="w-full min-w-[560px] border-collapse text-left"
-                  style={{ color: C.body }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: C.tableHeadBg }}>
-                      <th
-                        className="w-[22%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Category
-                      </th>
-                      <th
-                        className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        What it does
-                      </th>
-                      <th
-                        className="w-[22%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Can you turn it off?
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {COOKIE_TYPES.map((row) => (
-                      <tr key={row.category}>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] font-bold"
-                          style={{
-                            borderColor: C.border,
-                            color: C.headingDark,
-                          }}
-                        >
-                          {row.category}
-                        </td>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] leading-relaxed"
-                          style={{ borderColor: C.border }}
-                        >
-                          {row.does}
-                        </td>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px]"
-                          style={{ borderColor: C.border }}
-                        >
-                          {row.optOut}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Green: no advertising profiling */}
-              <div
-                className="mt-6 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.greenBg,
-                  borderColor: C.greenBorder,
-                }}
-              >
-                <p
-                  className="flex items-center gap-2 text-[13px] font-bold"
-                  style={{ color: C.green }}
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+              <thead>
+                <tr style={{ backgroundColor: C.tableHeadBg }}>
+                  <th
+                    className="w-[22%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
                   >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                  No advertising profiling
-                </p>
-                <p
-                  className="mt-2 text-[12.5px] leading-relaxed"
-                  style={{ color: C.body }}
-                >
-                  We do <strong>not</strong> use cookies to build advertising
-                  profiles about you or to sell your data to advertisers. We keep
-                  tracking to what&apos;s needed to run and improve Welvors.
-                </p>
-              </div>
-            </div>
-
-            {/* 3 */}
-            <div className="mt-10">
-              <SectionHeading id="third-party">
-                3. Third-party cookies
-              </SectionHeading>
-              <Para>
-                Some cookies are set by trusted partners who provide services on
-                our behalf — for example, analytics and crash-reporting tools, or
-                our payment provider during checkout. These partners are
-                contractually required to protect your data and use it only for
-                the services they provide to us.
-              </Para>
-            </div>
-
-            {/* 4 */}
-            <div className="mt-10">
-              <SectionHeading id="manage">
-                4. How to manage cookies
-              </SectionHeading>
-              <BulletList items={MANAGE} />
-              <Para>
-                Turning off non-essential cookies is fine — some conveniences,
-                like remembered preferences, simply won&apos;t carry over.
-              </Para>
-            </div>
-
-            {/* 5 */}
-            <div className="mt-10">
-              <SectionHeading id="consent">5. Your consent</SectionHeading>
-              <Para>
-                When you first use Welvors, we ask for your consent to
-                non-essential cookies. Strictly necessary cookies are always on
-                because the service can&apos;t function without them. You can
-                change your choices at any time, and withdrawing consent
-                won&apos;t affect processing that already happened.
-              </Para>
-            </div>
-
-            {/* 6 */}
-            <div className="mt-10">
-              <SectionHeading id="changes">
-                6. Changes to this policy
-              </SectionHeading>
-              <Para>
-                We may update this Cookie Policy as our technology changes.
-                We&apos;ll update the date above and, where required, ask for
-                your consent again.
-              </Para>
-            </div>
-
-            {/* 7 */}
-            <div className="mt-10">
-              <SectionHeading id="contact">7. Contact</SectionHeading>
-
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Privacy queries:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY_META.privacyEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Support:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY_META.supportEmail} />
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  This policy is a template provided in good faith and does not
-                  replace independent legal advice.
-                </p>
-              </div>
-            </div>
+                    Category
+                  </th>
+                  <th
+                    className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    What it does
+                  </th>
+                  <th
+                    className="w-[22%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Can you turn it off?
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {COOKIE_TYPES.map((row) => (
+                  <tr key={row.category}>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] font-bold"
+                      style={{
+                        borderColor: C.border,
+                        color: C.headingDark,
+                      }}
+                    >
+                      {row.category}
+                    </td>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] leading-relaxed"
+                      style={{ borderColor: C.border }}
+                    >
+                      {row.does}
+                    </td>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px]"
+                      style={{ borderColor: C.border }}
+                    >
+                      {row.optOut}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
+          {/* Green: no advertising profiling */}
+          <div
+            className="mt-6 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.greenBg,
+              borderColor: C.greenBorder,
+            }}
+          >
+            <p
+              className="flex items-center gap-2 text-[13px] font-bold"
+              style={{ color: C.green }}
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              No advertising profiling
+            </p>
+            <p
+              className="mt-2 text-[12.5px] leading-relaxed"
+              style={{ color: C.body }}
+            >
+              We do <strong>not</strong> use cookies to build advertising
+              profiles about you or to sell your data to advertisers. We keep
+              tracking to what&apos;s needed to run and improve Welvors.
+            </p>
+          </div>
+        </div>
+
+        {/* 3 */}
+        <div className="mt-10">
+          <SectionHeading id="third-party">
+            3. Third-party cookies
+          </SectionHeading>
+          <Para>
+            Some cookies are set by trusted partners who provide services on
+            our behalf — for example, analytics and crash-reporting tools, or
+            our payment provider during checkout. These partners are
+            contractually required to protect your data and use it only for
+            the services they provide to us.
+          </Para>
+        </div>
+
+        {/* 4 */}
+        <div className="mt-10">
+          <SectionHeading id="manage">
+            4. How to manage cookies
+          </SectionHeading>
+          <BulletList items={MANAGE} />
+          <Para>
+            Turning off non-essential cookies is fine — some conveniences,
+            like remembered preferences, simply won&apos;t carry over.
+          </Para>
+        </div>
+
+        {/* 5 */}
+        <div className="mt-10">
+          <SectionHeading id="consent">5. Your consent</SectionHeading>
+          <Para>
+            When you first use Welvors, we ask for your consent to
+            non-essential cookies. Strictly necessary cookies are always on
+            because the service can&apos;t function without them. You can
+            change your choices at any time, and withdrawing consent
+            won&apos;t affect processing that already happened.
+          </Para>
+        </div>
+
+        {/* 6 */}
+        <div className="mt-10">
+          <SectionHeading id="changes">
+            6. Changes to this policy
+          </SectionHeading>
+          <Para>
+            We may update this Cookie Policy as our technology changes.
+            We&apos;ll update the date above and, where required, ask for
+            your consent again.
+          </Para>
+        </div>
+
+        {/* 7 */}
+        <div className="mt-10">
+          <SectionHeading id="contact">7. Contact</SectionHeading>
+
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Privacy queries:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY_META.privacyEmail} />
+                </dd>
+              </div>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Support:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY_META.supportEmail} />
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              This policy is a template provided in good faith and does not
+              replace independent legal advice.
+            </p>
+          </div>
         </div>
       </div>
     </main>

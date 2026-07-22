@@ -403,7 +403,12 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
 
       // Success - token store karo, phir decide karo: profile saved hai ya nahi
       if (data.token) {
-        setToken(data.token);
+  setToken(data.token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("welvors_token", data.token);
+    const u = extractUser(data);
+    if (u) localStorage.setItem("welvors_user", JSON.stringify(u));
+  }
         setStatus("idle");
         setErrorMsg("");
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -33,25 +33,6 @@ const POLICY_META = {
   privacyEmail: "privacy@welvors.com",
   supportEmail: "help@welvors.com",
 };
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "Who we are", id: "who-we-are" },
-  { label: "Information we collect", id: "information-we-collect" },
-  { label: "How we use information", id: "how-we-use" },
-  { label: "Our legal bases", id: "legal-bases" },
-  { label: "When we share", id: "when-we-share" },
-  { label: "Your rights", id: "your-rights" },
-  { label: "Data retention", id: "data-retention" },
-  { label: "How we protect", id: "how-we-protect" },
-  { label: "Age restriction", id: "age-restriction" },
-  { label: "International transfers", id: "international-transfers" },
-  { label: "Changes to policy", id: "changes" },
-  { label: "Contact us", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Content data                                                       */
@@ -163,35 +144,6 @@ const PROTECT_LIST = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
-
-/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 function SectionHeading({
@@ -293,8 +245,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function PrivacyPolicyPage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -356,319 +306,282 @@ export default function PrivacyPolicyPage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-       <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
-            <p
-              className="text-[13.5px] leading-relaxed"
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          At Welvors, your trust is the entire product. This Privacy Policy
+          explains what personal information we collect, why we collect it,
+          how we protect it, and the rights you have over it. We&apos;ve
+          tried to keep it plain — if anything is unclear, write to{" "}
+          <MailLink email={POLICY_META.privacyEmail} /> and we&apos;ll
+          explain it.
+        </p>
+
+        {/* 1. Who we are */}
+        <div className="mt-10">
+          <SectionHeading id="who-we-are">1. Who we are</SectionHeading>
+          <Para>
+            Welvors is operated by {POLICY_META.company}, a company
+            registered in India. For the purposes of India&apos;s Digital
+            Personal Data Protection Act, 2023 (DPDP Act) and other
+            applicable law, we are the <strong>Data Fiduciary</strong>{" "}
+            responsible for your data. If you are in a region with other
+            data laws, we honour the protections that apply to you.
+          </Para>
+        </div>
+
+        {/* 2. Information we collect */}
+        <div className="mt-10">
+          <SectionHeading id="information-we-collect">
+            2. Information we collect
+          </SectionHeading>
+
+          <SubHeading>Information you give us</SubHeading>
+          <DefList items={COLLECT_GIVEN} />
+
+          <SubHeading>Information created when you use Welvors</SubHeading>
+          <DefList items={COLLECT_USAGE} />
+
+          <SubHeading>Information collected automatically</SubHeading>
+          <DefList items={COLLECT_AUTO} />
+        </div>
+
+        {/* 3. How we use your information */}
+        <div className="mt-10">
+          <SectionHeading id="how-we-use">
+            3. How we use your information
+          </SectionHeading>
+
+          <div className="mt-5 overflow-x-auto">
+            <table
+              className="w-full min-w-[520px] border-collapse text-left"
               style={{ color: C.body }}
             >
-              At Welvors, your trust is the entire product. This Privacy Policy
-              explains what personal information we collect, why we collect it,
-              how we protect it, and the rights you have over it. We&apos;ve
-              tried to keep it plain — if anything is unclear, write to{" "}
-              <MailLink email={POLICY_META.privacyEmail} /> and we&apos;ll
-              explain it.
+              <thead>
+                <tr style={{ backgroundColor: C.tableHeadBg }}>
+                  <th
+                    className="w-[28%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Purpose
+                  </th>
+                  <th
+                    className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Examples
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {USE_TABLE.map(([p, e]) => (
+                  <tr key={p}>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] font-bold"
+                      style={{
+                        borderColor: C.border,
+                        color: C.headingDark,
+                      }}
+                    >
+                      {p}
+                    </td>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] leading-relaxed"
+                      style={{ borderColor: C.border }}
+                    >
+                      {e}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 4. Our legal bases */}
+        <div className="mt-10">
+          <SectionHeading id="legal-bases">4. Our legal bases</SectionHeading>
+          <Para>
+            We process your data on the basis of your{" "}
+            <strong style={{ color: C.pink }}>consent</strong> (which you can
+            withdraw), the{" "}
+            <strong style={{ color: C.pink }}>
+              performance of our contract
+            </strong>{" "}
+            with you (to provide the service you signed up for), our{" "}
+            <strong style={{ color: C.pink }}>legitimate interests</strong>{" "}
+            in keeping Welvors safe and improving it, and{" "}
+            <strong style={{ color: C.pink }}>legal obligations</strong> we
+            must meet. Where consent is the basis, you may withdraw it at any
+            time without affecting past processing.
+          </Para>
+        </div>
+
+        {/* 5. When we share information */}
+        <div className="mt-10">
+          <SectionHeading id="when-we-share">
+            5. When we share information
+          </SectionHeading>
+          <Para>We share your data only when necessary, and never sell it. Specifically:</Para>
+          <DefList items={SHARE_LIST} />
+
+          {/* Never-do card */}
+          <div
+            className="mt-6 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.noteBg,
+              borderColor: C.noteBorder,
+            }}
+          >
+            <p
+              className="text-[13px] font-bold"
+              style={{ color: C.pink }}
+            >
+              ♡ What we will never do
             </p>
+            <p
+              className="mt-2 text-[12.5px] leading-relaxed"
+              style={{ color: C.body }}
+            >
+              We do not sell your personal data. We do not pass on messages
+              as ours. We do not hand your private photos to advertisers. We
+              do not show you to people outside your membership pool.
+            </p>
+          </div>
+        </div>
 
-            {/* 1. Who we are */}
-            <div className="mt-10">
-              <SectionHeading id="who-we-are">1. Who we are</SectionHeading>
-              <Para>
-                Welvors is operated by {POLICY_META.company}, a company
-                registered in India. For the purposes of India&apos;s Digital
-                Personal Data Protection Act, 2023 (DPDP Act) and other
-                applicable law, we are the <strong>Data Fiduciary</strong>{" "}
-                responsible for your data. If you are in a region with other
-                data laws, we honour the protections that apply to you.
-              </Para>
-            </div>
+        {/* 6. Your rights & choices */}
+        <div className="mt-10">
+          <SectionHeading id="your-rights">
+            6. Your rights &amp; choices
+          </SectionHeading>
+          <Para>
+            You are in control. From <strong>Settings → Privacy</strong>, or
+            by contacting us, you can:
+          </Para>
+          <DefList items={RIGHTS} />
+        </div>
 
-            {/* 2. Information we collect */}
-            <div className="mt-10">
-              <SectionHeading id="information-we-collect">
-                2. Information we collect
-              </SectionHeading>
+        {/* 7. How long we keep your data */}
+        <div className="mt-10">
+          <SectionHeading id="data-retention">
+            7. How long we keep your data
+          </SectionHeading>
+          <Para>
+            We keep your data while your account is active. When you delete
+            your account, your profile is removed from discovery{" "}
+            <strong>immediately</strong>, and your personal data is erased
+            within <strong>30 days</strong> — except limited records we must
+            retain for legal, security, or fraud-prevention reasons, or to
+            prevent someone we have removed from returning. Records are kept
+            only as long as required.
+          </Para>
+        </div>
 
-              <SubHeading>Information you give us</SubHeading>
-              <DefList items={COLLECT_GIVEN} />
+        {/* 8. How we protect your data */}
+        <div className="mt-10">
+          <SectionHeading id="how-we-protect">
+            8. How we protect your data
+          </SectionHeading>
+          <PlainList items={PROTECT_LIST} />
+        </div>
 
-              <SubHeading>Information created when you use Welvors</SubHeading>
-              <DefList items={COLLECT_USAGE} />
+        {/* 9. Age restriction */}
+        <div className="mt-10">
+          <SectionHeading id="age-restriction">
+            9. Age restriction
+          </SectionHeading>
+          <Para>
+            Welvors is strictly for adults{" "}
+            <strong style={{ color: C.pink }}>18 and older</strong>. We do
+            not knowingly collect data from minors. If we learn an account
+            belongs to someone under 18, we remove it immediately.
+          </Para>
+        </div>
 
-              <SubHeading>Information collected automatically</SubHeading>
-              <DefList items={COLLECT_AUTO} />
-            </div>
+        {/* 10. International transfers */}
+        <div className="mt-10">
+          <SectionHeading id="international-transfers">
+            10. International transfers
+          </SectionHeading>
+          <Para>
+            Your data is primarily stored and processed in India. If any
+            processing occurs elsewhere, we ensure comparable safeguards and
+            comply with applicable transfer rules.
+          </Para>
+        </div>
 
-            {/* 3. How we use your information */}
-            <div className="mt-10">
-              <SectionHeading id="how-we-use">
-                3. How we use your information
-              </SectionHeading>
+        {/* 11. Changes to this policy */}
+        <div className="mt-10">
+          <SectionHeading id="changes">
+            11. Changes to this policy
+          </SectionHeading>
+          <Para>
+            We may update this policy as Welvors evolves or the law changes.
+            We&apos;ll revise the &ldquo;Last updated&rdquo; date and, for
+            material changes, notify you in-app or by message. Continuing to
+            use Welvors after an update means you accept the current version.
+          </Para>
+        </div>
 
-              <div className="mt-5 overflow-x-auto">
-                <table
-                  className="w-full min-w-[520px] border-collapse text-left"
-                  style={{ color: C.body }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: C.tableHeadBg }}>
-                      <th
-                        className="w-[28%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Purpose
-                      </th>
-                      <th
-                        className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Examples
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {USE_TABLE.map(([p, e]) => (
-                      <tr key={p}>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] font-bold"
-                          style={{
-                            borderColor: C.border,
-                            color: C.headingDark,
-                          }}
-                        >
-                          {p}
-                        </td>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] leading-relaxed"
-                          style={{ borderColor: C.border }}
-                        >
-                          {e}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* 12. Contact us */}
+        <div className="mt-10">
+          <SectionHeading id="contact">12. Contact us</SectionHeading>
+
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Data Protection / Grievance Officer:
+                </dt>
+                <dd style={{ color: C.body }}>{POLICY_META.officer}</dd>
               </div>
-            </div>
-
-            {/* 4. Our legal bases */}
-            <div className="mt-10">
-              <SectionHeading id="legal-bases">4. Our legal bases</SectionHeading>
-              <Para>
-                We process your data on the basis of your{" "}
-                <strong style={{ color: C.pink }}>consent</strong> (which you can
-                withdraw), the{" "}
-                <strong style={{ color: C.pink }}>
-                  performance of our contract
-                </strong>{" "}
-                with you (to provide the service you signed up for), our{" "}
-                <strong style={{ color: C.pink }}>legitimate interests</strong>{" "}
-                in keeping Welvors safe and improving it, and{" "}
-                <strong style={{ color: C.pink }}>legal obligations</strong> we
-                must meet. Where consent is the basis, you may withdraw it at any
-                time without affecting past processing.
-              </Para>
-            </div>
-
-            {/* 5. When we share information */}
-            <div className="mt-10">
-              <SectionHeading id="when-we-share">
-                5. When we share information
-              </SectionHeading>
-              <Para>We share your data only when necessary, and never sell it. Specifically:</Para>
-              <DefList items={SHARE_LIST} />
-
-              {/* Never-do card */}
-              <div
-                className="mt-6 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.noteBg,
-                  borderColor: C.noteBorder,
-                }}
-              >
-                <p
-                  className="text-[13px] font-bold"
-                  style={{ color: C.pink }}
-                >
-                  ♡ What we will never do
-                </p>
-                <p
-                  className="mt-2 text-[12.5px] leading-relaxed"
-                  style={{ color: C.body }}
-                >
-                  We do not sell your personal data. We do not pass on messages
-                  as ours. We do not hand your private photos to advertisers. We
-                  do not show you to people outside your membership pool.
-                </p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Privacy queries:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY_META.privacyEmail} />
+                </dd>
               </div>
-            </div>
-
-            {/* 6. Your rights & choices */}
-            <div className="mt-10">
-              <SectionHeading id="your-rights">
-                6. Your rights &amp; choices
-              </SectionHeading>
-              <Para>
-                You are in control. From <strong>Settings → Privacy</strong>, or
-                by contacting us, you can:
-              </Para>
-              <DefList items={RIGHTS} />
-            </div>
-
-            {/* 7. How long we keep your data */}
-            <div className="mt-10">
-              <SectionHeading id="data-retention">
-                7. How long we keep your data
-              </SectionHeading>
-              <Para>
-                We keep your data while your account is active. When you delete
-                your account, your profile is removed from discovery{" "}
-                <strong>immediately</strong>, and your personal data is erased
-                within <strong>30 days</strong> — except limited records we must
-                retain for legal, security, or fraud-prevention reasons, or to
-                prevent someone we have removed from returning. Records are kept
-                only as long as required.
-              </Para>
-            </div>
-
-            {/* 8. How we protect your data */}
-            <div className="mt-10">
-              <SectionHeading id="how-we-protect">
-                8. How we protect your data
-              </SectionHeading>
-              <PlainList items={PROTECT_LIST} />
-            </div>
-
-            {/* 9. Age restriction */}
-            <div className="mt-10">
-              <SectionHeading id="age-restriction">
-                9. Age restriction
-              </SectionHeading>
-              <Para>
-                Welvors is strictly for adults{" "}
-                <strong style={{ color: C.pink }}>18 and older</strong>. We do
-                not knowingly collect data from minors. If we learn an account
-                belongs to someone under 18, we remove it immediately.
-              </Para>
-            </div>
-
-            {/* 10. International transfers */}
-            <div className="mt-10">
-              <SectionHeading id="international-transfers">
-                10. International transfers
-              </SectionHeading>
-              <Para>
-                Your data is primarily stored and processed in India. If any
-                processing occurs elsewhere, we ensure comparable safeguards and
-                comply with applicable transfer rules.
-              </Para>
-            </div>
-
-            {/* 11. Changes to this policy */}
-            <div className="mt-10">
-              <SectionHeading id="changes">
-                11. Changes to this policy
-              </SectionHeading>
-              <Para>
-                We may update this policy as Welvors evolves or the law changes.
-                We&apos;ll revise the &ldquo;Last updated&rdquo; date and, for
-                material changes, notify you in-app or by message. Continuing to
-                use Welvors after an update means you accept the current version.
-              </Para>
-            </div>
-
-            {/* 12. Contact us */}
-            <div className="mt-10">
-              <SectionHeading id="contact">12. Contact us</SectionHeading>
-
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Data Protection / Grievance Officer:
-                    </dt>
-                    <dd style={{ color: C.body }}>{POLICY_META.officer}</dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Privacy queries:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY_META.privacyEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      General support:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY_META.supportEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Address:
-                    </dt>
-                    <dd style={{ color: C.body }}>{POLICY_META.address}</dd>
-                  </div>
-                </dl>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  General support:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY_META.supportEmail} />
+                </dd>
               </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12.5px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  This policy is provided in good faith and reviewed
-                  periodically. It is a template and does not replace independent
-                  legal advice for your specific circumstances.
-                </p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Address:
+                </dt>
+                <dd style={{ color: C.body }}>{POLICY_META.address}</dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12.5px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              This policy is provided in good faith and reviewed
+              periodically. It is a template and does not replace independent
+              legal advice for your specific circumstances.
+            </p>
+          </div>
         </div>
       </div>
     </main>

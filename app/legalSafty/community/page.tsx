@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -27,22 +27,6 @@ const META = {
   safetyEmail: "safety@welvors.com",
   appealsEmail: "appeals@welvors.com",
 };
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "1. Our values", id: "our-values" },
-  { label: "2. Authenticity", id: "authenticity" },
-  { label: "3. Respect & consent", id: "respect-consent" },
-  { label: "4. What is never allowed", id: "never-allowed" },
-  { label: "5. Photo & profile standards", id: "photo-standards" },
-  { label: "6. Reporting & blocking", id: "reporting" },
-  { label: "7. How we enforce", id: "enforcement" },
-  { label: "8. Appeals", id: "appeals" },
-  { label: "9. Contact", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Content                                                            */
@@ -135,35 +119,6 @@ const ENFORCEMENT: React.ReactNode[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
-
-/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 function SectionHeading({
@@ -253,8 +208,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function CommunityGuidelinesPage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -316,205 +269,167 @@ export default function CommunityGuidelinesPage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
-        <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          Welvors only works because people show up as their real, kind
+          selves. These Community Guidelines describe what we expect from
+          everyone and what will get an account removed. They apply
+          everywhere on Welvors — profiles, photos, messages, and reports.
+          Breaking them has real consequences.
+        </p>
+
+        {/* 1 */}
+        <div className="mt-10">
+          <SectionHeading id="our-values">1. Our values</SectionHeading>
+          <DefList items={VALUES} />
+        </div>
+
+        {/* 2 */}
+        <div className="mt-10">
+          <SectionHeading id="authenticity">2. Authenticity</SectionHeading>
+          <BulletList items={AUTHENTICITY} />
+        </div>
+
+        {/* 3 */}
+        <div className="mt-10">
+          <SectionHeading id="respect-consent">
+            3. Respect &amp; consent
+          </SectionHeading>
+          <BulletList items={RESPECT} />
+        </div>
+
+        {/* 4 */}
+        <div className="mt-10">
+          <SectionHeading id="never-allowed">
+            4. What is never allowed
+          </SectionHeading>
+          <Para>
+            The following lead to content removal and often an immediate
+            permanent ban:
+          </Para>
+          <DefList items={NEVER_ALLOWED} />
+        </div>
+
+        {/* 5 */}
+        <div className="mt-10">
+          <SectionHeading id="photo-standards">
+            5. Photo &amp; profile standards
+          </SectionHeading>
+          <BulletList items={PHOTO_STANDARDS} />
+        </div>
+
+        {/* 6 */}
+        <div className="mt-10">
+          <SectionHeading id="reporting">
+            6. Reporting &amp; blocking
+          </SectionHeading>
+          <Para>
+            If something feels wrong, trust that instinct. You can{" "}
+            <strong style={{ color: C.pink }}>block</strong> anyone to stop
+            contact, and <strong style={{ color: C.pink }}>report</strong> a
+            profile or message in two taps. Reports are confidential — the
+            other person is not told who reported them. Our moderation team
+            reviews every report, usually within 24 hours.
+          </Para>
+
+          {/* Reporting note card */}
+          <div
+            className="mt-6 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.noteBg,
+              borderColor: C.noteBorder,
+            }}
+          >
             <p
-              className="text-[13.5px] leading-relaxed"
+              className="text-[13px] font-bold"
+              style={{ color: C.pink }}
+            >
+              ⓘ You won&apos;t get in trouble for reporting
+            </p>
+            <p
+              className="mt-2 text-[12.5px] leading-relaxed"
               style={{ color: C.body }}
             >
-              Welvors only works because people show up as their real, kind
-              selves. These Community Guidelines describe what we expect from
-              everyone and what will get an account removed. They apply
-              everywhere on Welvors — profiles, photos, messages, and reports.
-              Breaking them has real consequences.
+              Reporting in good faith never counts against you, even if we
+              ultimately take no action. When in doubt, report.
             </p>
+          </div>
+        </div>
 
-            {/* 1 */}
-            <div className="mt-10">
-              <SectionHeading id="our-values">1. Our values</SectionHeading>
-              <DefList items={VALUES} />
-            </div>
+        {/* 7 */}
+        <div className="mt-10">
+          <SectionHeading id="enforcement">
+            7. How we enforce
+          </SectionHeading>
+          <Para>
+            Depending on severity and history, we may:
+          </Para>
+          <BulletList items={ENFORCEMENT} />
+          <Para>
+            Serious violations skip straight to a permanent ban. We may
+            remove anyone whose behaviour puts the community at risk, even
+            if a specific rule isn&apos;t listed here.
+          </Para>
+        </div>
 
-            {/* 2 */}
-            <div className="mt-10">
-              <SectionHeading id="authenticity">2. Authenticity</SectionHeading>
-              <BulletList items={AUTHENTICITY} />
-            </div>
+        {/* 8 */}
+        <div className="mt-10">
+          <SectionHeading id="appeals">8. Appeals</SectionHeading>
+          <Para>
+            If you believe we got it wrong, you can appeal by writing to{" "}
+            <MailLink email={META.appealsEmail} />. We&apos;ll review your
+            case and respond. Bans for the most serious violations — such as
+            anything involving minors or violence — are final.
+          </Para>
+        </div>
 
-            {/* 3 */}
-            <div className="mt-10">
-              <SectionHeading id="respect-consent">
-                3. Respect &amp; consent
-              </SectionHeading>
-              <BulletList items={RESPECT} />
-            </div>
+        {/* 9 */}
+        <div className="mt-10">
+          <SectionHeading id="contact">9. Contact</SectionHeading>
 
-            {/* 4 */}
-            <div className="mt-10">
-              <SectionHeading id="never-allowed">
-                4. What is never allowed
-              </SectionHeading>
-              <Para>
-                The following lead to content removal and often an immediate
-                permanent ban:
-              </Para>
-              <DefList items={NEVER_ALLOWED} />
-            </div>
-
-            {/* 5 */}
-            <div className="mt-10">
-              <SectionHeading id="photo-standards">
-                5. Photo &amp; profile standards
-              </SectionHeading>
-              <BulletList items={PHOTO_STANDARDS} />
-            </div>
-
-            {/* 6 */}
-            <div className="mt-10">
-              <SectionHeading id="reporting">
-                6. Reporting &amp; blocking
-              </SectionHeading>
-              <Para>
-                If something feels wrong, trust that instinct. You can{" "}
-                <strong style={{ color: C.pink }}>block</strong> anyone to stop
-                contact, and <strong style={{ color: C.pink }}>report</strong> a
-                profile or message in two taps. Reports are confidential — the
-                other person is not told who reported them. Our moderation team
-                reviews every report, usually within 24 hours.
-              </Para>
-
-              {/* Reporting note card */}
-              <div
-                className="mt-6 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.noteBg,
-                  borderColor: C.noteBorder,
-                }}
-              >
-                <p
-                  className="text-[13px] font-bold"
-                  style={{ color: C.pink }}
-                >
-                  ⓘ You won&apos;t get in trouble for reporting
-                </p>
-                <p
-                  className="mt-2 text-[12.5px] leading-relaxed"
-                  style={{ color: C.body }}
-                >
-                  Reporting in good faith never counts against you, even if we
-                  ultimately take no action. When in doubt, report.
-                </p>
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Report / safety:
+                </dt>
+                <dd>
+                  <MailLink email={META.safetyEmail} />
+                </dd>
               </div>
-            </div>
-
-            {/* 7 */}
-            <div className="mt-10">
-              <SectionHeading id="enforcement">
-                7. How we enforce
-              </SectionHeading>
-              <Para>
-                Depending on severity and history, we may:
-              </Para>
-              <BulletList items={ENFORCEMENT} />
-              <Para>
-                Serious violations skip straight to a permanent ban. We may
-                remove anyone whose behaviour puts the community at risk, even
-                if a specific rule isn&apos;t listed here.
-              </Para>
-            </div>
-
-            {/* 8 */}
-            <div className="mt-10">
-              <SectionHeading id="appeals">8. Appeals</SectionHeading>
-              <Para>
-                If you believe we got it wrong, you can appeal by writing to{" "}
-                <MailLink email={META.appealsEmail} />. We&apos;ll review your
-                case and respond. Bans for the most serious violations — such as
-                anything involving minors or violence — are final.
-              </Para>
-            </div>
-
-            {/* 9 */}
-            <div className="mt-10">
-              <SectionHeading id="contact">9. Contact</SectionHeading>
-
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Report / safety:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.safetyEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Appeals:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.appealsEmail} />
-                    </dd>
-                  </div>
-                </dl>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Appeals:
+                </dt>
+                <dd>
+                  <MailLink email={META.appealsEmail} />
+                </dd>
               </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  These guidelines evolve as our community grows. This is a
-                  template provided in good faith and does not replace
-                  independent legal advice.
-                </p>
-              </div>
-            </div>
+            </dl>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              These guidelines evolve as our community grows. This is a
+              template provided in good faith and does not replace
+              independent legal advice.
+            </p>
+          </div>
         </div>
       </div>
     </main>

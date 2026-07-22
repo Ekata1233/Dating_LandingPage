@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -32,22 +32,6 @@ const POLICY = {
   grievanceOfficer: "Ms. Aarohi Menon",
   grievanceEmail: "grievance@welvors.com",
 };
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "1. Paid plans", id: "paid-plans" },
-  { label: "2. Cancelling your membership", id: "cancelling" },
-  { label: "3. When you're entitled to a refund", id: "entitled" },
-  { label: "4. When refunds don't apply", id: "not-apply" },
-  { label: "5. How to request a refund", id: "how-to-request" },
-  { label: "6. How refunds are processed", id: "processed" },
-  { label: "7. App-store purchases", id: "app-store" },
-  { label: "8. Changes to this policy", id: "changes" },
-  { label: "9. Contact", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Content                                                            */
@@ -112,35 +96,6 @@ const PROCESSED: React.ReactNode[] = [
     the refund.
   </>,
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -211,8 +166,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function RefundPolicyPage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -273,241 +226,203 @@ export default function RefundPolicyPage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
-        <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
-            <p
-              className="text-[13.5px] leading-relaxed"
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          Clear, fair, and no fine-print traps. This Refund &amp;
+          Cancellation Policy explains how memberships are billed, how to
+          cancel, and when you&apos;re entitled to a refund. It applies to
+          all paid plans and waitlist offers on Welvors.
+        </p>
+
+        {/* 1 */}
+        <div className="mt-10">
+          <SectionHeading id="paid-plans">1. Paid plans</SectionHeading>
+          <Para>
+            Welvors offers{" "}
+            <strong style={{ color: C.pink }}>Premium</strong>,{" "}
+            <strong style={{ color: C.pink }}>VIP</strong>, and{" "}
+            <strong style={{ color: C.pink }}>VIP Elite</strong> memberships
+            in addition to the Free plan. Each paid plan unlocks a specific
+            set of features shown at checkout. Prices are in Indian Rupees
+            and include applicable taxes unless stated otherwise.
+          </Para>
+        </div>
+
+        {/* 2 */}
+        <div className="mt-10">
+          <SectionHeading id="cancelling">
+            2. Cancelling your membership
+          </SectionHeading>
+          <BulletList items={CANCELLING} />
+        </div>
+
+        {/* 3 */}
+        <div className="mt-10">
+          <SectionHeading id="entitled">
+            3. When you&apos;re entitled to a refund
+          </SectionHeading>
+
+          <div className="mt-5 overflow-x-auto">
+            <table
+              className="w-full min-w-[520px] border-collapse text-left"
               style={{ color: C.body }}
             >
-              Clear, fair, and no fine-print traps. This Refund &amp;
-              Cancellation Policy explains how memberships are billed, how to
-              cancel, and when you&apos;re entitled to a refund. It applies to
-              all paid plans and waitlist offers on Welvors.
-            </p>
+              <thead>
+                <tr style={{ backgroundColor: C.tableHeadBg }}>
+                  <th
+                    className="w-[45%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Situation
+                  </th>
+                  <th
+                    className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Refund
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {REFUND_TABLE.map(([situation, refund]) => (
+                  <tr key={situation}>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] font-bold"
+                      style={{
+                        borderColor: C.border,
+                        color: C.headingDark,
+                      }}
+                    >
+                      {situation}
+                    </td>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] leading-relaxed"
+                      style={{ borderColor: C.border }}
+                    >
+                      {refund.replace("{WINDOW}", POLICY.refundWindowDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-            {/* 1 */}
-            <div className="mt-10">
-              <SectionHeading id="paid-plans">1. Paid plans</SectionHeading>
-              <Para>
-                Welvors offers{" "}
-                <strong style={{ color: C.pink }}>Premium</strong>,{" "}
-                <strong style={{ color: C.pink }}>VIP</strong>, and{" "}
-                <strong style={{ color: C.pink }}>VIP Elite</strong> memberships
-                in addition to the Free plan. Each paid plan unlocks a specific
-                set of features shown at checkout. Prices are in Indian Rupees
-                and include applicable taxes unless stated otherwise.
-              </Para>
-            </div>
+        {/* 4 */}
+        <div className="mt-10">
+          <SectionHeading id="not-apply">
+            4. When refunds don&apos;t apply
+          </SectionHeading>
+          <BulletList items={NOT_APPLY} />
+        </div>
 
-            {/* 2 */}
-            <div className="mt-10">
-              <SectionHeading id="cancelling">
-                2. Cancelling your membership
-              </SectionHeading>
-              <BulletList items={CANCELLING} />
-            </div>
+        {/* 5 */}
+        <div className="mt-10">
+          <SectionHeading id="how-to-request">
+            5. How to request a refund
+          </SectionHeading>
+          <Para>
+            Email <MailLink email={POLICY.billingEmail} /> from your
+            registered contact, or use{" "}
+            <strong>Settings › Membership › Help with a charge</strong>.
+            Include your registered mobile number, the plan, and the
+            transaction date or reference. We&apos;ll acknowledge within{" "}
+            <strong style={{ color: C.pink }}>
+              {POLICY.acknowledgeWithin}
+            </strong>
+            .
+          </Para>
+        </div>
 
-            {/* 3 */}
-            <div className="mt-10">
-              <SectionHeading id="entitled">
-                3. When you&apos;re entitled to a refund
-              </SectionHeading>
+        {/* 6 */}
+        <div className="mt-10">
+          <SectionHeading id="processed">
+            6. How refunds are processed
+          </SectionHeading>
+          <BulletList items={PROCESSED} />
+        </div>
 
-              <div className="mt-5 overflow-x-auto">
-                <table
-                  className="w-full min-w-[520px] border-collapse text-left"
-                  style={{ color: C.body }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: C.tableHeadBg }}>
-                      <th
-                        className="w-[45%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Situation
-                      </th>
-                      <th
-                        className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Refund
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {REFUND_TABLE.map(([situation, refund]) => (
-                      <tr key={situation}>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] font-bold"
-                          style={{
-                            borderColor: C.border,
-                            color: C.headingDark,
-                          }}
-                        >
-                          {situation}
-                        </td>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] leading-relaxed"
-                          style={{ borderColor: C.border }}
-                        >
-                          {refund.replace("{WINDOW}", POLICY.refundWindowDays)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* 7 */}
+        <div className="mt-10">
+          <SectionHeading id="app-store">
+            7. App-store purchases
+          </SectionHeading>
+          <Para>
+            If you subscribed through the Apple App Store or Google Play,
+            their refund and cancellation rules also apply, and some claims
+            may need to be requested directly through them. We&apos;ll help
+            you where we can.
+          </Para>
+        </div>
+
+        {/* 8 */}
+        <div className="mt-10">
+          <SectionHeading id="changes">
+            8. Changes to this policy
+          </SectionHeading>
+          <Para>
+            We may update this policy; changes never affect a period
+            you&apos;ve already paid for. The &ldquo;Last updated&rdquo; date
+            reflects the current version.
+          </Para>
+        </div>
+
+        {/* 9 */}
+        <div className="mt-10">
+          <SectionHeading id="contact">9. Contact</SectionHeading>
+
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Billing &amp; refunds:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY.billingEmail} />
+                </dd>
               </div>
-            </div>
-
-            {/* 4 */}
-            <div className="mt-10">
-              <SectionHeading id="not-apply">
-                4. When refunds don&apos;t apply
-              </SectionHeading>
-              <BulletList items={NOT_APPLY} />
-            </div>
-
-            {/* 5 */}
-            <div className="mt-10">
-              <SectionHeading id="how-to-request">
-                5. How to request a refund
-              </SectionHeading>
-              <Para>
-                Email <MailLink email={POLICY.billingEmail} /> from your
-                registered contact, or use{" "}
-                <strong>Settings › Membership › Help with a charge</strong>.
-                Include your registered mobile number, the plan, and the
-                transaction date or reference. We&apos;ll acknowledge within{" "}
-                <strong style={{ color: C.pink }}>
-                  {POLICY.acknowledgeWithin}
-                </strong>
-                .
-              </Para>
-            </div>
-
-            {/* 6 */}
-            <div className="mt-10">
-              <SectionHeading id="processed">
-                6. How refunds are processed
-              </SectionHeading>
-              <BulletList items={PROCESSED} />
-            </div>
-
-            {/* 7 */}
-            <div className="mt-10">
-              <SectionHeading id="app-store">
-                7. App-store purchases
-              </SectionHeading>
-              <Para>
-                If you subscribed through the Apple App Store or Google Play,
-                their refund and cancellation rules also apply, and some claims
-                may need to be requested directly through them. We&apos;ll help
-                you where we can.
-              </Para>
-            </div>
-
-            {/* 8 */}
-            <div className="mt-10">
-              <SectionHeading id="changes">
-                8. Changes to this policy
-              </SectionHeading>
-              <Para>
-                We may update this policy; changes never affect a period
-                you&apos;ve already paid for. The &ldquo;Last updated&rdquo; date
-                reflects the current version.
-              </Para>
-            </div>
-
-            {/* 9 */}
-            <div className="mt-10">
-              <SectionHeading id="contact">9. Contact</SectionHeading>
-
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Billing &amp; refunds:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY.billingEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Support:
-                    </dt>
-                    <dd>
-                      <MailLink email={POLICY.supportEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Grievance Officer:
-                    </dt>
-                    <dd style={{ color: C.body }}>
-                      {POLICY.grievanceOfficer} ·{" "}
-                      <MailLink email={POLICY.grievanceEmail} />
-                    </dd>
-                  </div>
-                </dl>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Support:
+                </dt>
+                <dd>
+                  <MailLink email={POLICY.supportEmail} />
+                </dd>
               </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  This policy is a template provided in good faith and does not
-                  constitute legal advice. Please align it with your payment
-                  gateway and app-store agreements before launch.
-                </p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Grievance Officer:
+                </dt>
+                <dd style={{ color: C.body }}>
+                  {POLICY.grievanceOfficer} ·{" "}
+                  <MailLink email={POLICY.grievanceEmail} />
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              This policy is a template provided in good faith and does not
+              constitute legal advice. Please align it with your payment
+              gateway and app-store agreements before launch.
+            </p>
+          </div>
         </div>
       </div>
     </main>

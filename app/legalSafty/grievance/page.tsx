@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -37,21 +37,6 @@ const META = {
   safetyEmail: "safety@welvors.com",
   supportEmail: "help@welvors.com",
 };
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "1. What this covers", id: "what-this-covers" },
-  { label: "2. How to raise a grievance", id: "how-to-raise" },
-  { label: "3. Our timelines", id: "timelines" },
-  { label: "4. Grievance Officer", id: "officer" },
-  { label: "5. How we handle your complaint", id: "how-we-handle" },
-  { label: "6. If you're not satisfied", id: "not-satisfied" },
-  { label: "7. Good-faith use", id: "good-faith" },
-  { label: "8. Contact", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Content                                                            */
@@ -112,35 +97,6 @@ const NOT_SATISFIED: React.ReactNode[] = [
   </>,
   <>You retain any rights available to you under applicable law.</>,
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -211,8 +167,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function GrievancePage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -273,284 +227,246 @@ export default function GrievancePage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
-        <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
-            <p
-              className="text-[13.5px] leading-relaxed"
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          If something goes wrong, you deserve a real person and a clear
+          timeline. This Grievance Redressal Policy explains how to raise a
+          concern with Welvors and how we resolve it — in line with
+          India&apos;s Information Technology (Intermediary Guidelines and
+          Digital Media Ethics Code) Rules, 2021 and the DPDP Act, 2023.
+        </p>
+
+        {/* 1 */}
+        <div className="mt-10">
+          <SectionHeading id="what-this-covers">
+            1. What this covers
+          </SectionHeading>
+          <Para>
+            You can raise a grievance about content that violates our{" "}
+            <Link
+              href="/guidelines"
+              className="underline hover:opacity-70"
+              style={{ color: C.pink }}
+            >
+              Community Guidelines
+            </Link>
+            , harassment or safety concerns, misuse of your personal data,
+            billing and refund issues, or any other problem with the service.
+            This policy sits alongside our{" "}
+            <Link
+              href="/privacy"
+              className="underline hover:opacity-70"
+              style={{ color: C.pink }}
+            >
+              Privacy Policy
+            </Link>
+            ,{" "}
+            <Link
+              href="/terms"
+              className="underline hover:opacity-70"
+              style={{ color: C.pink }}
+            >
+              Terms
+            </Link>
+            , and Community Guidelines.
+          </Para>
+        </div>
+
+        {/* 2 */}
+        <div className="mt-10">
+          <SectionHeading id="how-to-raise">
+            2. How to raise a grievance
+          </SectionHeading>
+          <BulletList items={HOW_TO_RAISE} />
+          <Para>
+            To protect your privacy, please raise grievances from the contact
+            details linked to your account.
+          </Para>
+        </div>
+
+        {/* 3 */}
+        <div className="mt-10">
+          <SectionHeading id="timelines">3. Our timelines</SectionHeading>
+
+          <div className="mt-5 overflow-x-auto">
+            <table
+              className="w-full min-w-[520px] border-collapse text-left"
               style={{ color: C.body }}
             >
-              If something goes wrong, you deserve a real person and a clear
-              timeline. This Grievance Redressal Policy explains how to raise a
-              concern with Welvors and how we resolve it — in line with
-              India&apos;s Information Technology (Intermediary Guidelines and
-              Digital Media Ethics Code) Rules, 2021 and the DPDP Act, 2023.
-            </p>
+              <thead>
+                <tr style={{ backgroundColor: C.tableHeadBg }}>
+                  <th
+                    className="w-[45%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Stage
+                  </th>
+                  <th
+                    className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
+                    style={{ borderColor: C.border, color: C.label }}
+                  >
+                    Timeline
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {TIMELINES.map(([stage, timeline]) => (
+                  <tr key={stage}>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] font-bold"
+                      style={{
+                        borderColor: C.border,
+                        color: C.headingDark,
+                      }}
+                    >
+                      {stage}
+                    </td>
+                    <td
+                      className="border px-4 py-3 align-top text-[13px] leading-relaxed"
+                      style={{ borderColor: C.border }}
+                    >
+                      {timeline}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-            {/* 1 */}
-            <div className="mt-10">
-              <SectionHeading id="what-this-covers">
-                1. What this covers
-              </SectionHeading>
-              <Para>
-                You can raise a grievance about content that violates our{" "}
-                <Link
-                  href="/guidelines"
-                  className="underline hover:opacity-70"
-                  style={{ color: C.pink }}
-                >
-                  Community Guidelines
-                </Link>
-                , harassment or safety concerns, misuse of your personal data,
-                billing and refund issues, or any other problem with the service.
-                This policy sits alongside our{" "}
-                <Link
-                  href="/privacy"
-                  className="underline hover:opacity-70"
-                  style={{ color: C.pink }}
-                >
-                  Privacy Policy
-                </Link>
-                ,{" "}
-                <Link
-                  href="/terms"
-                  className="underline hover:opacity-70"
-                  style={{ color: C.pink }}
-                >
-                  Terms
-                </Link>
-                , and Community Guidelines.
-              </Para>
-            </div>
+        {/* 4 */}
+        <div className="mt-10">
+          <SectionHeading id="officer">4. Grievance Officer</SectionHeading>
+          <Para>
+            In accordance with the IT Rules, 2021 and the DPDP Act, 2023, the
+            details of our Grievance Officer / Data Protection Officer are:
+          </Para>
 
-            {/* 2 */}
-            <div className="mt-10">
-              <SectionHeading id="how-to-raise">
-                2. How to raise a grievance
-              </SectionHeading>
-              <BulletList items={HOW_TO_RAISE} />
-              <Para>
-                To protect your privacy, please raise grievances from the contact
-                details linked to your account.
-              </Para>
-            </div>
-
-            {/* 3 */}
-            <div className="mt-10">
-              <SectionHeading id="timelines">3. Our timelines</SectionHeading>
-
-              <div className="mt-5 overflow-x-auto">
-                <table
-                  className="w-full min-w-[520px] border-collapse text-left"
-                  style={{ color: C.body }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: C.tableHeadBg }}>
-                      <th
-                        className="w-[45%] border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Stage
-                      </th>
-                      <th
-                        className="border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-[0.1em]"
-                        style={{ borderColor: C.border, color: C.label }}
-                      >
-                        Timeline
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TIMELINES.map(([stage, timeline]) => (
-                      <tr key={stage}>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] font-bold"
-                          style={{
-                            borderColor: C.border,
-                            color: C.headingDark,
-                          }}
-                        >
-                          {stage}
-                        </td>
-                        <td
-                          className="border px-4 py-3 align-top text-[13px] leading-relaxed"
-                          style={{ borderColor: C.border }}
-                        >
-                          {timeline}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div
+            className="mt-5 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.officerBg,
+              borderColor: C.border,
+            }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              {[
+                ["Name", OFFICER.name],
+                ["Designation", OFFICER.designation],
+                ["Company", OFFICER.company],
+                ["Address", OFFICER.address],
+                ["Working hours", OFFICER.workingHours],
+              ].map(([k, v]) => (
+                <div key={k} className="flex flex-wrap gap-x-2">
+                  <dt className="font-bold" style={{ color: C.headingDark }}>
+                    {k}:
+                  </dt>
+                  <dd style={{ color: C.body }}>{v}</dd>
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Email:
+                </dt>
+                <dd>
+                  <MailLink email={OFFICER.email} />
+                </dd>
               </div>
-            </div>
+            </dl>
+          </div>
+        </div>
 
-            {/* 4 */}
-            <div className="mt-10">
-              <SectionHeading id="officer">4. Grievance Officer</SectionHeading>
-              <Para>
-                In accordance with the IT Rules, 2021 and the DPDP Act, 2023, the
-                details of our Grievance Officer / Data Protection Officer are:
-              </Para>
+        {/* 5 */}
+        <div className="mt-10">
+          <SectionHeading id="how-we-handle">
+            5. How we handle your complaint
+          </SectionHeading>
+          <BulletList items={HANDLING} />
+        </div>
 
-              <div
-                className="mt-5 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.officerBg,
-                  borderColor: C.border,
-                }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  {[
-                    ["Name", OFFICER.name],
-                    ["Designation", OFFICER.designation],
-                    ["Company", OFFICER.company],
-                    ["Address", OFFICER.address],
-                    ["Working hours", OFFICER.workingHours],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex flex-wrap gap-x-2">
-                      <dt className="font-bold" style={{ color: C.headingDark }}>
-                        {k}:
-                      </dt>
-                      <dd style={{ color: C.body }}>{v}</dd>
-                    </div>
-                  ))}
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Email:
-                    </dt>
-                    <dd>
-                      <MailLink email={OFFICER.email} />
-                    </dd>
-                  </div>
-                </dl>
+        {/* 6 */}
+        <div className="mt-10">
+          <SectionHeading id="not-satisfied">
+            6. If you&apos;re not satisfied
+          </SectionHeading>
+          <Para>If our resolution doesn&apos;t satisfy you, you may escalate:</Para>
+          <BulletList items={NOT_SATISFIED} />
+        </div>
+
+        {/* 7 */}
+        <div className="mt-10">
+          <SectionHeading id="good-faith">7. Good-faith use</SectionHeading>
+          <Para>
+            Please use this process in good faith. Repeated false or
+            malicious complaints intended to harass another member may
+            constitute a violation of our{" "}
+            <Link
+              href="/guidelines"
+              className="underline hover:opacity-70"
+              style={{ color: C.pink }}
+            >
+              Community Guidelines
+            </Link>
+            .
+          </Para>
+        </div>
+
+        {/* 8 */}
+        <div className="mt-10">
+          <SectionHeading id="contact">8. Contact</SectionHeading>
+
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Grievance Officer:
+                </dt>
+                <dd>
+                  <MailLink email={OFFICER.email} />
+                </dd>
               </div>
-            </div>
-
-            {/* 5 */}
-            <div className="mt-10">
-              <SectionHeading id="how-we-handle">
-                5. How we handle your complaint
-              </SectionHeading>
-              <BulletList items={HANDLING} />
-            </div>
-
-            {/* 6 */}
-            <div className="mt-10">
-              <SectionHeading id="not-satisfied">
-                6. If you&apos;re not satisfied
-              </SectionHeading>
-              <Para>If our resolution doesn&apos;t satisfy you, you may escalate:</Para>
-              <BulletList items={NOT_SATISFIED} />
-            </div>
-
-            {/* 7 */}
-            <div className="mt-10">
-              <SectionHeading id="good-faith">7. Good-faith use</SectionHeading>
-              <Para>
-                Please use this process in good faith. Repeated false or
-                malicious complaints intended to harass another member may
-                constitute a violation of our{" "}
-                <Link
-                  href="/guidelines"
-                  className="underline hover:opacity-70"
-                  style={{ color: C.pink }}
-                >
-                  Community Guidelines
-                </Link>
-                .
-              </Para>
-            </div>
-
-            {/* 8 */}
-            <div className="mt-10">
-              <SectionHeading id="contact">8. Contact</SectionHeading>
-
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Grievance Officer:
-                    </dt>
-                    <dd>
-                      <MailLink email={OFFICER.email} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Safety:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.safetyEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      General support:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.supportEmail} />
-                    </dd>
-                  </div>
-                </dl>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Safety:
+                </dt>
+                <dd>
+                  <MailLink email={META.safetyEmail} />
+                </dd>
               </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  This policy is a template provided in good faith to reflect
-                  common statutory expectations. Confirm the actual officer,
-                  address, and applicable compliance obligations with qualified
-                  counsel before launch.
-                </p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  General support:
+                </dt>
+                <dd>
+                  <MailLink email={META.supportEmail} />
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              This policy is a template provided in good faith to reflect
+              common statutory expectations. Confirm the actual officer,
+              address, and applicable compliance obligations with qualified
+              counsel before launch.
+            </p>
+          </div>
         </div>
       </div>
     </main>

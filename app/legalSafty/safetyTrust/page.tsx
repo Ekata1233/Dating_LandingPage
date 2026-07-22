@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -46,21 +46,6 @@ const RESOURCES: { label: string; value: string; href?: string }[] = [
     href: `mailto:${META.safetyEmail}`,
   },
 ];
-
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "1. What we do to keep Welvors safe", id: "what-we-do" },
-  { label: "2. Staying safe while chatting", id: "chatting" },
-  { label: "3. Romance scams & money", id: "scams" },
-  { label: "4. Meeting in person", id: "meeting" },
-  { label: "5. Consent matters", id: "consent" },
-  { label: "6. If something goes wrong", id: "goes-wrong" },
-  { label: "7. Support resources", id: "resources" },
-  { label: "8. Contact", id: "contact" },
-];
-const TOC_IDS = TOC.map((t) => t.id);
 
 /* ------------------------------------------------------------------ */
 /*  Content                                                            */
@@ -128,35 +113,6 @@ const MEETING: [string, string][] = [
     "if anything feels off, it's completely fine to leave.",
   ],
 ];
-
-/* ------------------------------------------------------------------ */
-/*  Scroll spy                                                         */
-/* ------------------------------------------------------------------ */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-
-  useEffect(() => {
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -55% 0px", threshold: 0 }
-    );
-
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [ids]);
-
-  return active;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -227,8 +183,6 @@ function MailLink({ email }: { email: string }) {
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 export default function SafetyTrustPage() {
-  const active = useActiveSection(TOC_IDS);
-
   return (
     <main style={{ backgroundColor: C.bg }} className="w-full mt-5">
       {/* ==================== Hero ==================== */}
@@ -290,244 +244,206 @@ export default function SafetyTrustPage() {
         </div>
       </div>
 
-      {/* ==================== Body + TOC ==================== */}
+      {/* ==================== Body ==================== */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        {/* <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14"> */}
-        <div className="flex justify-center">
-          {/* -------------------- Main content -------------------- */}
-          <div className="max-w-7xl">
-            {/* Intro */}
+        {/* Intro */}
+        <p
+          className="text-[13.5px] leading-relaxed"
+          style={{ color: C.body }}
+        >
+          <strong style={{ color: C.pink }}>
+            Meeting someone new should feel exciting, not risky.
+          </strong>{" "}
+          Safety is built into how Welvors works — and this guide shows what
+          we do behind the scenes, plus simple steps that keep you in control
+          online and in person.
+        </p>
+
+        {/* 1 */}
+        <div className="mt-10">
+          <SectionHeading id="what-we-do">
+            1. What we do to keep Welvors safe
+          </SectionHeading>
+          <DefList items={WHAT_WE_DO} />
+        </div>
+
+        {/* 2 */}
+        <div className="mt-10">
+          <SectionHeading id="chatting">
+            2. Staying safe while chatting
+          </SectionHeading>
+          <DefList items={CHATTING} />
+        </div>
+
+        {/* 3 */}
+        <div className="mt-10">
+          <SectionHeading id="scams">
+            3. Romance scams &amp; money
+          </SectionHeading>
+
+          <div
+            className="mt-5 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.warnBg,
+              borderColor: C.warnBorder,
+            }}
+          >
+            <p className="text-[13px] font-bold" style={{ color: C.pink }}>
+              ▶ Never send money to someone you met online
+            </p>
             <p
-              className="text-[13.5px] leading-relaxed"
+              className="mt-2 text-[12.5px] leading-relaxed"
               style={{ color: C.body }}
             >
-              <strong style={{ color: C.pink }}>
-                Meeting someone new should feel exciting, not risky.
-              </strong>{" "}
-              Safety is built into how Welvors works — and this guide shows what
-              we do behind the scenes, plus simple steps that keep you in control
-              online and in person.
+              No genuine match will ask you for money, gift cards, crypto, or
+              &ldquo;investment&rdquo; help — no matter how convincing the
+              story (emergency, travel, customs fees). Report the moment you
+              see it. If it&apos;s a scam, report them immediately.
             </p>
+          </div>
+        </div>
 
-            {/* 1 */}
-            <div className="mt-10">
-              <SectionHeading id="what-we-do">
-                1. What we do to keep Welvors safe
-              </SectionHeading>
-              <DefList items={WHAT_WE_DO} />
-            </div>
+        {/* 4 */}
+        <div className="mt-10">
+          <SectionHeading id="meeting">4. Meeting in person</SectionHeading>
+          <DefList items={MEETING} />
+        </div>
 
-            {/* 2 */}
-            <div className="mt-10">
-              <SectionHeading id="chatting">
-                2. Staying safe while chatting
-              </SectionHeading>
-              <DefList items={CHATTING} />
-            </div>
+        {/* 5 */}
+        <div className="mt-10">
+          <SectionHeading id="consent">5. Consent matters</SectionHeading>
+          <Para>
+            Consent is essential, every time. It must be freely given,
+            enthusiastic, and can be withdrawn at any moment. Silence or a
+            date not having responded is never consent to anything. Respect a
+            &ldquo;no&rdquo; instantly.
+          </Para>
+        </div>
 
-            {/* 3 */}
-            <div className="mt-10">
-              <SectionHeading id="scams">
-                3. Romance scams &amp; money
-              </SectionHeading>
+        {/* 6 */}
+        <div className="mt-10">
+          <SectionHeading id="goes-wrong">
+            6. If something goes wrong
+          </SectionHeading>
+          <Para>
+            You can <strong style={{ color: C.pink }}>block</strong> or{" "}
+            <strong style={{ color: C.pink }}>report</strong> anyone from
+            their profile or your chat in a few taps. Reports are
+            confidential. If you feel unsafe, act first and tell us after.
+          </Para>
 
-              <div
-                className="mt-5 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.warnBg,
-                  borderColor: C.warnBorder,
-                }}
+          <div
+            className="mt-5 rounded-xl border p-5"
+            style={{
+              backgroundColor: C.greenBg,
+              borderColor: C.greenBorder,
+            }}
+          >
+            <p
+              className="text-[13px] font-bold"
+              style={{ color: C.green }}
+            >
+              ⚠ In immediate danger
+            </p>
+            <p
+              className="mt-2 text-[12.5px] leading-relaxed"
+              style={{ color: C.body }}
+            >
+              Contact local emergency services first — dial{" "}
+              <a
+                href="tel:112"
+                className="font-bold underline"
+                style={{ color: C.green }}
               >
-                <p className="text-[13px] font-bold" style={{ color: C.pink }}>
-                  ▶ Never send money to someone you met online
-                </p>
-                <p
-                  className="mt-2 text-[12.5px] leading-relaxed"
+                112
+              </a>{" "}
+              in India. Then report the incident to us at{" "}
+              <MailLink email={META.safetyEmail} />. Our safety team responds
+              around the clock and cooperates with lawful requests from the
+              authorities.
+            </p>
+          </div>
+        </div>
+
+        {/* 7 */}
+        <div className="mt-10">
+          <SectionHeading id="resources">
+            7. Support resources
+          </SectionHeading>
+          <ul className="mt-3 space-y-2.5">
+            {RESOURCES.map((r) => (
+              <li key={r.label} className="flex items-start gap-2.5">
+                <span
+                  className="mt-2 h-1.5 w-1.5 flex-none rounded-full"
+                  style={{ backgroundColor: C.pink }}
+                />
+                <span
+                  className="text-[13.5px] leading-relaxed"
                   style={{ color: C.body }}
                 >
-                  No genuine match will ask you for money, gift cards, crypto, or
-                  &ldquo;investment&rdquo; help — no matter how convincing the
-                  story (emergency, travel, customs fees). Report the moment you
-                  see it. If it&apos;s a scam, report them immediately.
-                </p>
-              </div>
-            </div>
-
-            {/* 4 */}
-            <div className="mt-10">
-              <SectionHeading id="meeting">4. Meeting in person</SectionHeading>
-              <DefList items={MEETING} />
-            </div>
-
-            {/* 5 */}
-            <div className="mt-10">
-              <SectionHeading id="consent">5. Consent matters</SectionHeading>
-              <Para>
-                Consent is essential, every time. It must be freely given,
-                enthusiastic, and can be withdrawn at any moment. Silence or a
-                date not having responded is never consent to anything. Respect a
-                &ldquo;no&rdquo; instantly.
-              </Para>
-            </div>
-
-            {/* 6 */}
-            <div className="mt-10">
-              <SectionHeading id="goes-wrong">
-                6. If something goes wrong
-              </SectionHeading>
-              <Para>
-                You can <strong style={{ color: C.pink }}>block</strong> or{" "}
-                <strong style={{ color: C.pink }}>report</strong> anyone from
-                their profile or your chat in a few taps. Reports are
-                confidential. If you feel unsafe, act first and tell us after.
-              </Para>
-
-              <div
-                className="mt-5 rounded-xl border p-5"
-                style={{
-                  backgroundColor: C.greenBg,
-                  borderColor: C.greenBorder,
-                }}
-              >
-                <p
-                  className="text-[13px] font-bold"
-                  style={{ color: C.green }}
-                >
-                  ⚠ In immediate danger
-                </p>
-                <p
-                  className="mt-2 text-[12.5px] leading-relaxed"
-                  style={{ color: C.body }}
-                >
-                  Contact local emergency services first — dial{" "}
-                  <a
-                    href="tel:112"
-                    className="font-bold underline"
-                    style={{ color: C.green }}
-                  >
-                    112
-                  </a>{" "}
-                  in India. Then report the incident to us at{" "}
-                  <MailLink email={META.safetyEmail} />. Our safety team responds
-                  around the clock and cooperates with lawful requests from the
-                  authorities.
-                </p>
-              </div>
-            </div>
-
-            {/* 7 */}
-            <div className="mt-10">
-              <SectionHeading id="resources">
-                7. Support resources
-              </SectionHeading>
-              <ul className="mt-3 space-y-2.5">
-                {RESOURCES.map((r) => (
-                  <li key={r.label} className="flex items-start gap-2.5">
-                    <span
-                      className="mt-2 h-1.5 w-1.5 flex-none rounded-full"
-                      style={{ backgroundColor: C.pink }}
-                    />
-                    <span
-                      className="text-[13.5px] leading-relaxed"
-                      style={{ color: C.body }}
+                  <strong style={{ color: C.headingDark }}>
+                    {r.label}:
+                  </strong>{" "}
+                  {r.href ? (
+                    <a
+                      href={r.href}
+                      className="hover:opacity-70"
+                      style={{ color: C.pink }}
                     >
-                      <strong style={{ color: C.headingDark }}>
-                        {r.label}:
-                      </strong>{" "}
-                      {r.href ? (
-                        <a
-                          href={r.href}
-                          className="hover:opacity-70"
-                          style={{ color: C.pink }}
-                        >
-                          {r.value}
-                        </a>
-                      ) : (
-                        r.value
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                      {r.value}
+                    </a>
+                  ) : (
+                    r.value
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-            {/* 8 */}
-            <div className="mt-10">
-              <SectionHeading id="contact">8. Contact</SectionHeading>
+        {/* 8 */}
+        <div className="mt-10">
+          <SectionHeading id="contact">8. Contact</SectionHeading>
 
-              <div
-                className="mt-5 rounded-xl border bg-white p-5"
-                style={{ borderColor: C.border }}
-              >
-                <dl className="space-y-2 text-[13.5px]">
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Safety team:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.safetyEmail} />
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-bold" style={{ color: C.headingDark }}>
-                      Support:
-                    </dt>
-                    <dd>
-                      <MailLink email={META.supportEmail} />
-                    </dd>
-                  </div>
-                </dl>
+          <div
+            className="mt-5 rounded-xl border bg-white p-5"
+            style={{ borderColor: C.border }}
+          >
+            <dl className="space-y-2 text-[13.5px]">
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Safety team:
+                </dt>
+                <dd>
+                  <MailLink email={META.safetyEmail} />
+                </dd>
               </div>
-
-              {/* Disclaimer strip */}
-              <div
-                className="mt-6 rounded-xl p-5"
-                style={{ backgroundColor: C.disclaimerBg }}
-              >
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: C.label }}
-                >
-                  This guidance helps you stay safer but cannot remove all risk.
-                  Welvors does not run criminal background checks and cannot
-                  guarantee any member&apos;s conduct. Please trust your instincts
-                  and always contact the authorities in an emergency.
-                </p>
+              <div className="flex flex-wrap gap-x-2">
+                <dt className="font-bold" style={{ color: C.headingDark }}>
+                  Support:
+                </dt>
+                <dd>
+                  <MailLink email={META.supportEmail} />
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
 
-          {/* -------------------- On this page (TOC) -------------------- */}
-          {/* <aside className="order-first lg:order-none">
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[12.5px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside> */}
+          {/* Disclaimer strip */}
+          <div
+            className="mt-6 rounded-xl p-5"
+            style={{ backgroundColor: C.disclaimerBg }}
+          >
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: C.label }}
+            >
+              This guidance helps you stay safer but cannot remove all risk.
+              Welvors does not run criminal background checks and cannot
+              guarantee any member&apos;s conduct. Please trust your instincts
+              and always contact the authorities in an emergency.
+            </p>
+          </div>
         </div>
       </div>
     </main>
