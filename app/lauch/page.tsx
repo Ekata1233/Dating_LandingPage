@@ -113,19 +113,36 @@ export default function LaunchPage() {
   const [user, setUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("welvors_user");
-      const token = localStorage.getItem("welvors_token");
-      if (!token || !raw) { router.replace("/"); return; }
-      setUser(JSON.parse(raw) as ApiUser);
-    } catch {
-      router.replace("/");
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+useEffect(() => {
+  let frameId: number;
 
+  try {
+    const raw = localStorage.getItem("welvors_user");
+    const token = localStorage.getItem("welvors_token");
+
+    if (!token || !raw) {
+      router.replace("/");
+      return;
+    }
+
+    const parsedUser = JSON.parse(raw) as ApiUser;
+
+    frameId = requestAnimationFrame(() => {
+      setUser(parsedUser);
+      setLoading(false);
+    });
+  } catch {
+    router.replace("/");
+
+    frameId = requestAnimationFrame(() => {
+      setLoading(false);
+    });
+  }
+
+  return () => {
+    if (frameId) cancelAnimationFrame(frameId);
+  };
+}, [router]);
   const t = useCountdown(waitlist?.launchDate || STATIC.launchAt);
 
   // referral — live, fallback ke sath

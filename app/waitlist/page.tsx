@@ -62,9 +62,15 @@ function WaitlistModalContent({ open, onClose }: WaitlistModalProps) {
     onPayNow,
   } = useWaitlist();
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+const [mounted, setMounted] = useState(false);
 
+useEffect(() => {
+  const id = requestAnimationFrame(() => {
+    setMounted(true);
+  });
+
+  return () => cancelAnimationFrame(id);
+}, []);
   // Reset when modal closes
   useEffect(() => {
     if (!open) {
@@ -140,38 +146,9 @@ function WaitlistModalContent({ open, onClose }: WaitlistModalProps) {
 
         {/* --- Body --- */}
         <div className="px-6 py-6 sm:px-8 sm:py-7">
-          {step === 1 && (
-            <StepVerify
-              phone={phone}
-              setPhone={setPhone}
-              otp={otp}
-              setOtp={setOtp}
-              otpSent={otpSent}
-              secondsLeft={secondsLeft}
-              referralOpen={referralOpen}
-              setReferralOpen={setReferralOpen}
-              referralCode={referralCode}
-              setReferralCode={setReferralCode}
-              status={status}
-              errorMsg={errorMsg}
-              onSendOtp={onSendOtp}
-              onVerify={onVerify}
-              onChangeNumber={onChangeNumber}
-              phoneRef={phoneRef}
-              otpRefs={otpRefs}
-            />
-          )}
+          {step === 1 && <StepVerify />}
 
-          {step === 2 && (
-            <StepProfile
-              phone={phone}
-              profile={profile}
-              setProfile={setProfile}
-              status={status}
-              errorMsg={errorMsg}
-              onSubmit={onSubmitProfile}
-            />
-          )}
+{step === 2 && <StepProfile />}
 
           {step === 3 && (
             <StepPlan

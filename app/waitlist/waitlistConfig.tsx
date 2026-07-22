@@ -115,7 +115,7 @@ export const LOOKING_FOR = ["Marriage", "Long-term", "New friends", "Figuring ou
 /* ------------------------------------------------------------------ */
 /*  Shared types                                                       */
 /* ------------------------------------------------------------------ */
-export type Status = "idle" | "sending" | "error";
+export type Status = "idle" | "sending" | "verifying" | "success" | "error";
 export type Plan = "founding" | "free";
 export type PayMethod = "upi" | "card";
 

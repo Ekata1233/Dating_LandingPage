@@ -67,12 +67,20 @@ export default function ReferralHistoryPage() {
   const [tab, setTab] = useState<TabKey>("joined");
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem("welvors_token");
-    if (!token) { router.replace("/"); return; }
-    setReady(true);
-  }, [router]);
+useEffect(() => {
+  const token = localStorage.getItem("welvors_token");
 
+  if (!token) {
+    router.replace("/");
+    return;
+  }
+
+  const id = requestAnimationFrame(() => {
+    setReady(true);
+  });
+
+  return () => cancelAnimationFrame(id);
+}, [router]);
   if (!ready) {
     return (
       <main style={{ backgroundColor: C.bg }} className="flex min-h-screen w-full items-center justify-center">

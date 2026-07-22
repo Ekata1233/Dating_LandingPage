@@ -15,13 +15,6 @@ const C = {
   ctaTo: "#B31E52",
 };
 
-// Fallback — API fail/khaali ho toh yahi dikhega
-const SUMMARY_FALLBACK = {
-  totalValue: "₹4,200+",
-  price: "₹299",
-  savings: "₹3,900",
-};
-
 const Icon = {
   Check: (p: SVGProps<SVGSVGElement>) => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -34,17 +27,6 @@ const Icon = {
     </svg>
   ),
 };
-
-// Fallback perks — API na aaye toh
-const PERKS_FALLBACK: { text: React.ReactNode; tag: string }[] = [
-  { text: (<><strong>1 month of Premium free</strong> at launch — unlimited likes, see who likes you, advanced filters</>), tag: "₹499" },
-  { text: (<><strong>Early access</strong> — first pick of matches before your city opens to everyone</>), tag: "Priority" },
-  { text: (<><strong>Weekly Boosts</strong> for your first month — be seen by more people</>), tag: "₹1,400" },
-  { text: (<><strong>Compliments &amp; Date Plans</strong> — stand out and break the ice</>), tag: "₹1,000" },
-  { text: (<><strong>Daily Rewinds</strong> for a month — undo accidental passes</>), tag: "₹1,800" },
-  { text: (<><strong>100 Welcome Coins</strong> free — spend on any premium feature</>), tag: "FREE" },
-  { text: (<><strong>Golden Founding Member badge</strong> — shown on your profile forever</>), tag: "Exclusive" },
-];
 
 const ASSURANCES: React.ReactNode[] = [
   <>Perks <strong>locked in for life</strong></>,
@@ -66,9 +48,9 @@ function inr(v: string | number) {
 function EarlyAccess() {
   const [modalOpen, setModalOpen] = useState(false);
   const { waitlist } = useLaunchData();
-const [waitlistCount, setWaitlistCount] = useState(515);
-  // Numbers — live, fallback ke sath
-   useEffect(() => {
+  const [waitlistCount, setWaitlistCount] = useState(515);
+
+  useEffect(() => {
     const BASE = 515;
     const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
 
@@ -89,6 +71,8 @@ const [waitlistCount, setWaitlistCount] = useState(515);
     const id = setInterval(compute, 60000); // har minute recheck
     return () => clearInterval(id);
   }, []);
+
+  // Numbers — sirf API se. Load hone tak dash (crash na ho, koi hardcoded fallback nahi)
   const summary = waitlist
     ? {
         totalValue: `₹${inr(waitlist.totalBenefitsValue)}+`,
@@ -96,9 +80,9 @@ const [waitlistCount, setWaitlistCount] = useState(515);
         // savings = original − final (discountAmount reliable nahi)
         savings: `₹${inr(Number(waitlist.originalPrice) - Number(waitlist.finalPrice))}`,
       }
-    : SUMMARY_FALLBACK;
+    : { totalValue: "—", price: "—", savings: "—" };
 
-  // Perks — API se (title + subtitle + ₹value), warna fallback
+  // Perks — sirf API se (title + subtitle + ₹value). Load hone tak khaali.
   const perks =
     waitlist?.perks && waitlist.perks.length > 0
       ? waitlist.perks.map((p) => ({
@@ -110,7 +94,7 @@ const [waitlistCount, setWaitlistCount] = useState(515);
           ),
           tag: p.value ? `₹${inr(p.value)}` : "FREE",
         }))
-      : PERKS_FALLBACK;
+      : [];
 
   return (
     <section
@@ -212,7 +196,7 @@ const [waitlistCount, setWaitlistCount] = useState(515);
               ))}
             </div>
 
-           <div className="mt-6 flex items-start gap-3">
+            <div className="mt-6 flex items-start gap-3">
               <div className="flex flex-none -space-x-2">
                 {AVATARS.map((av) => (
                   <span

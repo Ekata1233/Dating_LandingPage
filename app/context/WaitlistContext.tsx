@@ -121,6 +121,35 @@ const initialCard: Card = {
 };
 
 // ---- Profile-skip helpers ----
+
+// Backend se aane wala raw user — saare possible field variants optional.
+// user?: RawUser recursive isliye hai kyunki data.data.user bhi ho sakta hai.
+type RawUser = {
+  user?: RawUser;
+  fullName?: string;
+  full_name?: string;
+  email?: string;
+  birth_date?: string;
+  birthDate?: string;
+  dob?: string;
+  gender?: string;
+  gender_option?: string;
+  orientation?: string;
+  onboarding_step?: string;
+  city?: string;
+  lookingFor?: string;
+  looking_for?: string;
+  height?: number | string | null;
+};
+
+interface VerifyOtpResponse {
+  token?: string;
+  user?: RawUser;
+  data?: RawUser;
+  message?: string | Array<{ message: string }>;
+  error?: string;
+}
+
 // Backend enum -> UI label (hydration ke liye)
 const GENDER_REVERSE: Record<string, string> = {
   MEN: "Man",
@@ -144,7 +173,7 @@ const ORIENTATION_REVERSE: Record<string, string> = {
 };
 
 // Response ka shape kuch bhi ho — user object nikaalo defensively
-const extractUser = (data: any) =>
+const extractUser = (data: VerifyOtpResponse | null | undefined): RawUser | null =>
   data?.user ?? data?.data?.user ?? data?.data ?? null;
 
 // Profile "saved" hai ya nahi.
@@ -152,7 +181,9 @@ const extractUser = (data: any) =>
 // return nahi karta. Core basic-info fields (name+email+dob+gender) present hone
 // ka matlab profile save ho chuka. onboarding_step ko ek extra positive signal
 // ke roop me use kiya hai (BASIC_INFO ya usse aage = done).
-const isProfileComplete = (u: any): boolean => {
+// Type predicate (u is RawUser) taaki callsite pe user null-narrow ho jaaye
+// aur mapUserToProfile(user) compile ho.
+const isProfileComplete = (u: RawUser | null): u is RawUser => {
   if (!u) return false;
 
   const hasName = !!(u.fullName || u.full_name);
@@ -172,7 +203,7 @@ const isProfileComplete = (u: any): boolean => {
 };
 
 // Saved user ko wapas Profile state me daalo (Back button ke liye zaroori)
-const mapUserToProfile = (u: any): Profile => {
+const mapUserToProfile = (u: RawUser): Profile => {
   const dobRaw: string = u.birth_date || u.birthDate || u.dob || "";
   let dobYear = "";
   let dobMonth = "";
@@ -186,7 +217,7 @@ const mapUserToProfile = (u: any): Profile => {
   return {
     fullName: u.fullName || u.full_name || "",
     email: u.email || "",
-    gender: GENDER_REVERSE[u.gender] || u.gender || "",
+    gender: GENDER_REVERSE[u.gender ?? ""] || u.gender || "",
     city: u.city || "",
     lookingFor: u.lookingFor || u.looking_for || "",
     dobDay,
@@ -194,8 +225,8 @@ const mapUserToProfile = (u: any): Profile => {
     dobYear,
     height: u.height != null ? String(u.height) : "",
     orientation:
-      ORIENTATION_REVERSE[u.gender_option] ||
-      ORIENTATION_REVERSE[u.orientation] ||
+      ORIENTATION_REVERSE[u.gender_option ?? ""] ||
+      ORIENTATION_REVERSE[u.orientation ?? ""] ||
       "",
   };
 };
@@ -360,10 +391,14 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      const data = await response.json();
+      const data: VerifyOtpResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || "Invalid OTP. Please try again.");
+        throw new Error(
+          (typeof data.message === "string" ? data.message : undefined) ||
+            data.error ||
+            "Invalid OTP. Please try again."
+        );
       }
 
       // Success - token store karo, phir decide karo: profile saved hai ya nahi
@@ -518,7 +553,7 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
         // Handle validation errors from backend
         if (data.message && Array.isArray(data.message)) {
           // Parse validation errors
-          const errors = data.message.map((err: any) => err.message).join(". ");
+          const errors = data.message.map((err: { message: string }) => err.message).join(". ");
           throw new Error(errors);
         }
         throw new Error(data.message || data.error || "Failed to save profile");
