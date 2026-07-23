@@ -29,7 +29,7 @@ export const C = {
 /* ------------------------------------------------------------------ */
 export const MOCK_MODE = true;
 
-export const TOTAL_STEPS = 5;
+export const TOTAL_STEPS = 3; 
 export const OTP_LENGTH = 6;
 export const RESEND_SECONDS = 30;
 

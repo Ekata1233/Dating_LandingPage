@@ -2,6 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from "react";
+import { useRouter } from "next/navigation"; // ⬅ NEW
 
 // Types matching your existing config
 export type Status = "idle" | "sending" | "success" | "error";
@@ -62,7 +63,7 @@ interface WaitlistContextType {
   plan: Plan;
   setPlan: (v: Plan) => void;
 
-  // Step 4 - Payment
+  // Payment (DEAD for now — modal se hata diya, future ke liye rakha hai)
   payMethod: PayMethod;
   setPayMethod: (v: PayMethod) => void;
   upiId: string;
@@ -70,7 +71,7 @@ interface WaitlistContextType {
   card: Card;
   setCard: React.Dispatch<React.SetStateAction<Card>>;
 
-  // Step 5 - Done
+  // Done
   spotNumber: number | null;
   setSpotNumber: (v: number | null) => void;
 
@@ -95,6 +96,9 @@ const RESEND_SECONDS = 30;
 
 // Mock mode flag - set to false for production
 const MOCK_MODE = false;
+
+// ⬅ NEW: done page ko data pass karne ki key
+export const DONE_STORAGE_KEY = "welvors_waitlist_done";
 
 // API Endpoints
 const SEND_OTP_ENDPOINT = "https://dating-app-backend-plum.vercel.app/api/user/send-otp";
@@ -177,12 +181,6 @@ const extractUser = (data: VerifyOtpResponse | null | undefined): RawUser | null
   data?.user ?? data?.data?.user ?? data?.data ?? null;
 
 // Profile "saved" hai ya nahi.
-// NOTE: height ko required NAHI rakha — verify-otp response me backend height
-// return nahi karta. Core basic-info fields (name+email+dob+gender) present hone
-// ka matlab profile save ho chuka. onboarding_step ko ek extra positive signal
-// ke roop me use kiya hai (BASIC_INFO ya usse aage = done).
-// Type predicate (u is RawUser) taaki callsite pe user null-narrow ho jaaye
-// aur mapUserToProfile(user) compile ho.
 const isProfileComplete = (u: RawUser | null): u is RawUser => {
   if (!u) return false;
 
@@ -194,10 +192,7 @@ const isProfileComplete = (u: RawUser | null): u is RawUser => {
   const coreDone = hasName && hasEmail && hasDob && hasGender;
 
   const step: string | undefined = u.onboarding_step;
-  // Naya user (sirf phone verified) ka step PHONE/PHONE_VERIFIED/null hota hai.
-  // Basic info save hote hi backend "BASIC_INFO" (ya aage) set kar deta hai.
-  const stepDone =
-    !!step && step !== "PHONE" && step !== "PHONE_VERIFIED";
+  const stepDone = !!step && step !== "PHONE" && step !== "PHONE_VERIFIED";
 
   return coreDone || stepDone;
 };
@@ -211,7 +206,7 @@ const mapUserToProfile = (u: RawUser): Profile => {
   if (typeof dobRaw === "string" && dobRaw.includes("-")) {
     const [y, m, d] = dobRaw.split("T")[0].split("-");
     dobYear = y || "";
-    dobMonth = m ? String(parseInt(m, 10)) : ""; // "01" -> "1" (select options match karne ke liye)
+    dobMonth = m ? String(parseInt(m, 10)) : "";
     dobDay = d ? String(parseInt(d, 10)) : "";
   }
   return {
@@ -232,6 +227,8 @@ const mapUserToProfile = (u: RawUser): Profile => {
 };
 
 export function WaitlistProvider({ children }: { children: ReactNode }) {
+  const router = useRouter(); // ⬅ NEW
+
   // Step
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<Status>("idle");
@@ -251,12 +248,12 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
   // Step 3 - Plan
   const [plan, setPlan] = useState<Plan>("founding");
 
-  // Step 4 - Payment
+  // Payment (dead for now)
   const [payMethod, setPayMethod] = useState<PayMethod>("upi");
   const [upiId, setUpiId] = useState("");
   const [card, setCard] = useState<Card>(initialCard);
 
-  // Step 5 - Done
+  // Done
   const [spotNumber, setSpotNumber] = useState<number | null>(null);
 
   // Token
@@ -296,24 +293,25 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
   };
 
   const resetAll = useCallback(() => {
-  setStep(1);
-  setStatus("idle");
-  setErrorMsg("");
-  setOtpSent(false);
-  setPhone("");
-  setOtp(Array(OTP_LENGTH).fill(""));
-  setSecondsLeft(0);
-  setReferralOpen(true);
-  setReferralCode("");
-  setProfile(initialProfile);
-  setPlan("founding");
-  setPayMethod("upi");
-  setUpiId("");
-  setCard(initialCard);
-  setSpotNumber(null);
-  setToken(null);
-  if (timerRef.current) clearInterval(timerRef.current);
-}, []);
+    setStep(1);
+    setStatus("idle");
+    setErrorMsg("");
+    setOtpSent(false);
+    setPhone("");
+    setOtp(Array(OTP_LENGTH).fill(""));
+    setSecondsLeft(0);
+    setReferralOpen(true);
+    setReferralCode("");
+    setProfile(initialProfile);
+    setPlan("founding");
+    setPayMethod("upi");
+    setUpiId("");
+    setCard(initialCard);
+    setSpotNumber(null);
+    setToken(null);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
   const fail = (msg: string) => {
     setStatus("error");
     setErrorMsg(msg);
@@ -401,30 +399,29 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // Success - token store karo, phir decide karo: profile saved hai ya nahi
       if (data.token) {
-  setToken(data.token);
-  if (typeof window !== "undefined") {
-    localStorage.setItem("welvors_token", data.token);
-    const u = extractUser(data);
-    if (u) localStorage.setItem("welvors_user", JSON.stringify(u));
-  }
+        setToken(data.token);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("welvors_token", data.token);
+          const u = extractUser(data);
+          if (u) localStorage.setItem("welvors_user", JSON.stringify(u));
+        }
         setStatus("idle");
         setErrorMsg("");
 
         const user = extractUser(data);
         if (isProfileComplete(user)) {
-          setProfile(mapUserToProfile(user)); // hydrate — Back karne pe fields bhare dikhein
-          setStep(3); // profile already saved -> seedha Plan step pe jump
+          setProfile(mapUserToProfile(user));
+          setStep(3);
         } else {
-          setStep(2); // naya user -> profile step
+          setStep(2);
         }
       } else {
         throw new Error("No token received from server");
       }
     } catch (error) {
       fail(error instanceof Error ? error.message : "That code didn't match. Please try again.");
-      setOtp(Array(OTP_LENGTH).fill("")); // Clear OTP on error
+      setOtp(Array(OTP_LENGTH).fill(""));
     }
   };
 
@@ -502,10 +499,8 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Format date for API
       const birthDate = `${profile.dobYear}-${profile.dobMonth.padStart(2, "0")}-${profile.dobDay.padStart(2, "0")}`;
 
-      // Map gender to match backend enum
       const genderMap: Record<string, string> = {
         "Man": "MEN",
         "Woman": "WOMEN",
@@ -514,7 +509,6 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
         "Everyone": "EVERYONE"
       };
 
-      // Map orientation to match backend enum
       const orientationMap: Record<string, string> = {
         "Straight": "STRAIGHT",
         "Gay": "GAY",
@@ -528,7 +522,6 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
         "Not listed": "NOT_LISTED"
       };
 
-      // Get mapped values
       const mappedGender = genderMap[profile.gender] || profile.gender;
       const mappedOrientation = orientationMap[profile.orientation] || profile.orientation;
 
@@ -555,9 +548,7 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle validation errors from backend
         if (data.message && Array.isArray(data.message)) {
-          // Parse validation errors
           const errors = data.message.map((err: { message: string }) => err.message).join(". ");
           throw new Error(errors);
         }
@@ -572,32 +563,34 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Step 3: Confirm Plan
+  // ⬅ CHANGED — Step 3: Confirm Plan -> ab step 4/5 nahi, seedha /waitlist/stepDone page
   const onConfirmPlan = async () => {
     setStatus("sending");
     setErrorMsg("");
 
-    const nextStep = plan === "free" ? 5 : 4;
+    // TODO: backend se real spot number aane pe yahan replace karo
+    const finalSpot = 24;
 
-    if (MOCK_MODE) {
-      setTimeout(() => {
-        setStatus("idle");
-        if (plan === "free") setSpotNumber(24);
-        setStep(nextStep);
-      }, 400);
-      return;
+    // Context page pe available nahi hoga (provider modal ke saath unmount ho jaata hai),
+    // isliye done-page ke liye handoff payload sessionStorage me daal rahe hain.
+    const donePayload = {
+      plan,
+      fullName: profile.fullName,
+      phone,
+      city: profile.city || "",
+      spotNumber: finalSpot,
+    };
+
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(donePayload));
     }
 
-    try {
-      // Since we don't have a checkout endpoint yet, just navigate
-      setStatus("idle");
-      setStep(nextStep);
-    } catch (error) {
-      fail("Couldn't start checkout. Please try again.");
-    }
+    setSpotNumber(finalSpot);
+    setStatus("idle");
+router.push("/stepdone");
   };
 
-  // Step 4: Pay Now
+  // DEAD — payment step modal se hata diya gaya hai. Future ke liye rakha hai.
   const onPayNow = async () => {
     if (payMethod === "upi" && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upiId)) {
       fail("Please enter a valid UPI ID.");
@@ -621,20 +614,8 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
 
     setStatus("sending");
     setErrorMsg("");
-
-    if (MOCK_MODE) {
-      setTimeout(() => {
-        setStatus("idle");
-        setSpotNumber(24);
-        setStep(5);
-      }, 600);
-      return;
-    }
-
-    // TODO: Implement actual payment processing
     setStatus("idle");
     setSpotNumber(24);
-    setStep(5);
   };
 
   const value: WaitlistContextType = {

@@ -9,7 +9,7 @@ interface Props {
   phone: string;
   city: string;
   spotNumber: number | null;
-  onClose: () => void;
+  
 }
 
 export default function StepDone({
@@ -18,7 +18,7 @@ export default function StepDone({
   phone,
   city,
   spotNumber,
-  onClose,
+ 
 }: Props) {
   return (
     <div className="py-2">
@@ -111,9 +111,9 @@ export default function StepDone({
         </div>
       )}
 
-      <PrimaryButton onClick={onClose} className="mt-5">
+      {/* <PrimaryButton onClick={onClose} className="mt-5">
         Done
-      </PrimaryButton>
+      </PrimaryButton> */}
     </div>
   );
 }

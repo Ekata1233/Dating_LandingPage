@@ -1,4 +1,4 @@
-// WaitlistModal.tsx (updated)
+// WaitlistModal.tsx (updated — step 4 & 5 removed)
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -11,8 +11,7 @@ import {
 import StepVerify from "./steps/StepVerify";
 import StepProfile from "./steps/StepProfile";
 import StepPlan from "./steps/StepPlan";
-import StepPayment from "./steps/StepPayment";
-import StepDone from "./steps/StepDone";
+// ⬅ REMOVED: StepPayment, StepDone imports
 import { useWaitlist, WaitlistProvider } from "../context/WaitlistContext";
 
 interface WaitlistModalProps {
@@ -26,51 +25,25 @@ function WaitlistModalContent({ open, onClose }: WaitlistModalProps) {
     setStep,
     status,
     errorMsg,
-    setErrorMsg,
-    setStatus,
     resetAll,
-    phone,
-    setPhone,
-    otp,
-    setOtp,
-    otpSent,
-    setOtpSent,
-    secondsLeft,
-    setSecondsLeft,
-    referralOpen,
-    setReferralOpen,
-    referralCode,
-    setReferralCode,
     phoneRef,
-    otpRefs,
     profile,
-    setProfile,
     plan,
     setPlan,
-    payMethod,
-    setPayMethod,
-    upiId,
-    setUpiId,
-    card,
-    setCard,
-    spotNumber,
-    onSendOtp,
-    onVerify,
-    onChangeNumber,
-    onSubmitProfile,
     onConfirmPlan,
-    onPayNow,
+    // ⬅ REMOVED: payMethod/upiId/card/spotNumber/onPayNow etc. (ab use nahi hote)
   } = useWaitlist();
 
-const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-useEffect(() => {
-  const id = requestAnimationFrame(() => {
-    setMounted(true);
-  });
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setMounted(true);
+    });
 
-  return () => cancelAnimationFrame(id);
-}, []);
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   // Reset when modal closes
   useEffect(() => {
     if (!open) {
@@ -92,8 +65,6 @@ useEffect(() => {
       clearTimeout(t);
     };
   }, [open, onClose, phoneRef]);
-
-  // Timer effect moved to context
 
   if (!open || !mounted) return null;
 
@@ -148,7 +119,7 @@ useEffect(() => {
         <div className="px-6 py-6 sm:px-8 sm:py-7">
           {step === 1 && <StepVerify />}
 
-{step === 2 && <StepProfile />}
+          {step === 2 && <StepProfile />}
 
           {step === 3 && (
             <StepPlan
@@ -161,36 +132,7 @@ useEffect(() => {
               onConfirm={onConfirmPlan}
             />
           )}
-
-          {step === 4 && (
-            <StepPayment
-              payMethod={payMethod}
-              setPayMethod={setPayMethod}
-              upiId={upiId}
-              setUpiId={setUpiId}
-              card={card}
-              setCard={setCard}
-              status={status}
-              errorMsg={errorMsg}
-              onBack={() => setStep(3)}
-              onPay={onPayNow}
-              onResetError={() => {
-                setStatus("idle");
-                setErrorMsg("");
-              }}
-            />
-          )}
-
-          {step >= 5 && (
-            <StepDone
-              plan={plan}
-              fullName={profile.fullName}
-              phone={phone}
-              city=""
-              spotNumber={spotNumber}
-              onClose={onClose}
-            />
-          )}
+          {/* ⬅ REMOVED: step === 4 (StepPayment) aur step >= 5 (StepDone) blocks */}
         </div>
       </div>
     </div>,
