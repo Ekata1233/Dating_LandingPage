@@ -3,6 +3,12 @@
 import React, { SVGProps, useEffect, useState } from "react";
 
 /* ------------------------------------------------------------------ */
+/*  Mockup profile photo — apni image /public me daal ke path yahan     */
+/*  update karo. Jab tak nahi hai, gradient fallback dikhega.           */
+/* ------------------------------------------------------------------ */
+const PROFILE_IMG = "/download.jpg";
+
+/* ------------------------------------------------------------------ */
 /*  Brand colors inline rakhe hain (Tailwind theme pe depend nahi)     */
 /* ------------------------------------------------------------------ */
 const C = {
@@ -21,7 +27,7 @@ const C = {
 /*  Inline SVG icons (koi dependency nahi)                             */
 /* ------------------------------------------------------------------ */
 const Icon = {
-  Shield: (p:  SVGProps<SVGSVGElement>) => (
+  Shield: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="16"
       height="16"
@@ -36,7 +42,7 @@ const Icon = {
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   ),
-  EyeOff: (p:  SVGProps<SVGSVGElement>) => (
+  EyeOff: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="16"
       height="16"
@@ -52,7 +58,7 @@ const Icon = {
       <path d="M1 1l22 22" />
     </svg>
   ),
-  Globe: (p:  SVGProps<SVGSVGElement>) => (
+  Globe: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="16"
       height="16"
@@ -68,7 +74,7 @@ const Icon = {
       <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z" />
     </svg>
   ),
-  Star: (p:  SVGProps<SVGSVGElement>) => (
+  Star: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="16"
       height="16"
@@ -83,7 +89,7 @@ const Icon = {
       <polygon points="12 2 15 9 22 9.3 17 14 18.5 21 12 17.3 5.5 21 7 14 2 9.3 9 9" />
     </svg>
   ),
-  Arrow: (p:  SVGProps<SVGSVGElement>) => (
+  Arrow: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="18"
       height="18"
@@ -98,7 +104,7 @@ const Icon = {
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   ),
-  Lock: (p:  SVGProps<SVGSVGElement>) => (
+  Lock: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="14"
       height="14"
@@ -114,12 +120,12 @@ const Icon = {
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </svg>
   ),
-  Heart: (p:  SVGProps<SVGSVGElement>) => (
+  Heart: (p: SVGProps<SVGSVGElement>) => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" {...p}>
       <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5 8.6 5 10 6.5 12 8c2-1.5 3.4-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z" />
     </svg>
   ),
-  Check: (p:  SVGProps<SVGSVGElement>) => (
+  Check: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="12"
       height="12"
@@ -134,7 +140,7 @@ const Icon = {
       <path d="M20 6L9 17l-5-5" />
     </svg>
   ),
-  Clock: (p:  SVGProps<SVGSVGElement>) => (
+  Clock: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="14"
       height="14"
@@ -150,7 +156,7 @@ const Icon = {
       <path d="M12 7v5l3 2" />
     </svg>
   ),
-  User: (p:  SVGProps<SVGSVGElement>) => (
+  User: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="16"
       height="16"
@@ -166,7 +172,7 @@ const Icon = {
       <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
     </svg>
   ),
-  Image: (p:  SVGProps<SVGSVGElement>) => (
+  Image: (p: SVGProps<SVGSVGElement>) => (
     <svg
       width="26"
       height="26"
@@ -181,6 +187,75 @@ const Icon = {
       <rect x="3" y="3" width="18" height="18" rx="3" />
       <circle cx="9" cy="9" r="1.8" />
       <path d="M21 15l-5-5L5 21" />
+    </svg>
+  ),
+  /* ---------- naye icons: mockup ke liye ---------- */
+  Filter: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </svg>
+  ),
+  Bell: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M18 8a6 6 0 0 0-12 0c0 6-3 7-3 7h18s-3-1-3-7" />
+      <path d="M10.3 20a2 2 0 0 0 3.4 0" />
+    </svg>
+  ),
+  Close: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  ),
+  Rose: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" {...p}>
+      <path
+        d="M12 3c2.6 0 4.6 1.9 4.6 4.4 0 2.6-2 4.6-4.6 4.6S7.4 10 7.4 7.4C7.4 4.9 9.4 3 12 3z"
+        fill="#D93A5C"
+      />
+      <path
+        d="M12 5.2c1.4 0 2.4 1 2.4 2.2s-1 2.2-2.4 2.2-2.4-1-2.4-2.2 1-2.2 2.4-2.2z"
+        fill="#F2758C"
+      />
+      <path
+        d="M12 12v9"
+        stroke="#3F8F5B"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 15.5c-1.8 0-3.2-1-3.2-2.4 1.9 0 3.2 1 3.2 2.4zM12 18c1.8 0 3.2-1 3.2-2.4-1.9 0-3.2 1-3.2 2.4z"
+        fill="#3F8F5B"
+      />
     </svg>
   ),
 };
@@ -216,30 +291,37 @@ const AVATARS = [
   { letter: "S", bg: "#3F8F5B" },
   { letter: "M", bg: "#B8860B" },
 ];
+
+/* ------------------------------------------------------------------ */
+/*  Mockup card ke stat pills                                          */
+/* ------------------------------------------------------------------ */
+const STAT_PILLS = ["92% Match", "98% Trust", "~5m Reply"];
+
 function Header() {
   const [waitlistCount, setWaitlistCount] = useState(515);
-    // Numbers — live, fallback ke sath
-     useEffect(() => {
-      const BASE = 515;
-      const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
-  
-      // ghanta number ko seed maan ke 1-20 deterministic value
-      const perHour = (h: number) => {
-        const x = Math.sin(h * 9973) * 10000;
-        return 1 + Math.floor((x - Math.floor(x)) * 20); // 1..20
-      };
-  
-      const compute = () => {
-        const hours = Math.max(0, Math.floor((Date.now() - ANCHOR) / 3600000));
-        let total = BASE;
-        for (let h = 0; h < hours; h++) total += perHour(h);
-        setWaitlistCount(total);
-      };
-  
-      compute();
-      const id = setInterval(compute, 60000); // har minute recheck
-      return () => clearInterval(id);
-    }, []);
+  // Numbers — live, fallback ke sath
+  useEffect(() => {
+    const BASE = 515;
+    const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
+
+    // ghanta number ko seed maan ke 1-20 deterministic value
+    const perHour = (h: number) => {
+      const x = Math.sin(h * 9973) * 10000;
+      return 1 + Math.floor((x - Math.floor(x)) * 20); // 1..20
+    };
+
+    const compute = () => {
+      const hours = Math.max(0, Math.floor((Date.now() - ANCHOR) / 3600000));
+      let total = BASE;
+      for (let h = 0; h < hours; h++) total += perHour(h);
+      setWaitlistCount(total);
+    };
+
+    compute();
+    const id = setInterval(compute, 60000); // har minute recheck
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <header
       style={{ backgroundColor: C.bg }}
@@ -330,20 +412,20 @@ function Header() {
 
             {/* Feature chips */}
             <div className="mt-6 grid grid-cols-2 gap-3">
-  {CHIPS.map((chip) => (
-    <span
-      key={chip.label}
-      className="flex items-center justify-center gap-2 rounded-full border bg-white px-4 py-2 text-[13.5px] font-semibold"
-      style={{
-        borderColor: C.chipBorder,
-        color: C.headingDark,
-      }}
-    >
-      {chip.icon}
-      {chip.label}
-    </span>
-  ))}
-</div>
+              {CHIPS.map((chip) => (
+                <span
+                  key={chip.label}
+                  className="flex items-center justify-center gap-2 rounded-full border bg-white px-4 py-2 text-[13.5px] font-semibold"
+                  style={{
+                    borderColor: C.chipBorder,
+                    color: C.headingDark,
+                  }}
+                >
+                  {chip.icon}
+                  {chip.label}
+                </span>
+              ))}
+            </div>
 
             {/* CTA */}
             <div className="mt-8">
@@ -379,8 +461,14 @@ function Header() {
                   </span>
                 ))}
               </div>
-              <p className="text-[13.5px] leading-relaxed" style={{ color: C.body }}>
-                <strong style={{ color: C.headingDark }}>{waitlistCount}+ people</strong> are already on the list · new spots open daily.
+              <p
+                className="text-[13.5px] leading-relaxed"
+                style={{ color: C.body }}
+              >
+                <strong style={{ color: C.headingDark }}>
+                  {waitlistCount}+ people
+                </strong>{" "}
+                are already on the list · new spots open daily.
               </p>
             </div>
           </div>
@@ -389,7 +477,7 @@ function Header() {
         {/* -------------------- PHONE MOCKUP — MOBILE ORDER 2 -------------------- */}
         <div className="order-2 relative flex justify-center lg:order-none lg:justify-end">
           <div className="relative">
-            {/* Floating badge: ID verified (desktop only) */}
+            {/* Floating badge: ID verified */}
             <div className="welvors-float absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl -left-3 top-16 lg:-left-35 lg:top-14">
               <span
                 className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E4F5EA]"
@@ -405,7 +493,7 @@ function Header() {
               </span>
             </div>
 
-            {/* Floating badge: SafeFace on (desktop only) */}
+            {/* Floating badge: SafeFace on */}
             <div
               className="welvors-float absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl -right-3 top-[72%] lg:-right-32 lg:top-[64%]"
               style={{ animationDelay: "1.6s" }}
@@ -425,53 +513,154 @@ function Header() {
             </div>
 
             {/* Phone frame */}
-            <div className="relative w-[280px] rounded-[42px] bg-black p-3 shadow-2xl sm:w-[300px]">
+            <div className="relative w-[280px] rounded-[46px] bg-black p-3 shadow-2xl sm:w-[300px]">
               {/* Dynamic island */}
               <div className="absolute left-1/2 top-4 z-10 h-6 w-28 -translate-x-1/2 rounded-full bg-black" />
 
               {/* Screen */}
-              <div className="overflow-hidden rounded-[32px] bg-[#F7F1EC] pt-8">
-                {/* App top bar */}
-                <div className="flex items-center justify-center gap-1.5 pb-3">
-                  <span style={{ color: C.pink }}>
-                    <Icon.Heart />
-                  </span>
+              <div className="overflow-hidden rounded-[36px] bg-white pt-9">
+                {/* ---------- App top bar ---------- */}
+                <div className="flex items-center justify-between px-4 pb-3">
+                  {/* Filter button */}
                   <span
-                    className="text-[15px] font-bold"
-                    style={{ color: C.headingDark }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm"
+                    style={{
+                      borderColor: "#EDE4DC",
+                      color: C.headingDark,
+                    }}
                   >
-                    Wel<span style={{ color: C.pink }}>vors</span>
+                    <Icon.Filter />
+                  </span>
+
+                  {/* Logo */}
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
+                      style={{ backgroundColor: C.pink }}
+                    >
+                      <Icon.Heart width="13" height="13" />
+                    </span>
+                    <span
+                      className="text-[16px] font-bold"
+                      style={{ color: C.headingDark }}
+                    >
+                      Wel<span style={{ color: C.pink }}>vors</span>
+                    </span>
+                  </span>
+
+                  {/* Bell button */}
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm"
+                    style={{
+                      borderColor: "#EDE4DC",
+                      color: C.headingDark,
+                    }}
+                  >
+                    <Icon.Bell />
                   </span>
                 </div>
 
-                {/* Profile card */}
+                {/* ---------- Profile card ---------- */}
                 <div
-                  className="relative mx-3 mb-3 h-[440px] overflow-hidden rounded-3xl sm:h-[470px]"
+                  className="relative mx-3 mb-3 h-[440px] overflow-hidden rounded-[26px] sm:h-[470px]"
                   style={{
                     background:
-                      "linear-gradient(180deg, #D9CFC5 0%, #A69A8E 45%, #4A4038 100%)",
+                      "linear-gradient(180deg, #2FB8C6 0%, #7FC9C4 40%, #5A5049 100%)",
                   }}
                 >
-                  {/* Upload prompt (upper-middle) */}
-                  <div className="absolute left-1/2 top-[42%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-[#6E655C]">
-                    <Icon.Image />
-                    <span className="mt-2 text-[13px] font-medium">
-                      Profile photo
-                    </span>
-                    <span className="text-[12px]">
-                      or <span className="underline">browse files</span>
-                    </span>
-                  </div>
+                  {/* Photo (agar /public me maujood hai) */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={PROFILE_IMG}
+                    alt="Welvors profile preview"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display =
+                        "none";
+                    }}
+                  />
 
-                  {/* Bottom info */}
+                  {/* Bottom gradient scrim taaki text readable rahe */}
+                  <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.72) 100%)",
+                    }}
+                  />
+
+                  {/* ---------- Info block ---------- */}
                   <div className="absolute inset-x-0 bottom-0 p-4">
-                    <span className="mb-2 inline-flex items-center gap-1 rounded-md bg-[#2FA85F] px-2 py-1 text-[11px] font-semibold text-white">
-                      <Icon.Check /> Verified
+                    {/* Stat pills */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {STAT_PILLS.map((s) => (
+                        <span
+                          key={s}
+                          className="rounded-full px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm"
+                          style={{ backgroundColor: "rgba(20,16,14,0.55)" }}
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Verified */}
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#2FA85F] px-2.5 py-1 text-[10.5px] font-bold text-white">
+                      <Icon.Check width="11" height="11" /> Verified
                     </span>
-                    <h3 className="text-xl font-bold text-white">Aanya, 27</h3>
-                    <p className="text-[13px] text-white/85">
+
+                    {/* Name */}
+                    <h3
+                      className="mt-1.5 text-[26px] font-bold leading-tight text-white"
+                      style={{
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                      }}
+                    >
+                      Aanya, 27
+                    </h3>
+
+                    {/* Occupation */}
+                    <p className="text-[13px] font-semibold text-white/90">
+                      Fashion Designer
+                    </p>
+
+                    {/* Location */}
+                    <p className="text-[13px] text-white/80">
                       Bengaluru · 3 km away
                     </p>
+
+                    {/* Intent */}
+                    <p
+                      className="mt-1 flex items-center gap-1.5 text-[13px] font-bold"
+                      style={{ color: "#FF8FAB" }}
+                    >
+                      <Icon.Heart width="14" height="14" />
+                      Serious relationship
+                    </p>
+
+                    {/* ---------- Action buttons ---------- */}
+                    <div className="mt-4 flex items-center justify-center gap-5">
+                      {/* Pass */}
+                      <span
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg"
+                        style={{ color: C.headingDark }}
+                      >
+                        <Icon.Close />
+                      </span>
+
+                      {/* Like */}
+                      <span
+                        className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl"
+                        style={{ backgroundColor: C.pink }}
+                      >
+                        <Icon.Heart width="24" height="24" />
+                      </span>
+
+                      {/* Rose / compliment */}
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg">
+                        <Icon.Rose />
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
