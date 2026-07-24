@@ -582,7 +582,7 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
     };
 
     if (typeof window !== "undefined") {
-      sessionStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(donePayload));
+      localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(donePayload)); // ⬅ sessionStorage → localStorage
     }
 
     setSpotNumber(finalSpot);
