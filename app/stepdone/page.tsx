@@ -1,9 +1,8 @@
-// app/stepdone/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plan } from "../waitlist/waitlistConfig";
+
 import StepDone from "../waitlist/steps/StepDone";
 import { DONE_STORAGE_KEY, type Plan } from "@/app/context/WaitlistContext";
 
@@ -15,8 +14,6 @@ interface DoneData {
   spotNumber: number | null;
 }
 
-// Dev me direct /stepdone kholne pe ye dummy data use hoga.
-// Production build me ye kabhi trigger nahi hoga.
 const DEV_FALLBACK: DoneData = {
   plan: "founding",
   fullName: "Test User",
@@ -27,32 +24,34 @@ const DEV_FALLBACK: DoneData = {
 
 export default function StepDonePage() {
   const router = useRouter();
-  const [data, setData] = useState<DoneData | null>(null);
-  const [checked, setChecked] = useState(false);
 
-  useEffect(() => {
+  const data = useMemo<DoneData | null>(() => {
+    // During SSR / first render
+    if (typeof window === "undefined") {
+      return null;
+    }
+
     let payload: DoneData | null = null;
+
     try {
       const raw = sessionStorage.getItem(DONE_STORAGE_KEY);
       if (raw) payload = JSON.parse(raw) as DoneData;
-    } catch {
-      // corrupt payload — ignore
-    }
+    } catch {}
 
     if (!payload && process.env.NODE_ENV === "development") {
       payload = DEV_FALLBACK;
     }
 
-    setData(payload);
-    setChecked(true);
+    return payload;
   }, []);
 
-  // Payload nahi mila (production me direct URL hit) -> home
   useEffect(() => {
-    if (checked && !data) router.replace("/");
-  }, [checked, data, router]);
+    if (!data) {
+      router.replace("/");
+    }
+  }, [data, router]);
 
-  if (!checked || !data) return null;
+  if (!data) return null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#FCF8F4] p-4">

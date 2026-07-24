@@ -9,6 +9,7 @@ interface Props {
   phone: string;
   city: string;
   spotNumber: number | null;
+    onClose: () => void;
   
 }
 
