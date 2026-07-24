@@ -1,10 +1,11 @@
+// app/stepdone/page.tsx
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-
+import { Plan } from "../waitlist/waitlistConfig";
 import StepDone from "../waitlist/steps/StepDone";
-import { DONE_STORAGE_KEY, type Plan } from "@/app/context/WaitlistContext";
+import { DONE_STORAGE_KEY } from "@/app/context/WaitlistContext";
 
 interface DoneData {
   plan: Plan;
@@ -14,6 +15,8 @@ interface DoneData {
   spotNumber: number | null;
 }
 
+// Dev me direct /stepdone kholne pe ye dummy data use hoga.
+// Production build me ye kabhi trigger nahi hoga.
 const DEV_FALLBACK: DoneData = {
   plan: "founding",
   fullName: "Test User",
@@ -22,36 +25,51 @@ const DEV_FALLBACK: DoneData = {
   spotNumber: 24,
 };
 
+/* ---- external store readers (no effect, no setState) ---- */
+
+// sessionStorage ek external system hai — subscribe ki zaroorat nahi
+// kyunki ye page load pe ek baar hi padhna hai.
+const noopSubscribe = () => () => {};
+
+const readRaw = (): string | null => {
+  try {
+    return sessionStorage.getItem(DONE_STORAGE_KEY);
+  } catch {
+    return null; // private mode / storage blocked
+  }
+};
+
+const serverRaw = () => null;
+
+// Hydration ho chuki hai ya nahi — server pe false, client pe true
+const readHydrated = () => true;
+const serverHydrated = () => false;
+
 export default function StepDonePage() {
   const router = useRouter();
 
-  const data = useMemo<DoneData | null>(() => {
-    // During SSR / first render
-    if (typeof window === "undefined") {
-      return null;
+  const raw = useSyncExternalStore(noopSubscribe, readRaw, serverRaw);
+  const hydrated = useSyncExternalStore(noopSubscribe, readHydrated, serverHydrated);
+
+  const data: DoneData | null = useMemo(() => {
+    if (raw) {
+      try {
+        return JSON.parse(raw) as DoneData;
+      } catch {
+        // corrupt payload — ignore
+      }
     }
+    if (process.env.NODE_ENV === "development") return DEV_FALLBACK;
+    return null;
+  }, [raw]);
 
-    let payload: DoneData | null = null;
-
-    try {
-      const raw = sessionStorage.getItem(DONE_STORAGE_KEY);
-      if (raw) payload = JSON.parse(raw) as DoneData;
-    } catch {}
-
-    if (!payload && process.env.NODE_ENV === "development") {
-      payload = DEV_FALLBACK;
-    }
-
-    return payload;
-  }, []);
-
+  // Payload nahi mila (production me direct URL hit) -> home
+  // Ye effect setState nahi karta, sirf navigation — warning nahi aayegi.
   useEffect(() => {
-    if (!data) {
-      router.replace("/");
-    }
-  }, [data, router]);
+    if (hydrated && !data) router.replace("/");
+  }, [hydrated, data, router]);
 
-  if (!data) return null;
+  if (!hydrated || !data) return null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#FCF8F4] p-4">
@@ -63,7 +81,9 @@ export default function StepDonePage() {
           city={data.city}
           spotNumber={data.spotNumber}
           onClose={() => {
-            sessionStorage.removeItem(DONE_STORAGE_KEY);
+            try {
+              sessionStorage.removeItem(DONE_STORAGE_KEY);
+            } catch {}
             router.push("/");
           }}
         />
