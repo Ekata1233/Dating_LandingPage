@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
-import { C, Icon, LOCKED_IN, Plan, PrimaryButton } from "../waitlistConfig";
+import { C, Icon, LOCKED_IN, Plan
+  
+ } from "../waitlistConfig";
 
 interface Props {
   plan: Plan;
