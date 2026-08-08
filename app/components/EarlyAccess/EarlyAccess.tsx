@@ -52,7 +52,7 @@ function EarlyAccess() {
 
   useEffect(() => {
     const BASE = 515;
-    const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
+    const ANCHOR = new Date("©-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
 
     // ghanta number ko seed maan ke 1-20 deterministic value
     const perHour = (h: number) => {

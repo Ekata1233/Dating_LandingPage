@@ -27,8 +27,8 @@ const C = {
 const POLICY_META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  company: "Welvors Technologies Pvt. Ltd.",
-  address: "Welvors Technologies Pvt. Ltd., Bengaluru, Karnataka, India",
+  company: "InfyNod Technologies Pvt. Ltd.",
+  address: "InfyNod Technologies Pvt. Ltd., Hadpsar, Pune, Maharashtra, India",
   officer: "Ms. Aarohi Menon",
   privacyEmail: "privacy@welvors.com",
   supportEmail: "help@welvors.com",

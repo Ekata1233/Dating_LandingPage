@@ -23,8 +23,8 @@ const C = {
 const TERMS_META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  company: "Welvors Technologies Pvt. Ltd.",
-  address: "Welvors Technologies Pvt. Ltd., Bengaluru, Karnataka, India",
+  company: "InfyNod Technologies Pvt. Ltd.",
+  address: "InfyNod Technologies Pvt. Ltd., Hadpsar, Pune, Maharashtra, India",
   supportEmail: "help@welvors.com",
   legalEmail: "legal@welvors.com",
   jurisdiction: "Bengaluru, Karnataka",

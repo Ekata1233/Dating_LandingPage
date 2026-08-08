@@ -23,9 +23,9 @@ const C = {
 /*  NOTE: yahi jagah hai registered entity / address set karne ki.      */
 /* ------------------------------------------------------------------ */
 const COMPANY_INFO = {
-  name: "Welvors Technologies Pvt. Ltd.",
+  name: "InfyNod Technologies Pvt. Ltd.",
   registeredIn: "India",
-  headOffice: "Bengaluru, Karnataka",
+  headOffice: "Hadpsar, Pune, Maharashtra, India",
   email: "hello@welvors.com",
 };
 

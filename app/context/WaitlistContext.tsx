@@ -570,7 +570,8 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
 
     // TODO: backend se real spot number aane pe yahan replace karo
     const finalSpot = 24;
-
+ const paymentStatus: "success" | "failed" =
+      plan === "free" ? "success" : "success";
     // Context page pe available nahi hoga (provider modal ke saath unmount ho jaata hai),
     // isliye done-page ke liye handoff payload sessionStorage me daal rahe hain.
     const donePayload = {
@@ -579,10 +580,11 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
       phone,
       city: profile.city || "",
       spotNumber: finalSpot,
+      paymentStatus,
     };
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(donePayload)); // ⬅ sessionStorage → localStorage
+     if (typeof window !== "undefined") {
+      localStorage.setItem(DONE_STORAGE_KEY, JSON.stringify(donePayload));
     }
 
     setSpotNumber(finalSpot);

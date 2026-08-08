@@ -7,12 +7,15 @@ import { Plan } from "../waitlist/waitlistConfig";
 import StepDone from "../waitlist/steps/StepDone";
 import { DONE_STORAGE_KEY } from "@/app/context/WaitlistContext";
 
+type PaymentStatus = "success" | "failed";
+
 interface DoneData {
   plan: Plan;
   fullName: string;
   phone: string;
   city: string;
   spotNumber: number | null;
+  paymentStatus?: PaymentStatus;
 }
 
 /* ---- localStorage = external store (no effect, no setState) ---- */
@@ -22,7 +25,7 @@ const readRaw = (): string | null => {
   try {
     return localStorage.getItem(DONE_STORAGE_KEY);
   } catch {
-    return null; // private mode / storage blocked
+    return null;
   }
 };
 const serverRaw = () => null;
@@ -40,23 +43,33 @@ export default function StepDonePage() {
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw) as DoneData;
-      if (!parsed?.fullName) return null; // corrupt/partial payload
+      if (!parsed?.fullName) return null;
       return parsed;
     } catch {
       return null;
     }
   }, [raw]);
-console.log("data",data);
 
-  // localStorage clear NAHI karte — user wapas aa ke apni screen dekh sake
+  // Free plan pe payment lagta hi nahi -> success maano
+  const isPaid =
+    !!data && (data.plan === "free" || data.paymentStatus === "success");
+
   const goHome = () => router.push("/");
+
+  // Retry -> home pe waitlist modal auto-open (home page pe ?waitlist=1 handle karna hoga)
+  const retry = () => {
+    try {
+      localStorage.removeItem(DONE_STORAGE_KEY);
+    } catch {}
+    router.push("/?waitlist=1");
+  };
 
   if (!hydrated) return null;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#FCF8F4] p-4">
       <div className="w-full max-w-[520px] rounded-2xl bg-white px-6 py-8 shadow-[0_24px_60px_rgba(43,42,40,0.15)] sm:px-8">
-        {data ? (
+        {isPaid && data ? (
           <StepDone
             plan={data.plan}
             fullName={data.fullName}
@@ -74,20 +87,37 @@ console.log("data",data);
                 color: "#2B2A28",
               }}
             >
-              Nothing to show here
+              {data ? "Payment didn't go through" : "Nothing to show here"}
             </h2>
-            <p className="mt-3 text-[14.5px] leading-relaxed" style={{ color: "#6B655F" }}>
-              If you&apos;ve already joined the waitlist, your confirmation is on
-              its way by SMS. Otherwise, head back and grab your spot.
+
+            <p
+              className="mt-3 text-[14.5px] leading-relaxed"
+              style={{ color: "#6B655F" }}
+            >
+              {data
+                ? "Your spot isn't reserved yet. If any amount was deducted, it will be refunded within 5–7 working days."
+                : "If you've already joined the waitlist, your confirmation is on its way by SMS. Otherwise, head back and grab your spot."}
             </p>
+
             <button
               type="button"
-              onClick={goHome}
+              onClick={data ? retry : goHome}
               className="mt-6 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: "#CE3F63" }}
             >
-              Back to home
+              {data ? "Try again" : "Back to home"}
             </button>
+
+            {data && (
+              <button
+                type="button"
+                onClick={goHome}
+                className="mt-3 w-full text-[13.5px] font-medium hover:opacity-70"
+                style={{ color: "#6B655F" }}
+              >
+                Back to home
+              </button>
+            )}
           </div>
         )}
       </div>

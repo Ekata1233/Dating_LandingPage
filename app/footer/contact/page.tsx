@@ -36,8 +36,8 @@ const CONTACT_INFO = {
     email: "grievance@welvors.com",
   },
   office: {
-    company: "Welvors Technologies Pvt. Ltd.",
-    address: "Bengaluru, Karnataka, India",
+    company: "InfyNod Technologies Pvt. Ltd.",
+    address: "Hadpsar, Pune, Maharashtra, India",
   },
 };
 

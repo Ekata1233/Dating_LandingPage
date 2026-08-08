@@ -19,7 +19,7 @@ const C = {
 /*  Registered entity — copyright line ke liye.                        */
 /*  NOTE: legal entity yahin set karo (FTFL Technology Pvt. Ltd.).     */
 /* ------------------------------------------------------------------ */
-const COMPANY = "Welvors Technologies Pvt. Ltd.";
+const COMPANY = "InfyNod Technologies Pvt. Ltd.";
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icons                                                   */

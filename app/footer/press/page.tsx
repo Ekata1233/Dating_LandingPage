@@ -22,8 +22,8 @@ const C = {
 /*  Press info — ENTITY / HQ / EMAIL yahin badlo                       */
 /* ------------------------------------------------------------------ */
 const PRESS_INFO = {
-  company: "Welvors Technologies Pvt. Ltd.",
-  hq: "Bengaluru, Karnataka, India",
+  company: "InfyNod Technologies Pvt. Ltd.",
+  hq: "Hadpsar, Pune, Maharashtra, India",
   hqShort: "Bengaluru, India",
   email: "press@welvors.com",
   responseTime: "within 2 business days",

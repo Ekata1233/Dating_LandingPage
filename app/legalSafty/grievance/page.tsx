@@ -26,8 +26,8 @@ const OFFICER = {
   name: "Ms. Aarohi Menon",
   designation: "Grievance Officer & Data Protection Officer",
   email: "grievance@welvors.com",
-  company: "Welvors Technologies Pvt. Ltd.",
-  address: "Bengaluru, Karnataka, India",
+  company: "InfyNod Technologies Pvt. Ltd.",
+  address: "Hadpsar, Pune, Maharashtra, India",
   workingHours: "Monday–Saturday, 10:00–18:00 IST (excluding public holidays)",
 };
 
