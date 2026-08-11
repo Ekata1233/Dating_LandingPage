@@ -10,6 +10,8 @@ interface Props {
   city: string;
   spotNumber: number | null;
   userId?: string;
+  paymentId?: string;
+  amountPaid?: string;
   onClose: () => void;
 }
 
@@ -20,6 +22,8 @@ export default function StepDone({
   city,
   spotNumber,
   userId,
+  paymentId,
+  amountPaid,
 }: Props) {
   return (
     <div className="py-2">
@@ -86,7 +90,7 @@ export default function StepDone({
         )}
       </p>
 
-      {/* ---- Account details ---- */}
+      {/* ---- Account / payment details ---- */}
       <div
         className="mt-5 rounded-xl border px-5 py-4"
         style={{ borderColor: "#EDE4DC" }}
@@ -102,6 +106,12 @@ export default function StepDone({
             { k: "Name", v: fullName },
             { k: "Phone", v: phone ? `+91 ${phone}` : "" },
             { k: "City", v: city },
+            { k: "Spot number", v: spotNumber ? `#${spotNumber}` : "" },
+            {
+              k: "Amount paid",
+              v: amountPaid ? `₹${Number(amountPaid).toLocaleString("en-IN")}` : "",
+            },
+            { k: "Payment ID", v: paymentId || "" },
             { k: "Account ID", v: userId || "" },
           ]
             .filter((r) => r.v)

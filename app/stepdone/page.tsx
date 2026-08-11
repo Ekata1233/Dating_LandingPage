@@ -1,7 +1,7 @@
 // app/stepdone/page.tsx
 "use client";
 
-import React, { useMemo, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Plan } from "../waitlist/waitlistConfig";
 import StepDone from "../waitlist/steps/StepDone";
@@ -16,6 +16,23 @@ interface DoneData {
   city: string;
   spotNumber: number | null;
   paymentStatus?: PaymentStatus;
+}
+
+/* ---- Waitlist details API (source of truth for payment/spot) ---- */
+const WAITLIST_USER_API =
+  "https://dating-app-backend-plum.vercel.app/api/user/waitlist-user/get";
+
+interface WaitlistUser {
+  id: string;
+  userId: string;
+  waitlistNumber: number;
+  plan: "PAID" | "FREE";
+  amountPaid: string;
+  paymentStatus: "COMPLETED" | "PENDING" | "FAILED";
+  paymentId: string | null;
+  launchBenefit: string | null;
+  premiumActivated: boolean;
+  createdAt: string;
 }
 
 /* ---- localStorage = external store (no effect, no setState) ---- */
@@ -33,32 +50,36 @@ const serverRaw = () => null;
 const readHydrated = () => true;
 const serverHydrated = () => false;
 
-/* ---- JWT se userId nikalna (welvors_token) ---- */
-const readUserId = (): string => {
+/* ---- welvors_token padho ---- */
+const readToken = (): string => {
   try {
-    const t = (
+    return (
       localStorage.getItem("welvors_token") ||
       sessionStorage.getItem("welvors_token") ||
       ""
     ).replace(/^"|"$/g, "");
-    if (!t) return "";
-    const payload = JSON.parse(atob(t.split(".")[1]));
-    return payload?.id || payload?.userId || payload?.sub || "";
   } catch {
     return "";
   }
 };
 
-/* ---- JWT payload padho (name/phone fallback ke liye) ---- */
-const readTokenPayload = (): any => {
+/* ---- JWT payload (name/phone fallback ke liye) ---- */
+interface TokenPayload {
+  id?: string;
+  userId?: string;
+  sub?: string;
+  full_name?: string;
+  fullName?: string;
+  name?: string;
+  phone_number?: string;
+  phone?: string;
+}
+
+const readTokenPayload = (): TokenPayload | null => {
   try {
-    const t = (
-      localStorage.getItem("welvors_token") ||
-      sessionStorage.getItem("welvors_token") ||
-      ""
-    ).replace(/^"|"$/g, "");
+    const t = readToken();
     if (!t) return null;
-    return JSON.parse(atob(t.split(".")[1]));
+    return JSON.parse(atob(t.split(".")[1])) as TokenPayload;
   } catch {
     return null;
   }
@@ -70,49 +91,78 @@ export default function StepDonePage() {
   const raw = useSyncExternalStore(noopSubscribe, readRaw, serverRaw);
   const hydrated = useSyncExternalStore(noopSubscribe, readHydrated, serverHydrated);
 
-  /* ---- URL se payment status (backend return redirect se aata hai) ---- */
-  const urlStatus =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("status")
-      : null;
+  /* ---- Backend se waitlist entry fetch (real verification) ---- */
+  const [wl, setWl] = useState<WaitlistUser | null>(null);
+  const [wlLoading, setWlLoading] = useState(true);
 
+  useEffect(() => {
+    let alive = true;
+    const token = readToken();
+    if (!token) {
+      setWlLoading(false);
+      return;
+    }
+    fetch(WAITLIST_USER_API, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j?.success && j?.data) setWl(j.data as WaitlistUser);
+        setWlLoading(false);
+      })
+      .catch(() => {
+        if (alive) setWlLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /* ---- Name/phone/city: localStorage pehle, warna token payload ---- */
   const data: DoneData | null = useMemo(() => {
+    let base: DoneData | null = null;
+
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as DoneData;
-        if (parsed?.fullName) return parsed;
+        if (parsed?.fullName) base = parsed;
       } catch {}
     }
-    // Fallback: /stepdone pe aaye hain (payment redirect) aur logged-in token hai
-    // -> StepDone dikhao, chahe query param na ho
-    if (urlStatus !== "failed") {
-      const p = typeof window !== "undefined" ? readTokenPayload() : null;
+
+    if (!base) {
+      const p = readTokenPayload();
       if (p) {
-        return {
+        base = {
           plan: "founding",
-          fullName: p?.full_name || p?.fullName || p?.name || "",
-          phone: p?.phone_number?.replace?.("+91", "") || p?.phone || "",
+          fullName: p.full_name || p.fullName || p.name || "",
+          phone: p.phone_number?.replace("+91", "") || p.phone || "",
           city: "",
           spotNumber: null,
-          paymentStatus: "success",
         };
       }
     }
-    return null;
-  }, [raw, urlStatus]);
 
-  // Free plan pe payment lagta hi nahi -> success maano
+    if (!base) return null;
+
+    /* API mila to wahi source of truth hai */
+    if (wl) {
+      return {
+        ...base,
+        plan: wl.plan === "PAID" ? ("founding" as Plan) : ("free" as Plan),
+        spotNumber: wl.waitlistNumber ?? base.spotNumber,
+        paymentStatus:
+          wl.paymentStatus === "COMPLETED" ? "success" : "failed",
+      };
+    }
+    return base;
+  }, [raw, wl]);
+
   const isPaid =
-    !!data &&
-    (data.plan === "free" ||
-      data.paymentStatus === "success" ||
-      urlStatus === "success");
-
-  const userId = hydrated ? readUserId() : "";
+    !!data && (data.plan === "free" || data.paymentStatus === "success");
 
   const goHome = () => router.push("/");
 
-  // Retry -> home pe waitlist modal auto-open (home page pe ?waitlist=1 handle karna hoga)
   const retry = () => {
     try {
       localStorage.removeItem(DONE_STORAGE_KEY);
@@ -121,6 +171,17 @@ export default function StepDonePage() {
   };
 
   if (!hydrated) return null;
+
+  /* API ka jawab aane tak loading — galat screen flash na ho */
+  if (wlLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#FCF8F4] p-4">
+        <p className="text-[14px]" style={{ color: "#6B655F" }}>
+          Confirming your spot…
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#FCF8F4] p-4">
@@ -132,7 +193,9 @@ export default function StepDonePage() {
             phone={data.phone}
             city={data.city}
             spotNumber={data.spotNumber}
-            userId={userId}
+            userId={wl?.userId || ""}
+            paymentId={wl?.paymentId || ""}
+            amountPaid={wl?.amountPaid || ""}
             onClose={goHome}
           />
         ) : (
