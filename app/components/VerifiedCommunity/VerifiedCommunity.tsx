@@ -13,7 +13,7 @@ const C = {
   check: "#3F8F5B",
 };
 
-// Per-tier accent palettes
+// Per-tier accent palettes — pink → purple → teal → gold
 const ACCENT = {
   pink: {
     main: "#C21559",
@@ -23,6 +23,24 @@ const ACCENT = {
     badgeText: "#C21559",
     track: "#EFE3DF",
     cardBorder: "#F0E8E1",
+  },
+  purple: {
+    main: "#7C3AED",
+    line: "#7C3AED",
+    tint: "#F1EAFB",
+    badgeBg: "#EDE4FA",
+    badgeText: "#6D28D9",
+    track: "#EAE4F2",
+    cardBorder: "#E2D8F0",
+  },
+  teal: {
+    main: "#0E7C86",
+    line: "#0E7C86",
+    tint: "#E4F2F3",
+    badgeBg: "#DDEEEF",
+    badgeText: "#0B6570",
+    track: "#E0EBEA",
+    cardBorder: "#CFE4E3",
   },
   amber: {
     main: "#C9962A",
@@ -136,7 +154,7 @@ const TIERS: {
     progress: 52,
     checks: ["Government ID", "Face / selfie", "Live video check"],
     note: "Blocks catfish & stolen photos",
-    accent: "pink",
+    accent: "purple",
   },
   {
     n: 3,
@@ -147,7 +165,7 @@ const TIERS: {
     progress: 78,
     checks: ["Education verified", "Profession verified"],
     note: "Rules out identity & resume liars",
-    accent: "pink",
+    accent: "teal",
   },
   {
     n: 4,
