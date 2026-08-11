@@ -27,10 +27,10 @@ const POLICY = {
   refundWindowDays: "7 days",
   acknowledgeWithin: "48 hours",
   processingTime: "5–7 business days",
-  billingEmail: "billing@welvors.com",
-  supportEmail: "help@welvors.com",
+  billingEmail: "infynod@gmail.com",
+  supportEmail: "infynod@gmail.com",
   grievanceOfficer: "Ms. Aarohi Menon",
-  grievanceEmail: "grievance@welvors.com",
+  grievanceEmail: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -409,20 +409,7 @@ export default function RefundPolicyPage() {
             </dl>
           </div>
 
-          {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              This policy is a template provided in good faith and does not
-              constitute legal advice. Please align it with your payment
-              gateway and app-store agreements before launch.
-            </p>
-          </div>
+          
         </div>
       </div>
     </main>

@@ -22,10 +22,10 @@ const C = {
 /*  Press info — ENTITY / HQ / EMAIL yahin badlo                       */
 /* ------------------------------------------------------------------ */
 const PRESS_INFO = {
-  company: "InfyNod Technologies Pvt. Ltd.",
+  company: "Infynod Tech Private Limited (CIN: U62020PN2026PTC258333) ",
   hq: "Hadpsar, Pune, Maharashtra, India",
   hqShort: "Bengaluru, India",
-  email: "press@welvors.com",
+  email: "infynod@gmail.com",
   responseTime: "within 2 business days",
 };
 

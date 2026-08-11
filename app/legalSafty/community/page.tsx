@@ -24,8 +24,8 @@ const C = {
 const META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  safetyEmail: "safety@welvors.com",
-  appealsEmail: "appeals@welvors.com",
+  safetyEmail: "infynod@gmail.com",
+  appealsEmail: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -416,20 +416,7 @@ export default function CommunityGuidelinesPage() {
             </dl>
           </div>
 
-          {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              These guidelines evolve as our community grows. This is a
-              template provided in good faith and does not replace
-              independent legal advice.
-            </p>
-          </div>
+          
         </div>
       </div>
     </main>

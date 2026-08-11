@@ -27,11 +27,12 @@ const C = {
 const POLICY_META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  company: "InfyNod Technologies Pvt. Ltd.",
-  address: "InfyNod Technologies Pvt. Ltd., Hadpsar, Pune, Maharashtra, India",
-  officer: "Ms. Aarohi Menon",
-  privacyEmail: "privacy@welvors.com",
-  supportEmail: "help@welvors.com",
+  company: "Infynod Tech Private Limited ",
+  cin: "U62020PN2026PTC258333",
+  address: "Office No. 307, 3rd Floor, Amanora Chamber, Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028, India",
+  officer: "Mr. Satish Kadam",
+  privacyEmail: "infynod@gmail.com",
+  supportEmail: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -325,13 +326,17 @@ export default function PrivacyPolicyPage() {
         <div className="mt-10">
           <SectionHeading id="who-we-are">1. Who we are</SectionHeading>
           <Para>
-            Welvors is operated by {POLICY_META.company}, a company
-            registered in India. For the purposes of India&apos;s Digital
-            Personal Data Protection Act, 2023 (DPDP Act) and other
-            applicable law, we are the <strong>Data Fiduciary</strong>{" "}
-            responsible for your data. If you are in a region with other
-            data laws, we honour the protections that apply to you.
-          </Para>
+  Welvors is a brand owned and operated by {POLICY_META.company}{" "}
+  (CIN: {POLICY_META.cin}), a company incorporated in India with its
+  registered office at {POLICY_META.address}. In this policy,
+  &ldquo;Welvors&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo; and
+  &ldquo;us&rdquo; refer to {POLICY_META.company}. For the purposes of
+  India&apos;s Digital Personal Data Protection Act, 2023 (DPDP Act)
+  and other applicable law, we are the{" "}
+  <strong>Data Fiduciary</strong> responsible for your data. If you
+  are in a region with other data laws, we honour the protections
+  that apply to you.
+</Para>
         </div>
 
         {/* 2. Information we collect */}
@@ -568,20 +573,7 @@ export default function PrivacyPolicyPage() {
             </dl>
           </div>
 
-          {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12.5px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              This policy is provided in good faith and reviewed
-              periodically. It is a template and does not replace independent
-              legal advice for your specific circumstances.
-            </p>
-          </div>
+          
         </div>
       </div>
     </main>

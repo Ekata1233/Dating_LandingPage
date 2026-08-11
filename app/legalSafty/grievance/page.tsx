@@ -23,19 +23,19 @@ const C = {
 /*  (IT Rules 2021 Rule 3(2) + DPDP Act 2023)                          */
 /* ------------------------------------------------------------------ */
 const OFFICER = {
-  name: "Ms. Aarohi Menon",
+  name: "Mr. Satish Kadam",
   designation: "Grievance Officer & Data Protection Officer",
-  email: "grievance@welvors.com",
-  company: "InfyNod Technologies Pvt. Ltd.",
-  address: "Hadpsar, Pune, Maharashtra, India",
+  email: "infynod@gmail.com",
+  company: "Infynod Tech Private Limited ",
+  address: "Office No. 307, 3rd Floor, Amanora Chamber, Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028, India",
   workingHours: "Monday–Saturday, 10:00–18:00 IST (excluding public holidays)",
 };
 
 const META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  safetyEmail: "safety@welvors.com",
-  supportEmail: "help@welvors.com",
+  safetyEmail: "infynod@gmail.com",
+  supportEmail: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -452,21 +452,7 @@ export default function GrievancePage() {
             </dl>
           </div>
 
-          {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              This policy is a template provided in good faith to reflect
-              common statutory expectations. Confirm the actual officer,
-              address, and applicable compliance obligations with qualified
-              counsel before launch.
-            </p>
-          </div>
+          
         </div>
       </div>
     </main>

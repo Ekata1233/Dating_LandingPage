@@ -23,10 +23,10 @@ const C = {
 /*  NOTE: yahi jagah hai registered entity / address set karne ki.      */
 /* ------------------------------------------------------------------ */
 const COMPANY_INFO = {
-  name: "InfyNod Technologies Pvt. Ltd.",
+  name: "Infynod Tech Private Limited (CIN: U62020PN2026PTC258333) ",
   registeredIn: "India",
   headOffice: "Hadpsar, Pune, Maharashtra, India",
-  email: "hello@welvors.com",
+  email: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */

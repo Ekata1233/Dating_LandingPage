@@ -19,44 +19,104 @@ const C = {
 /*  Inline SVG icons                                                   */
 /* ------------------------------------------------------------------ */
 const Icon = {
-  Shield: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  Shield: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="M9.5 12l2 2 3.5-4" />
     </svg>
   ),
-  Heart: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  Heart: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5 8.6 5 10 6.5 12 8c2-1.5 3.4-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z" />
     </svg>
   ),
-  Clock: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  Clock: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </svg>
   ),
-  UserPlus: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  UserPlus: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <circle cx="9" cy="8" r="3.5" />
       <path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" />
       <path d="M19 8v6M22 11h-6" />
     </svg>
   ),
-  Star: (p:  SVGProps<SVGSVGElement>) => (
+  Star: (p: SVGProps<SVGSVGElement>) => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" {...p}>
       <polygon points="12 2 15 9 22 9.3 17 14 18.5 21 12 17.3 5.5 21 7 14 2 9.3 9 9" />
     </svg>
   ),
-  Gift: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  Gift: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <rect x="3" y="8" width="18" height="13" rx="2" />
       <path d="M3 12h18M12 8v13" />
       <path d="M12 8S10.5 3 8 3a2.5 2.5 0 0 0 0 5h4zM12 8s1.5-5 4-5a2.5 2.5 0 0 1 0 5h-4z" />
     </svg>
   ),
-  Arrow: (p:  SVGProps<SVGSVGElement>) => (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+  Arrow: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   ),
@@ -90,16 +150,16 @@ const BENEFITS = [
 
 function CommitmentMode() {
   return (
-  <section
-  id="commitment"
-  className="w-full overflow-hidden py-16 sm:py-20 lg:py-24"
-  style={{
-    background:
-      "linear-gradient(135deg, #fdf8f8 0%, #fbe7ecd7 35%, #f7dfe4e8 65%, #efe3f0ea 100%)",
-    borderTop: "1px solid #e6e6e6",
-    borderBottom: "1px solid #e6e6e6",
-  }}
->
+    <section
+      id="commitment"
+      className="w-full overflow-hidden py-16 sm:py-20 lg:py-24"
+      style={{
+        background:
+          "linear-gradient(135deg, #fdf8f8 0%, #fbe7ecd7 35%, #f7dfe4e8 65%, #efe3f0ea 100%)",
+        borderTop: "1px solid #e6e6e6",
+        borderBottom: "1px solid #e6e6e6",
+      }}
+    >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8">
         {/* ==================== LEFT: copy ==================== */}
         <div>
@@ -151,33 +211,25 @@ function CommitmentMode() {
           </blockquote>
 
           {/* Loyalty reward card */}
-          <div
-            className="mt-8 flex max-w-lg items-start gap-4 rounded-2xl border p-5"
-            style={{
-              background: "linear-gradient(135deg, #FBEFD3 0%, #F9E9CC 100%)",
-              borderColor: "#EBD8A8",
-            }}
-          >
-            <span
-              className="flex h-12 w-12 flex-none items-center justify-center rounded-xl text-white"
-              style={{
-                background: "linear-gradient(135deg, #F0C244 0%, #E0A519 100%)",
-              }}
-            >
-              <Icon.Gift />
-            </span>
+          <div className="flex items-center justify-between gap-4 py-[18px]">
             <div>
-              <h3 className="text-[16px] font-bold" style={{ color: C.amber }}>
-                ₹5,00,000 Loyalty Reward
-              </h3>
-              <p
-                className="mt-1 text-[14px] leading-relaxed"
-                style={{ color: "#6B5C3A" }}
-              >
-                Stay committed with your Welvors match for 3 years and marry
-                after — we gift you ₹5 lakh to start your new life together.
+              <p className="text-[14px] font-bold text-gray-900">
+                Forever Love Reward — Offer Terms
+              </p>
+
+              <p className="mt-1 text-[12px] text-gray-400">
+                ₹5,00,000 reward — eligibility, claim &amp; verification terms
               </p>
             </div>
+
+            <a
+              href="https://www.welvors.com/legalSafty/termCondition"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-lg bg-purple-100 px-4 py-2 text-[13px] font-semibold text-purple-600 hover:bg-purple-200"
+            >
+              View →
+            </a>
           </div>
 
           {/* CTA */}

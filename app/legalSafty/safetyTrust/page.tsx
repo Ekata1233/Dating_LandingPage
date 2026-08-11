@@ -28,8 +28,8 @@ const C = {
 const META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  safetyEmail: "safety@welvors.com",
-  supportEmail: "help@welvors.com",
+  safetyEmail: "infynod@gmail.com",
+  supportEmail: "infynod@gmail.com",
 };
 
 const RESOURCES: { label: string; value: string; href?: string }[] = [
@@ -64,7 +64,7 @@ const WHAT_WE_DO: [string, string][] = [
     "you only ever appear to, and interact with, verified members in your own community pool — never anyone outside it.",
   ],
   ["24/7 moderation", "and rapid action on reports."],
-  ["Proactive detection", "of scam, match patterns, and abusive behaviour."],
+  ["Proactive detection", "of scam and abuse patterns, and abusive behaviour."],
   ["Easy block & report", "tools on every profile and chat."],
 ];
 
@@ -79,7 +79,7 @@ const CHATTING: [string, string][] = [
   ],
   [
     "Watch for red flags",
-    "someone who quickly professes strong feelings, avoids video calls, has a story that keeps changing, or seems talk toward money.",
+    "someone who quickly professes strong feelings, avoids video calls, has a story that keeps changing, or steers the conversation toward money.",
   ],
   [
     "Never send codes or OTPs",
@@ -402,8 +402,17 @@ export default function SafetyTrustPage() {
         </div>
 
         {/* 8 */}
-        <div className="mt-10">
+       <div className="mt-10">
           <SectionHeading id="contact">8. Contact</SectionHeading>
+
+          <Para>
+            This guidance helps you stay safer but cannot remove all risk.
+            Background verification, where offered, is limited to the
+            Elite-tier checks described in the app and performed via
+            third-party partners; it is not a guarantee of any member&apos;s
+            conduct. Please trust your instincts and always contact the
+            authorities in an emergency.
+          </Para>
 
           <div
             className="mt-5 rounded-xl border bg-white p-5"
@@ -430,20 +439,7 @@ export default function SafetyTrustPage() {
           </div>
 
           {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              This guidance helps you stay safer but cannot remove all risk.
-              Welvors does not run criminal background checks and cannot
-              guarantee any member&apos;s conduct. Please trust your instincts
-              and always contact the authorities in an emergency.
-            </p>
-          </div>
+         
         </div>
       </div>
     </main>

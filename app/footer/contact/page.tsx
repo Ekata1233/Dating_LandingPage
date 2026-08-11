@@ -28,16 +28,16 @@ const SUBMIT_ENDPOINT = "/api/contact";
 /*  real aur publicly published hona chahiye.                          */
 /* ------------------------------------------------------------------ */
 const CONTACT_INFO = {
-  supportEmail: "help@welvors.com",
+  supportEmail: "infynod@gmail.com",
   inAppPath: "Profile → Help & Support → Live chat",
   responseTime: "within 24 hours",
   grievance: {
-    name: "Ms. Aarohi Menon",
-    email: "grievance@welvors.com",
+    name: "Mr. Satish Jaywant Kadam",
+    email: "infynod@gmail.com",
   },
   office: {
-    company: "InfyNod Technologies Pvt. Ltd.",
-    address: "Hadpsar, Pune, Maharashtra, India",
+    company: "Infynod Tech Private Limited ",
+    address: "Office No. 307, 3rd Floor, Amanora Chamber, Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028, India",
   },
 };
 
@@ -57,12 +57,12 @@ const TOC_IDS = TOC.map((t) => t.id);
 /*  Team emails                                                        */
 /* ------------------------------------------------------------------ */
 const TEAM_EMAILS: [string, string][] = [
-  ["General enquiries", "hello@welvors.com"],
-  ["Member support", "help@welvors.com"],
-  ["Privacy & data", "privacy@welvors.com"],
-  ["Partnerships", "partners@welvors.com"],
-  ["Press & media", "press@welvors.com"],
-  ["Careers", "careers@welvors.com"],
+  ["General enquiries", "infynod@gmail.com"],
+  ["Member support", "infynod@gmail.com"],
+  ["Privacy & data", "infynod@gmail.com"],
+  ["Partnerships", "infynod@gmail.com"],
+  ["Press & media", "infynod@gmail.com"],
+  ["Careers", "infynod@gmail.com"],
 ];
 
 const TOPICS = [

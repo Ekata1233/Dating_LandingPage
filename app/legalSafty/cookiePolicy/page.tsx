@@ -26,8 +26,8 @@ const C = {
 const POLICY_META = {
   lastUpdated: "12 July 2026",
   effective: "12 July 2026",
-  privacyEmail: "privacy@welvors.com",
-  supportEmail: "help@welvors.com",
+  privacyEmail: "infynod@gmail.com",
+  supportEmail: "infynod@gmail.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -421,19 +421,7 @@ export default function CookiePolicyPage() {
             </dl>
           </div>
 
-          {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              This policy is a template provided in good faith and does not
-              replace independent legal advice.
-            </p>
-          </div>
+          
         </div>
       </div>
     </main>

@@ -19,7 +19,7 @@ const C = {
 /*  Registered entity — copyright line ke liye.                        */
 /*  NOTE: legal entity yahin set karo (FTFL Technology Pvt. Ltd.).     */
 /* ------------------------------------------------------------------ */
-const COMPANY = "InfyNod Technologies Pvt. Ltd.";
+const COMPANY = "Infynod Tech Private Limited ";
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icons                                                   */
@@ -116,9 +116,8 @@ const COLUMNS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://instagram.com", icon: <Icon.Instagram /> },
-  { label: "X", href: "https://x.com", icon: <Icon.X /> },
-  { label: "LinkedIn", href: "https://linkedin.com", icon: <Icon.LinkedIn /> },
+  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
+  
 ];
 
 const BOTTOM_LINKS = [
@@ -214,37 +213,58 @@ function Footer() {
         </div>
 
         {/* ==================== Bottom bar ==================== */}
-        <div
-          className="mt-12 flex flex-col items-center gap-4 border-t pt-6 sm:flex-row sm:justify-between"
-          style={{ borderColor: C.divider }}
+    
+<div
+  className="mt-12 flex flex-col items-center gap-4 border-t pt-6"
+  style={{ borderColor: C.divider }}
+>
+  <p
+    className="text-center text-[12px] leading-5"
+    style={{ color: C.label }}
+  >
+  Welvors is a product of Infynod Tech Private Limited · CIN:
+    U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
+    Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
+    <a
+      href="mailto:info@infynod.com"
+      className="welvors-footer-link"
+      style={{ color: C.headingDark }}
+    >
+      info@infynod.com
+    </a>
+  </p>
+
+  <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-between">
+    <p className="text-[13px]" style={{ color: C.label }}>
+      © {year} {COMPANY} · All rights reserved.
+    </p>
+
+    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+      {BOTTOM_LINKS.map((l) => (
+        <SmartLink
+          key={l.label}
+          href={l.href}
+          className="welvors-footer-link text-[13px] font-semibold"
+          style={{ color: C.headingDark }}
         >
-          <p className="text-[13px]" style={{ color: C.label }}>
-            © {year} {COMPANY} · All rights reserved.
-          </p>
+          {l.label}
+        </SmartLink>
+      ))}
 
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            {BOTTOM_LINKS.map((l) => (
-              <SmartLink
-                key={l.label}
-                href={l.href}
-                className="welvors-footer-link text-[13px] font-semibold"
-                style={{ color: C.headingDark }}
-              >
-                {l.label}
-              </SmartLink>
-            ))}
+      <span
+        className="flex items-center gap-1.5 text-[13px]"
+        style={{ color: C.label }}
+      >
+        Made with care in India
+        <span className="text-[10px] font-semibold tracking-wider">
+          IN
+        </span>
+      </span>
+    </div>
+  </div>
+</div>
 
-            <span
-              className="flex items-center gap-1.5 text-[13px]"
-              style={{ color: C.label }}
-            >
-              Made with care in India
-              <span className="text-[10px] font-semibold tracking-wider">
-                IN
-              </span>
-            </span>
-          </div>
-        </div>
+
       </div>
     </footer>
   );

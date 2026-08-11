@@ -60,7 +60,7 @@ const Icon = {
 const FEATURES = [
   {
     title: "Verified profiles only",
-    body: "A four-tier ladder that checks phone & email, government ID, selfie and live-video, education, profession, and — for Elite — income and criminal background. A near-zero fake-profile environment.",
+    body: "A four-tier ladder that checks phone & email, government ID, selfie and live-video, education, profession, and — for Elite — income and Background check via verified third-party partner. A near-zero fake-profile environment.",
     icon: <Icon.Shield />,
     iconBg: "#E4F5EA",
     iconColor: "#3F8F5B",
@@ -95,7 +95,7 @@ const FEATURES = [
   },
   {
     title: "Forever Love reward",
-    body: "We grow with you from match to marriage — couples-only features, an anniversary box and a partner-funded ₹5L honeymoon on marriage.",
+    body: "We grow with you from match to marriage — couples-only features, an anniversary box and a partner-funded in honeymoon on marriage.",
     icon: <Icon.Heart />,
     iconBg: "#FBE8EF",
     iconColor: "#C21559",

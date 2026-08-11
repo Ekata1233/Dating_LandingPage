@@ -23,11 +23,13 @@ const C = {
 const TERMS_META = {
   lastUpdated: "11 July 2026",
   effective: "11 July 2026",
-  company: "InfyNod Technologies Pvt. Ltd.",
-  address: "InfyNod Technologies Pvt. Ltd., Hadpsar, Pune, Maharashtra, India",
-  supportEmail: "help@welvors.com",
-  legalEmail: "legal@welvors.com",
-  jurisdiction: "Bengaluru, Karnataka",
+  company: "Infynod Tech Private Limited",
+  cin: "U62020PN2026PTC258333",
+  address:
+    "Infynod Tech Private Limited, Office No. 307, 3rd Floor, Amanora Chamber, Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028, India",
+  supportEmail: "infynod@gmail.com",   // ⚠ info@infynod.com ya help@welvors.com karo
+  legalEmail: "infynod@gmail.com",     // ⚠ same
+  jurisdiction: "Pune, Maharashtra",   // Bengaluru → Pune
 };
 
 /* ------------------------------------------------------------------ */
@@ -65,23 +67,49 @@ const BEHAVIOUR: React.ReactNode[] = [
   </>,
 ];
 
-const CONTENT_POINTS: React.ReactNode[] = [
+const PAYMENT_POINTS: React.ReactNode[] = [
   <>
-    Photos and content you upload remain{" "}
-    <strong style={{ color: C.pink }}>yours</strong>. We do not claim ownership.
+    All prices are shown in Indian Rupees (INR) at checkout and include
+    applicable taxes (GST) unless stated otherwise.
   </>,
   <>
     Payments are processed by{" "}
-    <strong style={{ color: C.pink }}>third-party payment providers</strong>; by
-    paying, you also accept their terms.
+    <strong style={{ color: C.pink }}>
+      RBI-authorised third-party payment providers
+    </strong>
+    ; by paying, you also accept their terms. We do not store your full card
+    or UPI credentials.
   </>,
   <>
-    If a subscription renews and you delete the content in your account, we may
-    still hold limited records where the law requires it.
+    If your plan is set to auto-renew, it renews at the interval and price
+    shown at checkout. Auto-renewal is charged only under a standing
+    instruction (e-mandate) you authorise with the payment provider, as per
+    RBI rules, and you will be notified before each charge as required.
+  </>,
+  <>
+    You can turn off auto-renewal anytime from{" "}
+    <strong>Settings › Membership</strong>. Cancelling before the renewal
+    date stops the next charge; you keep paid features until the end of the
+    current period.
+  </>,
+  <>
+    If a payment fails, we may retry it or pause paid features until payment
+    succeeds.
   </>,
   <>
     We may change pricing going forward; changes never affect a period
     you&apos;ve already paid for.
+  </>,
+  <>
+    Refunds and cancellations are governed by our{" "}
+    <Link
+      href="/legalSafty/refund"
+      className="underline hover:opacity-70"
+      style={{ color: C.pink }}
+    >
+      Refund &amp; Cancellation Policy
+    </Link>
+    .
   </>,
 ];
 
@@ -89,7 +117,7 @@ const DISCLAIMER_POINTS: React.ReactNode[] = [
   <>
     Welvors is a platform to meet people.{" "}
     <strong style={{ color: C.pink }}>
-      We do not conduct criminal background checks on members
+      We do not conduct Background check via verified third-party partner checks on members
     </strong>{" "}
     beyond the verification steps described in the app, and we cannot guarantee
     anyone&apos;s identity, intentions, or conduct.
@@ -249,9 +277,10 @@ export default function TermsPage() {
           style={{ color: C.body }}
         >
           These Terms &amp; Conditions are the agreement between you and
-          Welvors. By creating an account, joining the waitlist, or using the
-          app in any way, you agree to them. Please read them carefully —
-          they set out your rights, your responsibilities, and ours.
+          Welvors. &ldquo;Welvors&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo;
+          and &ldquo;us&rdquo; mean {TERMS_META.company} (CIN:{" "}
+          {TERMS_META.cin}), the owner and operator of the Welvors platform.
+          By creating an account, joining the waitlist, or using the
         </p>
 
         {/* 1 */}
@@ -371,7 +400,7 @@ export default function TermsPage() {
           <SectionHeading id="payments">
             6. Payments &amp; renewals
           </SectionHeading>
-          <BulletList items={CONTENT_POINTS} />
+          <BulletList items={PAYMENT_POINTS} />
         </div>
 
         {/* 7 */}
@@ -505,19 +534,7 @@ export default function TermsPage() {
           </div>
 
           {/* Disclaimer strip */}
-          <div
-            className="mt-6 rounded-xl p-5"
-            style={{ backgroundColor: C.disclaimerBg }}
-          >
-            <p
-              className="text-[12.5px] leading-relaxed"
-              style={{ color: C.label }}
-            >
-              These terms are a template provided in good faith and do not
-              constitute legal advice. Please have them reviewed by qualified
-              counsel before launch.
-            </p>
-          </div>
+         
         </div>
       </div>
     </main>

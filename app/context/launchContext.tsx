@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const BASE = "https://dating-app-backend-plum.vercel.app";
+
 const REFER_EARN_URL = `${BASE}/api/onboarding/referEarn/get`;
 const WAITLIST_URL = `${BASE}/api/user/waitlist/get`;
 const REFERRAL_DASHBOARD_URL = `${BASE}/api/user/referral/dashboard`;
@@ -82,47 +83,157 @@ export function LaunchProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // useEffect(() => {
+  //   let alive = true;
+  //   const token =
+  //     typeof window !== "undefined"
+  //       ? localStorage.getItem("welvors_token")
+  //       : null;
+
+  //   const authGet = (url: string) =>
+  //     token
+  //       ? fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  //           .then((r) => r.json())
+  //           .catch(() => null)
+  //       : Promise.resolve(null);
+
+  //   (async () => {
+  //     try {
+  //       const [r1, r2, r3, r4] = await Promise.all([
+  //         fetch(REFER_EARN_URL).then((r) => r.json()).catch(() => null),
+  //         fetch(WAITLIST_URL).then((r) => r.json()).catch(() => null),
+  //         authGet(REFERRAL_DASHBOARD_URL),
+  //         authGet(REFERRAL_HISTORY_URL),
+  //       ]);
+  //       if (!alive) return;
+  //       if (r1?.success && r1.data) setReferEarn(r1.data as ReferEarn);
+  //       if (r2?.success && r2.data) setWaitlist(r2.data as Waitlist);
+  //       if (r3?.success && r3.data) setReferral(r3.data as ReferralDashboard);
+  //       if (r4?.success && r4.data?.history)
+  //         setHistory(r4.data.history as ReferralHistoryItem[]);
+  //       if (!r1?.data && !r2?.data && !r3?.data && !r4?.data)
+  //         setError("Couldn't load rewards data.");
+  //     } catch {
+  //       if (alive) setError("Couldn't load rewards data.");
+  //     } finally {
+  //       if (alive) setLoading(false);
+  //     }
+  //   })();
+  //   return () => {
+  //     alive = false;
+  //   };
+  // }, []);
+
+
   useEffect(() => {
-    let alive = true;
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("welvors_token")
-        : null;
+  let alive = true;
 
-    const authGet = (url: string) =>
-      token
-        ? fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-            .then((r) => r.json())
-            .catch(() => null)
-        : Promise.resolve(null);
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("welvors_token")
+      : null;
 
-    (async () => {
-      try {
-        const [r1, r2, r3, r4] = await Promise.all([
-          fetch(REFER_EARN_URL).then((r) => r.json()).catch(() => null),
-          fetch(WAITLIST_URL).then((r) => r.json()).catch(() => null),
-          authGet(REFERRAL_DASHBOARD_URL),
-          authGet(REFERRAL_HISTORY_URL),
-        ]);
-        if (!alive) return;
-        if (r1?.success && r1.data) setReferEarn(r1.data as ReferEarn);
-        if (r2?.success && r2.data) setWaitlist(r2.data as Waitlist);
-        if (r3?.success && r3.data) setReferral(r3.data as ReferralDashboard);
-        if (r4?.success && r4.data?.history)
-          setHistory(r4.data.history as ReferralHistoryItem[]);
-        if (!r1?.data && !r2?.data && !r3?.data && !r4?.data)
-          setError("Couldn't load rewards data.");
-      } catch {
-        if (alive) setError("Couldn't load rewards data.");
-      } finally {
-        if (alive) setLoading(false);
+  const publicGet = async (url: string) => {
+    try {
+      const response = await fetch(url);
+
+      console.log("PUBLIC API:", url);
+      console.log("STATUS:", response.status);
+
+      const text = await response.text();
+
+      console.log("RESPONSE:", text);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${text}`);
       }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
 
+      return JSON.parse(text);
+    } catch (error) {
+      console.error("PUBLIC API ERROR:", url, error);
+      return null;
+    }
+  };
+
+  const authGet = async (url: string) => {
+    if (!token) return null;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("AUTH API:", url);
+      console.log("STATUS:", response.status);
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        console.error("AUTH API ERROR:", text);
+        return null;
+      }
+
+      return JSON.parse(text);
+    } catch (error) {
+      console.error("AUTH FETCH ERROR:", url, error);
+      return null;
+    }
+  };
+
+  (async () => {
+    try {
+      const [r1, r2, r3, r4] = await Promise.all([
+        publicGet(REFER_EARN_URL),
+        publicGet(WAITLIST_URL),
+        authGet(REFERRAL_DASHBOARD_URL),
+        authGet(REFERRAL_HISTORY_URL),
+      ]);
+
+      if (!alive) return;
+
+      console.log("REFER EARN:", r1);
+      console.log("WAITLIST:", r2);
+      console.log("REFERRAL:", r3);
+      console.log("HISTORY:", r4);
+
+      if (r1?.success && r1.data) {
+        setReferEarn(r1.data as ReferEarn);
+      }
+
+      if (r2?.success && r2.data) {
+        setWaitlist(r2.data as Waitlist);
+      }
+
+      if (r3?.success && r3.data) {
+        setReferral(r3.data as ReferralDashboard);
+      }
+
+      if (r4?.success && r4.data?.history) {
+        setHistory(r4.data.history as ReferralHistoryItem[]);
+      }
+
+      if (!r1?.data && !r2?.data && !r3?.data && !r4?.data) {
+        setError("Couldn't load rewards data.");
+      }
+    } catch (error) {
+      console.error("LaunchProvider ERROR:", error);
+
+      if (alive) {
+        setError("Couldn't load rewards data.");
+      }
+    } finally {
+      if (alive) {
+        setLoading(false);
+      }
+    }
+  })();
+
+  return () => {
+    alive = false;
+  };
+}, []);
   return (
     <LaunchContext.Provider
       value={{ referEarn, waitlist, referral, history, loading, error }}

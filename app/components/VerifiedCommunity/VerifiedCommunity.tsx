@@ -41,36 +41,36 @@ type AccentKey = keyof typeof ACCENT;
 /*  Inline SVG icons                                                   */
 /* ------------------------------------------------------------------ */
 const Icon = {
-  Phone: (p:  SVGProps<SVGSVGElement>) => (
+  Phone: (p: SVGProps<SVGSVGElement>) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="6" y="2" width="12" height="20" rx="2.5" />
       <path d="M11 18h2" />
     </svg>
   ),
-  IdCard: (p:  SVGProps<SVGSVGElement>) => (
+  IdCard: (p: SVGProps<SVGSVGElement>) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="2" y="5" width="20" height="14" rx="2.5" />
       <circle cx="8" cy="12" r="2" />
       <path d="M13 10h5M13 14h4" />
     </svg>
   ),
-  Video: (p:  SVGProps<SVGSVGElement>) => (
+  Video: (p: SVGProps<SVGSVGElement>) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="2" y="6" width="13" height="12" rx="2.5" />
       <path d="M15 10l6-3v10l-6-3z" />
     </svg>
   ),
-  Star: (p:  SVGProps<SVGSVGElement>) => (
+  Star: (p: SVGProps<SVGSVGElement>) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <polygon points="12 2 15 9 22 9.3 17 14 18.5 21 12 17.3 5.5 21 7 14 2 9.3 9 9" />
     </svg>
   ),
-  Check: (p:  SVGProps<SVGSVGElement>) => (
+  Check: (p: SVGProps<SVGSVGElement>) => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M20 6L9 17l-5-5" />
     </svg>
   ),
-  Bulb: (p:  SVGProps<SVGSVGElement>) => (
+  Bulb: (p: SVGProps<SVGSVGElement>) => (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M9 18h6M10 22h4" />
       <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2h6c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
@@ -78,24 +78,24 @@ const Icon = {
   ),
 
   /* ---- "What this means for you" section icons ---- */
-  ShieldTick: (p:  SVGProps<SVGSVGElement>) => (
+  ShieldTick: (p: SVGProps<SVGSVGElement>) => (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="M9.5 12l2 2 3.5-4" />
     </svg>
   ),
-  Clock: (p:  SVGProps<SVGSVGElement>) => (
+  Clock: (p: SVGProps<SVGSVGElement>) => (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </svg>
   ),
-  CheckMark: (p:  SVGProps<SVGSVGElement>) => (
+  CheckMark: (p: SVGProps<SVGSVGElement>) => (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M20 6L9 17l-5-5" />
     </svg>
   ),
-  HeartOutline: (p:  SVGProps<SVGSVGElement>) => (
+  HeartOutline: (p: SVGProps<SVGSVGElement>) => (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5 8.6 5 10 6.5 12 8c2-1.5 3.4-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z" />
     </svg>
@@ -156,8 +156,11 @@ const TIERS: {
     subtitle: "Fully vetted",
     icon: <Icon.Star />,
     progress: 100,
-    checks: ["Income verified", "Criminal background"],
-    note: "Filters out scammers completely",
+    checks: [
+      "Income verified",
+      "Background check via verified third-party partner",
+    ],
+    note: "Designed to filter out scammers",
     accent: "amber",
   },
 ];
@@ -167,8 +170,8 @@ const TIERS: {
 /* ------------------------------------------------------------------ */
 const BENEFITS = [
   {
-    title: "Zero fakes",
-    body: "Every profile you see is a real, verified person — no bots, no catfish.",
+    title: "Real, verified profiles",
+    body: "Every profile completes verification before it reaches you — built to keep bots and catfish out.",
     icon: <Icon.ShieldTick />,
   },
   {
@@ -183,7 +186,7 @@ const BENEFITS = [
   },
   {
     title: "Date with peace of mind",
-    body: "Meet knowing they're safe, genuine and exactly who they claim to be.",
+    body: "Meet with more confidence — verified details, genuine intent.",
     icon: <Icon.HeartOutline />,
   },
 ];
@@ -198,7 +201,7 @@ function VerifiedCommunity() {
             className="text-[15px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: C.pink }}
           >
-            100% Verified Community
+            Verified Community
           </span>
 
           <h2
@@ -208,9 +211,9 @@ function VerifiedCommunity() {
               color: C.headingDark,
             }}
           >
-            Every single member.
+            Every member clears verification
             <br />
-            Verified. No exceptions.
+            before entering the community.
           </h2>
 
           <p
@@ -219,9 +222,8 @@ function VerifiedCommunity() {
           >
             On Welvors, no one gets in without proving they&apos;re real. Every
             profile clears a multi-step verification ladder before it ever
-            reaches you — so fakes, catfish and scammers simply have nowhere to
-            hide. Just genuine, verified people looking for the same thing you
-            are.
+            reaches you — built to keep fakes, catfish and scammers out.
+            Genuine, verified people looking for the same thing you are.
           </p>
         </div>
 

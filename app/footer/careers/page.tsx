@@ -21,7 +21,7 @@ const C = {
 /* ------------------------------------------------------------------ */
 const CAREERS_INFO = {
   hub: "Bengaluru",
-  email: "careers@welvors.com",
+  email: "infynod@gmail.com",
 };
 
 

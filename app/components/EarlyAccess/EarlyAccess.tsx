@@ -50,6 +50,8 @@ function EarlyAccess() {
   const { waitlist } = useLaunchData();
   const [waitlistCount, setWaitlistCount] = useState(515);
 
+  console.log("----------------------------------------waitlist data", waitlist);
+
   useEffect(() => {
     const BASE = 515;
     const ANCHOR = new Date("©-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
