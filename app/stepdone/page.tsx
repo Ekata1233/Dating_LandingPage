@@ -33,26 +33,82 @@ const serverRaw = () => null;
 const readHydrated = () => true;
 const serverHydrated = () => false;
 
+/* ---- JWT se userId nikalna (welvors_token) ---- */
+const readUserId = (): string => {
+  try {
+    const t = (
+      localStorage.getItem("welvors_token") ||
+      sessionStorage.getItem("welvors_token") ||
+      ""
+    ).replace(/^"|"$/g, "");
+    if (!t) return "";
+    const payload = JSON.parse(atob(t.split(".")[1]));
+    return payload?.id || payload?.userId || payload?.sub || "";
+  } catch {
+    return "";
+  }
+};
+
+/* ---- JWT payload padho (name/phone fallback ke liye) ---- */
+const readTokenPayload = (): any => {
+  try {
+    const t = (
+      localStorage.getItem("welvors_token") ||
+      sessionStorage.getItem("welvors_token") ||
+      ""
+    ).replace(/^"|"$/g, "");
+    if (!t) return null;
+    return JSON.parse(atob(t.split(".")[1]));
+  } catch {
+    return null;
+  }
+};
+
 export default function StepDonePage() {
   const router = useRouter();
 
   const raw = useSyncExternalStore(noopSubscribe, readRaw, serverRaw);
   const hydrated = useSyncExternalStore(noopSubscribe, readHydrated, serverHydrated);
 
+  /* ---- URL se payment status (backend return redirect se aata hai) ---- */
+  const urlStatus =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("status")
+      : null;
+
   const data: DoneData | null = useMemo(() => {
-    if (!raw) return null;
-    try {
-      const parsed = JSON.parse(raw) as DoneData;
-      if (!parsed?.fullName) return null;
-      return parsed;
-    } catch {
-      return null;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as DoneData;
+        if (parsed?.fullName) return parsed;
+      } catch {}
     }
-  }, [raw]);
+    // Fallback: /stepdone pe aaye hain (payment redirect) aur logged-in token hai
+    // -> StepDone dikhao, chahe query param na ho
+    if (urlStatus !== "failed") {
+      const p = typeof window !== "undefined" ? readTokenPayload() : null;
+      if (p) {
+        return {
+          plan: "founding",
+          fullName: p?.full_name || p?.fullName || p?.name || "",
+          phone: p?.phone_number?.replace?.("+91", "") || p?.phone || "",
+          city: "",
+          spotNumber: null,
+          paymentStatus: "success",
+        };
+      }
+    }
+    return null;
+  }, [raw, urlStatus]);
 
   // Free plan pe payment lagta hi nahi -> success maano
   const isPaid =
-    !!data && (data.plan === "free" || data.paymentStatus === "success");
+    !!data &&
+    (data.plan === "free" ||
+      data.paymentStatus === "success" ||
+      urlStatus === "success");
+
+  const userId = hydrated ? readUserId() : "";
 
   const goHome = () => router.push("/");
 
@@ -76,6 +132,7 @@ export default function StepDonePage() {
             phone={data.phone}
             city={data.city}
             spotNumber={data.spotNumber}
+            userId={userId}
             onClose={goHome}
           />
         ) : (

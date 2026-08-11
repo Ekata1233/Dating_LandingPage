@@ -47,7 +47,7 @@ export const CHECKOUT_ENDPOINT = "/api/waitlist/checkout";
 export const HIGHLIGHTS = [
   {
     title: "1 month Premium free at launch",
-    desc: "Your ₹299 unlocks the full Premium plan — unlimited likes, see who likes you & more",
+    desc: "Your ₹999 unlocks the full Premium plan — unlimited likes, see who likes you & more",
   },
   {
     title: "Early access",

@@ -138,60 +138,69 @@ export default function StepPlan({
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
 
-  const handleFoundingPay = async () => {
-    setPayError("");
-    setPaying(true);
+ const handleFoundingPay = async () => {
+  setPayError("");
+  setPaying(true);
+
+  // Click ke synchronous moment pe hi tab kholo — popup blocker se bachne ke liye
+  const payTab = window.open("", "_blank");
+
+  try {
+    const token = getAuthToken();
+
+    // DEBUG: see who the token maps to (remove once working).
     try {
-      const token = getAuthToken();
-
-      // DEBUG: see who the token maps to (remove once working).
-      try {
-        if (token) {
-          console.log("Sending token payload:", JSON.parse(atob(token.split(".")[1])));
-        } else {
-          console.log("No token found in browser storage.");
-        }
-      } catch {}
-
-      // If we found a token → send it as Bearer.
-      // If not → fall back to cookie auth (credentials:include) in case the
-      // token lives in an httpOnly cookie the JS can't read.
-      const res = await fetch(PAYMENT_API, {
-        method: "POST",
-        headers: token
-          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-          : { "Content-Type": "application/json" },
-        credentials: token ? "same-origin" : "include",
-        body: JSON.stringify({
-          description: "join waitlist",
-          purpose: "WAITLIST",
-        }),
-      });
-
-      const json = await res.json();
-      const link = json?.data?.result?.paymentLink;
-      if (json?.success && link) {
-        // Full-page redirect to PayU — survives popup blockers.
-        window.location.href = link;
-        return; // leaving the page — don't reset `paying`
-      }
-
-      // Surface the real server message (it comes back at the top level).
-      const serverMsg = json?.message || json?.data?.message || "";
-      if (/token|auth|login|unauthor/i.test(serverMsg) || !token) {
-        setPayError(
-          "You need to be logged in to reserve a founding spot. Please log in, then try again."
-        );
+      if (token) {
+        console.log("Sending token payload:", JSON.parse(atob(token.split(".")[1])));
       } else {
-        setPayError(serverMsg || "Couldn't start payment. Please try again.");
+        console.log("No token found in browser storage.");
+      }
+    } catch {}
+
+    const res = await fetch(PAYMENT_API, {
+      method: "POST",
+      headers: token
+        ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+        : { "Content-Type": "application/json" },
+      credentials: token ? "same-origin" : "include",
+      body: JSON.stringify({
+        description: "join waitlist",
+        purpose: "WAITLIST",
+      }),
+    });
+
+    const json = await res.json();
+    const link = json?.data?.result?.paymentLink;
+    if (json?.success && link) {
+      if (payTab) {
+        payTab.location.href = link;
+      } else {
+        // Tab block ho gaya to fallback: same tab
+        window.location.href = link;
       }
       setPaying(false);
-    } catch (err) {
-      console.error("Payment order failed:", err);
-      setPayError("Network error. Please try again.");
-      setPaying(false);
+      return;
     }
-  };
+
+    // Error case — khali tab band karo
+    payTab?.close();
+
+    const serverMsg = json?.message || json?.data?.message || "";
+    if (/token|auth|login|unauthor/i.test(serverMsg) || !token) {
+      setPayError(
+        "You need to be logged in to reserve a founding spot. Please log in, then try again."
+      );
+    } else {
+      setPayError(serverMsg || "Couldn't start payment. Please try again.");
+    }
+    setPaying(false);
+  } catch (err) {
+    payTab?.close();
+    console.error("Payment order failed:", err);
+    setPayError("Network error. Please try again.");
+    setPaying(false);
+  }
+};
 
   useEffect(() => {
     let alive = true;

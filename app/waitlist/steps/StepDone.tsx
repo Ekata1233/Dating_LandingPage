@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import { C, Icon, LOCKED_IN, Plan
-  
- } from "../waitlistConfig";
+import { C, Icon, LOCKED_IN, Plan } from "../waitlistConfig";
 
 interface Props {
   plan: Plan;
@@ -11,8 +9,8 @@ interface Props {
   phone: string;
   city: string;
   spotNumber: number | null;
-    onClose: () => void;
-  
+  userId?: string;
+  onClose: () => void;
 }
 
 export default function StepDone({
@@ -21,7 +19,7 @@ export default function StepDone({
   phone,
   city,
   spotNumber,
- 
+  userId,
 }: Props) {
   return (
     <div className="py-2">
@@ -87,6 +85,39 @@ export default function StepDone({
           </>
         )}
       </p>
+
+      {/* ---- Account details ---- */}
+      <div
+        className="mt-5 rounded-xl border px-5 py-4"
+        style={{ borderColor: "#EDE4DC" }}
+      >
+        <p
+          className="text-[11.5px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: C.body }}
+        >
+          Your details
+        </p>
+        <div className="mt-3 space-y-2 text-[13px]">
+          {[
+            { k: "Name", v: fullName },
+            { k: "Phone", v: phone ? `+91 ${phone}` : "" },
+            { k: "City", v: city },
+            { k: "Account ID", v: userId || "" },
+          ]
+            .filter((r) => r.v)
+            .map((r) => (
+              <div key={r.k} className="flex items-center justify-between gap-3">
+                <span style={{ color: C.label }}>{r.k}</span>
+                <span
+                  className="max-w-[60%] truncate text-right font-semibold"
+                  style={{ color: C.headingDark }}
+                >
+                  {r.v}
+                </span>
+              </div>
+            ))}
+        </div>
+      </div>
 
       {plan === "founding" && (
         <div className="mt-5 rounded-xl px-5 py-4" style={{ backgroundColor: "#F5EFE7" }}>
