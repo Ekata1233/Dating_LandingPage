@@ -432,9 +432,16 @@ html {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding: 1.5rem 0;
+  padding: 1.5rem 3rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@media (max-width: 639px) {
+  .wv-hscroll-track {
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
 }
 
 .wv-hscroll-track::-webkit-scrollbar {

@@ -138,7 +138,7 @@ function CommitmentMode() {
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md">
               <Icon.Sparkles style={{ color: "#D4A853", width: 14, height: 14 }} />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#D4A853" }}>
-                World-first Feature
+                World's first
               </span>
             </div>
 

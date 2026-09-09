@@ -305,28 +305,29 @@ function DownloadAppFeature() {
           </div>
 
           {/* RIGHT: Text content */}
-          <div ref={textRef} className="order-2 lg:order-2">
-            <h3
-              className={`text-3xl leading-tight sm:text-4xl lg:text-[2.4rem] ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+          <div ref={textRef} className="order-2 lg:order-2 text-center lg:text-left">
+                          <h3
+              className={`text-3xl flex flex-col items-center lg:items-start justify-center leading-tight sm:text-4xl lg:text-[2.4rem] ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 color: C.headingDark,
                 animationDelay: "100ms",
               }}
-            >
-              Built for India&apos;s{" "}
-              <span className="italic" style={{ color: C.pink }}>serious seekers</span>
+            ><span>
+              
+              Meet Your Forever{" "}
+            </span>
+              <span className="italic" style={{ color: C.pink }}>Anytime. Anywhere.</span>
             </h3>
-
             <p
               className={`mt-5 text-[15px] leading-relaxed ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ color: C.body, animationDelay: "200ms" }}
             >
-              No endless swiping. No fake profiles. Just real people, real intentions, real connections.
+              Download the Ruxsy app and start creating a love story that stands the test of time. Available free for iOS and Android.
             </p>
 
             {/* App Store Buttons */}
-            <div className={`mt-8 flex flex-wrap gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
+            <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
               <a
                 href="#"
                 className="inline-flex items-center gap-3 rounded-xl px-6 py-3.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"

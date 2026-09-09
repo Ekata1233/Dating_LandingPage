@@ -368,8 +368,9 @@ function VerifiedCommunity() {
         <div ref={tiersRef} className={`mt-12 ${tiersVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}>
           {/* Timeline progress line */}
 
-          {/* Scroll arrows */}
-          <div className="hidden sm:block">
+          {/* Horizontal scroll container with arrows */}
+          <div className="relative">
+            {/* Scroll arrows */}
             <button
               type="button"
               onClick={() => scrollTo("left")}
@@ -386,21 +387,20 @@ function VerifiedCommunity() {
             >
               <Icon.ChevronRight style={{ color: C.headingDark }} />
             </button>
-          </div>
 
-          {/* Horizontal scroll track */}
-          <div
-            ref={scrollTrackRef}
-            className="wv-hscroll-track hidden md:flex"
-            style={{ padding: "1.5rem 3rem" }}
-          >
-            {TIERS.map((t, i) => (
-              <HorizontalTierCard
-                key={t.n}
-                tier={t}
-                isActive={i === activeTier}
-              />
-            ))}
+            {/* Horizontal scroll track */}
+            <div
+              ref={scrollTrackRef}
+              className="wv-hscroll-track flex overflow-x-auto"
+            >
+              {TIERS.map((t, i) => (
+                <HorizontalTierCard
+                  key={t.n}
+                  tier={t}
+                  isActive={i === activeTier}
+                />
+              ))}
+            </div>
           </div>
 
 

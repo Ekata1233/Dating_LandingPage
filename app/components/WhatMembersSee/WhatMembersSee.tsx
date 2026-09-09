@@ -87,46 +87,47 @@ const Icon = {
 const VISIBLE_FEATURES = [
   {
     num: "01",
-    title: "Gift & Roses",
-    body: "Send meaningful gifts, roses & compliments",
-    icon: <Icon.Gift />,
-    color: "#C21559",
-  },
-  {
-    num: "02",
     title: "Smart Matches",
     body: "See compatible profiles daily",
     icon: <Icon.Sparkles />,
     color: "#3F8F5B",
   },
   {
+    num: "02",
+    title: "Safe Face",
+    body: "Protect your identity with secure avatars",
+    icon: <Icon.ShieldCheck />,
+    color: "#00838F",
+  },
+  {
     num: "03",
+    title: "Gift & Roses",
+    body: "Send meaningful gifts, roses & compliments",
+    icon: <Icon.Gift />,
+    color: "#C21559",
+  },
+  {
+    num: "04",
     title: "Offline Events",
     body: "Meet singles at curated offline dating events",
     icon: <Icon.Calendar />,
     color: "#C99A22",
   },
   {
-    num: "04",
+    num: "05",
     title: "Chat & Connect",
     body: "Chat, share, and build deeper connections",
     icon: <Icon.MessageCircle />,
     color: "#3D6FB4",
   },
   {
-    num: "05",
+    num: "06",
     title: "Profile Boost",
     body: "Get seen first in your city",
     icon: <Icon.Zap />,
     color: "#8E24AA",
   },
-  {
-    num: "06",
-    title: "Safe Face",
-    body: "Protect your identity with secure avatars",
-    icon: <Icon.ShieldCheck />,
-    color: "#00838F",
-  },
+
 ];
 
 /* ------------------------------------------------------------------ */

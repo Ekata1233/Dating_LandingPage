@@ -416,7 +416,7 @@ function Header() {
 
 
             {/* ---- CTA ---- */}
-            <div className={`mt-4 flex flex-col sm:flex-row items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
+            <div className={`mt-4 flex flex-col sm:flex-row items-start mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button
                   type="button"
