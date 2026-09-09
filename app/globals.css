@@ -31,3 +31,788 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* ============================================================
+   SCROLL REVEAL ANIMATIONS — Premium Edition
+   ============================================================ */
+
+/* --- Core keyframes --- */
+@keyframes wv-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-fade-left {
+  from {
+    opacity: 0;
+    transform: translateX(-44px) scale(0.97);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-fade-right {
+  from {
+    opacity: 0;
+    transform: translateX(44px) scale(0.97);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(12px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes wv-pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes wv-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes wv-bounce-in {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { transform: scale(1.08); }
+  70% { transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wv-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes wv-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(194, 21, 89, 0.15); }
+  50% { box-shadow: 0 0 32px rgba(194, 21, 89, 0.3); }
+}
+
+@keyframes wv-rotate-subtle {
+  from { transform: rotate(-1deg); }
+  to { transform: rotate(1deg); }
+}
+
+@keyframes wv-gradient-sweep {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes wv-progress-fill {
+  from { width: 0%; }
+}
+
+/* --- Animation utility classes --- */
+.wv-reveal {
+  opacity: 0;
+}
+
+.wv-reveal.is-visible {
+  animation: wv-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-reveal-left {
+  opacity: 0;
+}
+
+.wv-reveal-left.is-visible {
+  animation: wv-fade-left 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-reveal-right {
+  opacity: 0;
+}
+
+.wv-reveal-right.is-visible {
+  animation: wv-fade-right 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-reveal-scale {
+  opacity: 0;
+}
+
+.wv-reveal-scale.is-visible {
+  animation: wv-scale-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-reveal-down {
+  opacity: 0;
+}
+
+.wv-reveal-down.is-visible {
+  animation: wv-slide-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-reveal-blur {
+  opacity: 0;
+}
+
+.wv-reveal-blur.is-visible {
+  animation: wv-blur-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* --- Float animations --- */
+.wv-float {
+  animation: wv-float 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.wv-float-delayed {
+  animation: wv-float 3.2s ease-in-out infinite;
+  animation-delay: 1.6s;
+  will-change: transform;
+}
+
+/* --- Interactive hover effects --- */
+.wv-glow-hover {
+  transition: box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wv-glow-hover:hover {
+  box-shadow: 0 8px 32px rgba(194, 21, 89, 0.18), 0 0 0 1px rgba(194, 21, 89, 0.06);
+  transform: translateY(-2px);
+}
+
+.wv-card-lift {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wv-card-lift:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(43, 42, 40, 0.1), 0 0 0 1px rgba(43, 42, 40, 0.03);
+}
+
+.wv-icon-pop {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.wv-icon-pop:hover {
+  transform: scale(1.15);
+}
+
+.wv-cta-magnetic {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wv-cta-magnetic:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 16px 36px rgba(179, 30, 82, 0.35);
+}
+
+.wv-cta-magnetic:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 8px 20px rgba(179, 30, 82, 0.25);
+}
+
+/* --- Gradient text shimmer --- */
+.wv-gradient-text {
+  background-size: 200% auto;
+  animation: wv-gradient-sweep 4s ease-in-out infinite;
+}
+
+/* --- Progress bar animation --- */
+.wv-progress-animated {
+  animation: wv-progress-fill 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* --- Stagger delays for children --- */
+.wv-stagger > *:nth-child(1) { transition-delay: 0ms; }
+.wv-stagger > *:nth-child(2) { transition-delay: 80ms; }
+.wv-stagger > *:nth-child(3) { transition-delay: 160ms; }
+.wv-stagger > *:nth-child(4) { transition-delay: 240ms; }
+.wv-stagger > *:nth-child(5) { transition-delay: 320ms; }
+.wv-stagger > *:nth-child(6) { transition-delay: 400ms; }
+.wv-stagger > *:nth-child(7) { transition-delay: 480ms; }
+.wv-stagger > *:nth-child(8) { transition-delay: 560ms; }
+
+/* --- Section divider glow --- */
+.wv-section-glow {
+  position: relative;
+}
+
+.wv-section-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(194, 21, 89, 0.2) 50%, transparent 100%);
+}
+
+/* --- Smooth scroll indicator --- */
+@keyframes wv-scroll-bounce {
+  0%, 100% { transform: translateY(0) translateX(-50%); opacity: 0.6; }
+  50% { transform: translateY(8px) translateX(-50%); opacity: 1; }
+}
+
+.wv-scroll-indicator {
+  animation: wv-scroll-bounce 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   SCROLL PROGRESS BAR (top of page)
+   ============================================================ */
+.wv-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, #C21559, #D6336C, #C93B68);
+  z-index: 9999;
+  border-radius: 0 2px 2px 0;
+  transition: width 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 10px rgba(194, 21, 89, 0.4), 0 0 4px rgba(194, 21, 89, 0.6);
+  pointer-events: none;
+}
+
+/* ============================================================
+   RUXSY-STYLE GLOW CARD HOVER EFFECT
+   ============================================================ */
+.wv-glow-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wv-glow-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(194, 21, 89, 0.35),
+    transparent 40%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wv-glow-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(194, 21, 89, 0.06),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wv-glow-card:hover::before,
+.wv-glow-card:hover::after {
+  opacity: 1;
+}
+
+.wv-glow-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 25px 60px rgba(194, 21, 89, 0.12),
+              0 8px 20px rgba(43, 42, 40, 0.06);
+}
+
+.wv-glow-card .wv-glow-icon {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.4s ease;
+}
+
+.wv-glow-card:hover .wv-glow-icon {
+  transform: scale(1.12) rotate(5deg);
+  box-shadow: 0 6px 20px rgba(194, 21, 89, 0.2);
+}
+
+.wv-glow-card .wv-glow-title {
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.wv-glow-card:hover .wv-glow-title {
+  transform: translateX(4px);
+}
+
+.wv-glow-card .wv-glow-body {
+  transition: color 0.3s ease;
+}
+
+.wv-glow-card:hover .wv-glow-body {
+  color: #5F5A55;
+}
+
+/* ============================================================
+   HORIZONTAL SCROLL TIMELINE
+   ============================================================ */
+.wv-hscroll-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.wv-hscroll-track {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.wv-hscroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+.wv-hscroll-card {
+  flex: 0 0 320px;
+  scroll-snap-align: center;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .wv-hscroll-card {
+    flex: 0 0 380px;
+  }
+}
+
+/* Timeline line */
+.wv-hscroll-line {
+  position: relative;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #C21559 10%, #C21559 90%, transparent);
+  border-radius: 999px;
+  margin: 0 2rem;
+  overflow: visible;
+}
+
+.wv-hscroll-line::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, #EDE4DC 10%, #EDE4DC 90%, transparent);
+  border-radius: 999px;
+  z-index: 0;
+}
+
+.wv-hscroll-line::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, #C21559, #D6336C);
+  border-radius: 999px;
+  z-index: 1;
+  width: var(--scroll-progress, 0%);
+  transition: width 0.3s ease;
+}
+
+/* Dots on timeline */
+.wv-hscroll-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 2;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease;
+}
+
+.wv-hscroll-dot.active {
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 0 3px currentColor, 0 0 16px rgba(194, 21, 89, 0.3);
+}
+
+/* Scroll indicator arrows */
+.wv-hscroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wv-hscroll-arrow:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+}
+
+.wv-hscroll-arrow.left { left: 0.5rem; }
+.wv-hscroll-arrow.right { right: 0.5rem; }
+
+/* ============================================================
+   TEXT GRADIENT ANIMATION
+   ============================================================ */
+@keyframes wv-text-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.wv-gradient-animated {
+  background: linear-gradient(135deg, #C21559, #D6336C, #C93B68, #C21559);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wv-text-gradient 4s ease infinite;
+}
+
+/* ============================================================
+   TYPING / WORD CYCLE ANIMATION
+   ============================================================ */
+@keyframes wv-word-enter {
+  0% { opacity: 0; transform: translateY(20px) rotateX(-40deg); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+}
+
+@keyframes wv-word-exit {
+  0% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+  100% { opacity: 0; transform: translateY(-20px) rotateX(40deg); }
+}
+
+.wv-word-cycle {
+  display: inline-block;
+  perspective: 200px;
+}
+
+/* ============================================================
+   ENHANCED SECTION DIVIDER
+   ============================================================ */
+@keyframes wv-section-line {
+  from { width: 0; }
+  to { width: 80px; }
+}
+
+.wv-section-divider::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 3px;
+  border-radius: 999px;
+  margin: 0.75rem auto 0;
+  background: linear-gradient(90deg, #C21559, #D6336C);
+}
+
+.wv-section-divider.is-visible::after {
+  animation: wv-section-line 0.8s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ============================================================
+   MAGNETIC CTA BUTTON ENHANCED
+   ============================================================ */
+@keyframes wv-cta-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.wv-cta-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.wv-cta-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.25) 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.25) 55%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: wv-cta-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ============================================================
+   CARD NUMBER / STEP PULSE
+   ============================================================ */
+@keyframes wv-step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(194, 21, 89, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(194, 21, 89, 0); }
+}
+
+.wv-step-pulse {
+  animation: wv-step-pulse 2.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   PARALLAX FLOAT EFFECT
+   ============================================================ */
+@keyframes wv-parallax-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(1deg); }
+  66% { transform: translateY(4px) rotate(-0.5deg); }
+}
+
+.wv-parallax-float {
+  animation: wv-parallax-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ============================================================
+   STAGGER CHILDREN ENTRANCE
+   ============================================================ */
+@keyframes wv-stagger-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+.wv-stagger-children > * {
+  opacity: 0;
+}
+
+.wv-stagger-children.is-visible > *:nth-child(1) { animation: wv-stagger-up 0.6s 0ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(2) { animation: wv-stagger-up 0.6s 80ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(3) { animation: wv-stagger-up 0.6s 160ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(4) { animation: wv-stagger-up 0.6s 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(5) { animation: wv-stagger-up 0.6s 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(6) { animation: wv-stagger-up 0.6s 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(7) { animation: wv-stagger-up 0.6s 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible > *:nth-child(8) { animation: wv-stagger-up 0.6s 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* ============================================================
+   BORDER GLOW ANIMATION
+   ============================================================ */
+@keyframes wv-border-glow {
+  0%, 100% { border-color: rgba(194, 21, 89, 0.15); }
+  50% { border-color: rgba(194, 21, 89, 0.35); }
+}
+
+.wv-border-glow {
+  animation: wv-border-glow 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   INFINITE MARQUEE
+   ============================================================ */
+@keyframes wv-marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.wv-marquee {
+  width: 100%;
+  overflow: hidden;
+}
+
+.wv-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: wv-marquee-scroll 25s linear infinite;
+}
+
+.wv-marquee-item {
+  padding: 0 2.5rem;
+}
+
+.wv-marquee:hover .wv-marquee-track {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   HERO IMAGE FLOAT ANIMATION
+   ============================================================ */
+@keyframes hero-image-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-12px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-0.3deg);
+  }
+  75% {
+    transform: translateY(-14px) rotate(0.2deg);
+  }
+}
+
+.hero-image-float {
+  animation: hero-image-float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* --- Respect reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .wv-reveal,
+  .wv-reveal-left,
+  .wv-reveal-right,
+  .wv-reveal-scale,
+  .wv-reveal-down,
+  .wv-reveal-blur {
+    opacity: 1 !important;
+    animation: none !important;
+    filter: none !important;
+  }
+  .wv-float,
+  .wv-float-delayed {
+    animation: none !important;
+  }
+  .hero-image-float {
+    animation: none !important;
+  }
+  .wv-glow-hover:hover,
+  .wv-card-lift:hover,
+  .wv-icon-pop:hover,
+  .wv-cta-magnetic:hover,
+  .wv-cta-magnetic:active {
+    transform: none !important;
+  }
+  .wv-gradient-text {
+    animation: none !important;
+  }
+  .wv-scroll-indicator {
+    animation: none !important;
+  }
+  .wv-glow-card:hover {
+    transform: none !important;
+  }
+  .wv-glow-card:hover::before,
+  .wv-glow-card:hover::after {
+    opacity: 0 !important;
+  }
+  .wv-glow-card:hover .wv-glow-icon {
+    transform: none !important;
+  }
+  .wv-glow-card:hover .wv-glow-title {
+    transform: none !important;
+  }
+  .wv-hscroll-arrow:hover {
+    transform: translateY(-50%) !important;
+  }
+  .wv-gradient-animated {
+    animation: none !important;
+  }
+  .wv-cta-shimmer::after {
+    animation: none !important;
+  }
+  .wv-step-pulse {
+    animation: none !important;
+  }
+  .wv-parallax-float {
+    animation: none !important;
+  }
+  .wv-stagger-children > * {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .wv-border-glow {
+    animation: none !important;
+  }
+  .wv-marquee-track {
+    animation: none !important;
+  }
+}

@@ -176,7 +176,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       <div className="relative my-auto w-full max-w-[520px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(43,42,40,0.25)]">
         {/* Top bar — sirf close */}
         <div
-          className="flex items-center justify-start border-b px-6 py-4"
+          className="flex items-center justify-end border-b px-6 py-4"
           style={{ borderColor: C.border }}
         >
           <button

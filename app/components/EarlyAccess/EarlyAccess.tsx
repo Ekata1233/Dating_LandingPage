@@ -2,6 +2,7 @@
 
 import WaitlistModal from "@/app/waitlist/page";
 import React, { SVGProps, useEffect, useState } from "react";
+import { useScrollReveal } from "../useScrollReveal";
 import { useLaunchData } from "@/app/context/launchContext"; // path adjust karo
 
 const C = {
@@ -49,6 +50,8 @@ function EarlyAccess() {
   const [modalOpen, setModalOpen] = useState(false);
   const { waitlist } = useLaunchData();
   const [waitlistCount, setWaitlistCount] = useState(515);
+  const [sectionRef, sectionVisible] = useScrollReveal();
+  const [perksRef, perksVisible] = useScrollReveal({ threshold: 0.05 });
 
   console.log("----------------------------------------waitlist data", waitlist);
 
@@ -101,11 +104,12 @@ function EarlyAccess() {
   return (
     <section
       id="waitlist"
+      ref={sectionRef}
       style={{ backgroundColor: C.pageBg }}
       className="w-full px-4 py-16 sm:px-6 sm:py-20"
     >
       <div
-        className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] p-6 shadow-[0_18px_50px_rgba(43,42,40,0.08)] sm:p-10 lg:p-12"
+        className={`mx-auto max-w-7xl overflow-hidden rounded-[2rem] p-6 shadow-[0_18px_50px_rgba(43,42,40,0.08)] sm:p-10 lg:p-12 ${sectionVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
         style={{
           background: [
             "radial-gradient(circle at 100% 0%, #F9D3DF 0%, rgba(249,211,223,0.45) 28%, rgba(255,255,255,0) 55%)",
@@ -116,16 +120,16 @@ function EarlyAccess() {
       >
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
           {/* LEFT */}
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: C.pink }}>
+          <div ref={perksRef}>
+            <span className={`text-[11px] font-bold uppercase tracking-[0.18em] ${perksVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ color: C.pink }}>
               Early access
             </span>
 
-            <h2 className="mt-3 text-3xl leading-tight sm:text-4xl" style={{ fontFamily: 'Georgia, "Times New Roman", serif', color: C.headingDark }}>
+            <h2 className={`mt-3 text-3xl leading-tight sm:text-4xl ${perksVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ fontFamily: 'Georgia, "Times New Roman", serif', color: C.headingDark, animationDelay: "100ms" }}>
               Be first in line for Welvors.
             </h2>
 
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed" style={{ color: C.body }}>
+            <p className={`mt-4 max-w-md text-[15px] leading-relaxed ${perksVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ color: C.body, animationDelay: "200ms" }}>
               Reserve a founding spot for a one-time {summary.price} — lock in everything below.
             </p>
 
@@ -133,8 +137,8 @@ function EarlyAccess() {
               {perks.map((p, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 rounded-xl border px-4 py-3"
-                  style={{ borderColor: C.perkBorder, background: "linear-gradient(100deg, #FBF3EE 0%, #FCEFF2 100%)" }}
+                  className="wv-glow-hover flex items-start gap-3 rounded-xl border px-4 py-3 transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.08)] hover:translate-y-[-1px]"
+                  style={{ borderColor: C.perkBorder, background: "linear-gradient(100deg, #FBF3EE 0%, #FCEFF2 100%)", transitionDelay: `${300 + i * 80}ms` }}
                 >
                   <span className="mt-0.5 flex-none" style={{ color: C.pink }}>
                     <Icon.Check />
@@ -151,8 +155,8 @@ function EarlyAccess() {
           </div>
 
           {/* RIGHT */}
-          <div>
-            <div className="rounded-2xl border px-5 py-4" style={{ backgroundColor: "#FCEDF2", borderColor: "#F6DCE5" }}>
+          <div className={perksVisible ? "wv-reveal-right is-visible" : "wv-reveal-right"} style={{ animationDelay: "200ms" }}>
+            <div className="wv-card-lift rounded-2xl border px-5 py-4" style={{ backgroundColor: "#FCEDF2", borderColor: "#F6DCE5" }}>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[14px]" style={{ color: C.body }}>
                   <strong style={{ color: C.headingDark }}>Total value</strong> of everything above
@@ -174,7 +178,7 @@ function EarlyAccess() {
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+                className="wv-cta-magnetic wv-cta-shimmer inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`, boxShadow: "0 12px 24px rgba(179,30,82,0.26)" }}
               >
                 Join the waitlist

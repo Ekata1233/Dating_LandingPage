@@ -1,6 +1,7 @@
 "use client";
 
 import React, { SVGProps, useEffect, useState } from "react";
+import { useScrollReveal } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Mockup profile photo — apni image /public me daal ke path yahan     */
@@ -21,6 +22,7 @@ const C = {
   ctaTo: "#B31E52",
   badgeBg: "#FBE8EF",
   stripBg: "#EFE8E2",
+  black: "#000000"
 };
 
 /* ------------------------------------------------------------------ */
@@ -258,32 +260,33 @@ const Icon = {
       />
     </svg>
   ),
+  MapPin: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M12 22s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+      <circle cx="12" cy="11" r="2.5" />
+    </svg>
+  ),
+  Sparkles: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    </svg>
+  ),
+    Phone: (p: SVGProps<SVGSVGElement>) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+        <rect x="6" y="2" width="12" height="20" rx="2.5" />
+        <path d="M11 18h2" />
+      </svg>),
 };
 
-const CHIPS = [
-  {
-    label: "Verified profiles only",
-    icon: <Icon.Shield style={{ color: "#3F8F5B" }} />,
-  },
-  {
-    label: "SafeFace privacy",
-    icon: <Icon.EyeOff style={{ color: C.pink }} />,
-  },
-  {
-    label: "AI matchmaking",
-    icon: <Icon.Globe style={{ color: "#3D6FB4" }} />,
-  },
-  {
-    label: "Commitment Mode",
-    icon: <Icon.Star style={{ color: "#C99A22" }} />,
-  },
-];
 
 const STRIP = [
   { label: "Every profile verified", icon: <Icon.Shield /> },
   { label: "Privacy first", icon: <Icon.Lock /> },
   { label: "Real intentions only", icon: <Icon.User /> },
   { label: "Meaningful Matches", icon: <Icon.Heart /> },
+  { label: "Discover people nearby", icon: <Icon.MapPin /> },
+  { label: "No endless swiping", icon: <Icon.Sparkles /> },
+
 ];
 const AVATARS = [
   { letter: "A", bg: "#C9436E" },
@@ -299,15 +302,29 @@ const STAT_PILLS = ["92% Match", "98% Trust", "~5m Reply"];
 
 function Header() {
   const [waitlistCount, setWaitlistCount] = useState(515);
-  // Numbers — live, fallback ke sath
+  const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
+
+  const handleDiscover = () => {
+    if (typeof document === "undefined") return;
+    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
+    loginBtn?.click();
+  };
+
+  const handleDownloadApp = () => {
+    if (typeof document === "undefined") return;
+    const downloadSection = document.getElementById("download-app");
+    if (downloadSection) {
+      downloadSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   useEffect(() => {
     const BASE = 515;
-    const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime(); // yahan se ginti shuru
+    const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime();
 
-    // ghanta number ko seed maan ke 1-20 deterministic value
     const perHour = (h: number) => {
       const x = Math.sin(h * 9973) * 10000;
-      return 1 + Math.floor((x - Math.floor(x)) * 20); // 1..20
+      return 1 + Math.floor((x - Math.floor(x)) * 20);
     };
 
     const compute = () => {
@@ -318,26 +335,16 @@ function Header() {
     };
 
     compute();
-    const id = setInterval(compute, 60000); // har minute recheck
+    const id = setInterval(compute, 60000);
     return () => clearInterval(id);
   }, []);
 
   return (
     <header
+      ref={headerRef}
       style={{ backgroundColor: C.bg }}
-      className="relative w-full overflow-hidden mt-15"
+      className="relative w-full  overflow-hidden px-10 pt-20"
     >
-      {/* Float animation (up-down). Reduced-motion pe auto-disable */}
-      <style>{`
-        @keyframes welvorsFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-        .welvors-float { animation: welvorsFloat 3.2s ease-in-out infinite; will-change: transform; }
-        @media (prefers-reduced-motion: reduce) {
-          .welvors-float { animation: none; }
-        }
-      `}</style>
 
       {/* Soft pink glow top-right */}
       <div
@@ -348,7 +355,7 @@ function Header() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:gap-8 lg:px-10 lg:py-20">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-4 px-4 sm:px-6 lg:grid-cols-2 lg:gap-4 lg:px-10 lg:py-15">
         {/*
           COPY WRAPPER
           - Mobile: `contents` => badge (order-1) aur copy (order-3) direct grid items ban jaate hain
@@ -357,10 +364,11 @@ function Header() {
         <div className="contents lg:block lg:max-w-xl">
           {/* Launch badge — MOBILE ORDER 1 */}
           <div
-            className="order-1 mb-7 inline-flex w-full max-w-md items-center gap-2 rounded-full border px-4 py-2 lg:order-none"
+            className={`order-1 mb-7 inline-flex w-full max-w-md items-center gap-2 rounded-full border px-4 py-2 lg:order-none ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
             style={{
               backgroundColor: C.badgeBg,
               borderColor: C.ctaFrom,
+              animationDelay: "0ms",
             }}
           >
             <span
@@ -379,317 +387,97 @@ function Header() {
           <div className="order-3 lg:order-none">
             {/* Heading */}
             <h1
-              className="text-4xl leading-[1.08] sm:text-5xl lg:text-[3.4rem]"
+              className={`text-4xl leading-[1.08] sm:text-5xl lg:text-[3.4rem] ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 color: C.headingDark,
+                animationDelay: "100ms",
               }}
             >
               We&apos;re not building another dating app. We&apos;re building{" "}
-              <span className="italic" style={{ color: C.pink }}>
+              <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
                 trust.
               </span>
             </h1>
 
-            {/* Bold sub-heading */}
-            <p
-              className="mt-5 text-[15px] font-bold leading-snug"
-              style={{ color: C.pink }}
-            >
-              A trust-driven, emotionally intelligent ecosystem for people who
-              want something real.
-            </p>
+
 
             {/* Body */}
             <p
-              className="mt-4 text-[15px] leading-relaxed"
-              style={{ color: C.body }}
+              className={`mt-4 text-[15px] leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{ color: C.body, animationDelay: "300ms" }}
             >
-              Built for people who want something genuine — verified profiles,
+              Built for people who want something genuine. verified profiles,
               safety built in, and matches who want the same things you do. No
               biodata. No family pressure. Just you, on your own timeline.
             </p>
 
-            {/* Feature chips */}
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              {CHIPS.map((chip) => (
-                <span
-                  key={chip.label}
-                  className="flex items-center justify-center gap-2 rounded-full border bg-white px-4 py-2 text-[13.5px] font-semibold"
+
+
+
+            {/* ---- CTA ---- */}
+            <div className={`mt-4 flex flex-col sm:flex-row items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
+              <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
+                <button
+                  type="button"
+                  onClick={handleDiscover}
+                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-8 py-3.5 text-[14px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
                   style={{
-                    borderColor: C.chipBorder,
+                    background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pink}, ${C.ctaTo})`,
+                    backgroundSize: "200% 200%",
+                    boxShadow: `0 8px 28px ${C.pink}35`,
+                  }}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
+                    Discover Welvors
+                    <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                  <span className="cm-shimmer pointer-events-none absolute inset-0" />
+                </button>
+              </div>
+              <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
+                <button
+                  type="button"
+                  onClick={handleDownloadApp}
+                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-8 py-3.5 text-[14px] font-bold shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(43,42,40,0.25)] active:scale-95 border-2"
+                  style={{
                     color: C.headingDark,
+                    backgroundColor: "white",
+                    borderColor: C.headingDark,
+                    backgroundSize: "200% 200%",
                   }}
                 >
-                  {chip.icon}
-                  {chip.label}
-                </span>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <div className="mt-8">
-              <a
-                href="#waitlist"
-                className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
-                style={{
-                  background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`,
-                  boxShadow: "0 12px 24px rgba(179,30,82,0.28)",
-                }}
-              >
-                Join the waitlist
-                <Icon.Arrow />
-              </a>
-              <p
-                className="mt-3 flex items-center gap-1.5 text-[13px]"
-                style={{ color: C.body }}
-              >
-                <Icon.Lock style={{ color: C.body }} />
-                Reserve your founding spot · No spam
-              </p>
-            </div>
-
-            <div className="mt-6 flex items-start gap-3">
-              <div className="flex flex-none -space-x-2">
-                {AVATARS.map((av) => (
-                  <span
-                    key={av.letter}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[12px] font-semibold text-white"
-                    style={{ backgroundColor: av.bg }}
-                  >
-                    {av.letter}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon.Phone className="transition-transform duration-300 group-hover:scale-125" />
+                    Download App
+                    <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                   </span>
-                ))}
+                  <span className="cm-shimmer pointer-events-none absolute inset-0" />
+                </button>
               </div>
-              <p
-                className="text-[13.5px] leading-relaxed"
-                style={{ color: C.body }}
-              >
-                <strong style={{ color: C.headingDark }}>
-                  {waitlistCount}+ people
-                </strong>{" "}
-                are already on the list · new spots open daily.
-              </p>
             </div>
           </div>
         </div>
 
-        {/* -------------------- PHONE MOCKUP — MOBILE ORDER 2 -------------------- */}
+        {/* -------------------- HERO IMAGE — MOBILE ORDER 2 -------------------- */}
         <div className="order-2 relative flex justify-center lg:order-none lg:justify-end">
-          <div className="relative">
-            {/* Floating badge: ID verified */}
-            <div className="welvors-float absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl -left-3 top-16 lg:-left-35 lg:top-14">
-              <span
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E4F5EA]"
-                style={{ color: "#3F8F5B" }}
-              >
-                <Icon.Check />
-              </span>
-              <span
-                className="text-[13px] font-semibold"
-                style={{ color: C.headingDark }}
-              >
-                ID verified
-              </span>
-            </div>
+          <div className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`} style={{ animationDelay: "200ms" }}>
 
-            {/* Floating badge: SafeFace on */}
-            <div
-              className="welvors-float absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-xl -right-3 top-[72%] lg:-right-32 lg:top-[64%]"
-              style={{ animationDelay: "1.6s" }}
-            >
-              <span
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FBE8EF]"
-                style={{ color: C.pink }}
-              >
-                <Icon.Clock />
-              </span>
-              <span
-                className="text-[13px] font-semibold"
-                style={{ color: C.headingDark }}
-              >
-                SafeFace on
-              </span>
-            </div>
-
-            {/* Phone frame */}
-            <div className="relative w-[280px] rounded-[46px] bg-black p-3 shadow-2xl sm:w-[300px]">
-              {/* Dynamic island */}
-              <div className="absolute left-1/2 top-4 z-10 h-6 w-28 -translate-x-1/2 rounded-full bg-black" />
-
-              {/* Screen */}
-              <div className="overflow-hidden rounded-[36px] bg-white pt-9">
-                {/* ---------- App top bar ---------- */}
-                <div className="flex items-center justify-between px-4 pb-3">
-                  {/* Filter button */}
-                  <span
-                    className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm"
-                    style={{
-                      borderColor: "#EDE4DC",
-                      color: C.headingDark,
-                    }}
-                  >
-                    <Icon.Filter />
-                  </span>
-
-                  {/* Logo */}
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
-                      style={{ backgroundColor: C.pink }}
-                    >
-                      <Icon.Heart width="13" height="13" />
-                    </span>
-                    <span
-                      className="text-[16px] font-bold"
-                      style={{ color: C.headingDark }}
-                    >
-                      Wel<span style={{ color: C.pink }}>vors</span>
-                    </span>
-                  </span>
-
-                  {/* Bell button */}
-                  <span
-                    className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm"
-                    style={{
-                      borderColor: "#EDE4DC",
-                      color: C.headingDark,
-                    }}
-                  >
-                    <Icon.Bell />
-                  </span>
-                </div>
-
-                {/* ---------- Profile card ---------- */}
-                <div
-                  className="relative mx-3 mb-3 h-[440px] overflow-hidden rounded-[26px] sm:h-[470px]"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, #2FB8C6 0%, #7FC9C4 40%, #5A5049 100%)",
-                  }}
-                >
-                  {/* Photo (agar /public me maujood hai) */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={PROFILE_IMG}
-                    alt="Welvors profile preview"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
-                    }}
-                  />
-
-                  {/* Bottom gradient scrim taaki text readable rahe */}
-                  <div
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
-                    style={{
-                      background:
-                        "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.72) 100%)",
-                    }}
-                  />
-
-                  {/* ---------- Info block ---------- */}
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    {/* Stat pills */}
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {STAT_PILLS.map((s) => (
-                        <span
-                          key={s}
-                          className="rounded-full px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm"
-                          style={{ backgroundColor: "rgba(20,16,14,0.55)" }}
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Verified */}
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#2FA85F] px-2.5 py-1 text-[10.5px] font-bold text-white">
-                      <Icon.Check width="11" height="11" /> Verified
-                    </span>
-
-                    {/* Name */}
-                    <h3
-                      className="mt-1.5 text-[26px] font-bold leading-tight text-white"
-                      style={{
-                        fontFamily: 'Georgia, "Times New Roman", serif',
-                      }}
-                    >
-                      Aanya, 27
-                    </h3>
-
-                    {/* Occupation */}
-                    <p className="text-[13px] font-semibold text-white/90">
-                      Fashion Designer
-                    </p>
-
-                    {/* Location */}
-                    <p className="text-[13px] text-white/80">
-                      Bengaluru · 3 km away
-                    </p>
-
-                    {/* Intent */}
-                    <p
-                      className="mt-1 flex items-center gap-1.5 text-[13px] font-bold"
-                      style={{ color: "#FF8FAB" }}
-                    >
-                      <Icon.Heart width="14" height="14" />
-                      Serious relationship
-                    </p>
-
-                    {/* ---------- Action buttons ---------- */}
-                    <div className="mt-4 flex items-center justify-center gap-5">
-                      {/* Pass */}
-                      <span
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg"
-                        style={{ color: C.headingDark }}
-                      >
-                        <Icon.Close />
-                      </span>
-
-                      {/* Like */}
-                      <span
-                        className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl"
-                        style={{ backgroundColor: C.pink }}
-                      >
-                        <Icon.Heart width="24" height="24" />
-                      </span>
-
-                      {/* Rose / compliment */}
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg">
-                        <Icon.Rose />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Hero image with continuous animation */}
+            <div className="hero-image-float">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/hero_image.png"
+                alt="Welvors App Preview"
+                className="w-[280px] sm:w-[320px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.2),0_8px_24px_rgba(194,21,89,0.15)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.25),0_12px_32px_rgba(194,21,89,0.2)] hover:scale-[1.02]"
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* -------------------- Bottom trust strip -------------------- */}
-      <div
-        className="w-full border-y"
-        style={{
-          backgroundColor: C.stripBg,
-          borderColor: "#6b655f17", // '#6B655F'
-        }}
-      >
-        <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4 gap-y-4 px-4 py-5 sm:px-6 lg:px-10">
-          {STRIP.map((item) => (
-            <span
-              key={item.label}
-              className="inline-flex items-center gap-2 text-[13.5px] font-semibold"
-              style={{ color: C.headingDark }}
-            >
-              <span style={{ color: C.pink }}>{item.icon}</span>
-              {item.label}
-            </span>
-          ))}
-        </div>
-      </div>
+
     </header>
   );
 }

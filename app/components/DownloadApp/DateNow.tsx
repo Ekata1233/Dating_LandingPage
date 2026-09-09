@@ -1,6 +1,7 @@
 "use client";
 
 import React, { SVGProps } from "react";
+import { useScrollReveal, staggerDelay } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -87,6 +88,9 @@ const BENEFITS = [
 ];
 
 function DateNow() {
+  const [leftRef, leftVisible] = useScrollReveal({ threshold: 0.05 });
+  const [rightRef, rightVisible] = useScrollReveal();
+
   return (
     <section
       className="w-full overflow-hidden py-16 sm:py-20 lg:py-24"
@@ -97,9 +101,9 @@ function DateNow() {
     >
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8">
         {/* ============ LEFT (desktop): benefit cards — mobile order 2 ============ */}
-        <div className="order-2 lg:order-1">
+        <div ref={leftRef} className="order-2 lg:order-1">
           {/* Section label */}
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${leftVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
             <span style={{ color: C.labelGreen }}>
               <Icon.Star />
             </span>
@@ -112,14 +116,15 @@ function DateNow() {
           </div>
 
           {/* Cards */}
-          <div className="mt-5 space-y-5">
-            {BENEFITS.map((b) => (
+          <div className={`mt-5 space-y-5 ${leftVisible ? "wv-stagger-children is-visible" : "wv-stagger-children"}`}>
+            {BENEFITS.map((b, i) => (
               <div
                 key={b.title}
-                className="flex items-start gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(43,42,40,0.06)]"
+                className="wv-glow-hover flex items-start gap-4 rounded-2xl bg-white p-5 shadow-[0_4px_20px_rgba(43,42,40,0.06)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(91,98,181,0.1)] hover:translate-y-[-2px]"
+                style={staggerDelay(i, 100)}
               >
                 <span
-                  className="flex h-11 w-11 flex-none items-center justify-center rounded-xl"
+                  className="wv-icon-pop flex h-11 w-11 flex-none items-center justify-center rounded-xl transition-all duration-300"
                   style={{ backgroundColor: C.iconTint, color: C.iconColor }}
                 >
                   {b.icon}
@@ -144,9 +149,9 @@ function DateNow() {
         </div>
 
         {/* ============ RIGHT (desktop): copy — mobile order 1 ============ */}
-        <div className="order-1 lg:order-2 lg:pt-4">
+        <div ref={rightRef} className="order-1 lg:order-2 lg:pt-4">
           {/* Pill badge */}
-          <div className="inline-flex items-center rounded-full border border-white bg-white/70 px-4 py-2">
+          <div className={`inline-flex items-center rounded-full border border-white bg-white/70 px-4 py-2 ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
             <span
               className="text-[12px] font-bold uppercase tracking-[0.14em]"
               style={{ color: C.badgeText }}
@@ -157,10 +162,11 @@ function DateNow() {
 
           {/* Heading */}
           <h2
-            className="mt-6 text-4xl leading-[1.12] sm:text-5xl"
+            className={`mt-6 text-4xl leading-[1.12] sm:text-5xl ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
             style={{
               fontFamily: 'Georgia, "Times New Roman", serif',
               color: C.headingDark,
+              animationDelay: "100ms",
             }}
           >
             Skip the small talk.{" "}
@@ -171,8 +177,8 @@ function DateNow() {
 
           {/* Body */}
           <p
-            className="mt-6 max-w-lg text-[16px] leading-relaxed"
-            style={{ color: C.body }}
+            className={`mt-6 max-w-lg text-[16px] leading-relaxed ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+            style={{ color: C.body, animationDelay: "200ms" }}
           >
             Chatting for weeks and never meeting? Date Now flips it. Turn it on
             and Welvors shows you verified people nearby who are free to meet
@@ -181,11 +187,12 @@ function DateNow() {
 
           {/* Quote */}
           <blockquote
-            className="mt-7 max-w-lg border-l-2 pl-4 text-[16px] italic leading-relaxed"
+            className={`mt-7 max-w-lg border-l-2 pl-4 text-[16px] italic leading-relaxed ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
             style={{
               borderColor: C.indigo,
               fontFamily: 'Georgia, "Times New Roman", serif',
               color: C.indigo,
+              animationDelay: "300ms",
             }}
           >
             &ldquo;Kam baat, zyada mulaqaat. Real connection tab banti hai jab
@@ -193,10 +200,10 @@ function DateNow() {
           </blockquote>
 
           {/* CTA */}
-          <div className="mt-8">
+          <div className={`mt-8 ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "400ms" }}>
             <a
               href="#waitlist"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[15px] font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+              className="wv-cta-magnetic wv-cta-shimmer inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
               style={{
                 background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`,
                 boxShadow: "0 12px 24px rgba(179,30,82,0.28)",

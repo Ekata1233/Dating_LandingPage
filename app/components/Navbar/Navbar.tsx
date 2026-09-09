@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { setLoggedIn, useAuth } from "../authState";
 import LoginModal from "../auth/LoginModal";
@@ -14,8 +14,8 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { label: "Why Welvors", href: "#why" },
+  { label: "Features", href: "#members-see" },
   { label: "Commitment Mode", href: "#commitment" },
-  { label: "How it works", href: "#how-it-works" },
 ];
 
 // Brand colors inline rakhe hain taaki Tailwind theme pe depend na kare
@@ -25,11 +25,13 @@ const COLORS = {
   bgDropdown: "rgba(252, 248, 244, 0.92)", // mobile menu (zyada opaque = readable)
   border: "rgba(43, 42, 40, 0.06)",
   brandDark: "#2B2A28",
-  brandPink: "#E11D63",
+  brandPink: "#C21559",
   linkText: "#403B37",
   loginBorder: "#E7DFD9",
   waitlistBg: "#FCE1EC",
   waitlistText: "#C21559",
+  ctaFrom: "#C93B68",
+  ctaTo: "#B31E52",
 };
 
 // Frosted-glass blur (inline, cross-browser)
@@ -41,11 +43,17 @@ const blur = {
 function Navbar({ logoSrc }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const loggedIn = useAuth();
 
   const router = useRouter();
   const pathname = usePathname();
-  const isLaunch = pathname === "/lauch"; // member page — minimal navbar
+  const isLaunch = pathname === "/lauch";
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleLogout = () => {
     setLoggedIn(false);
@@ -66,6 +74,9 @@ function Navbar({ logoSrc }: NavbarProps) {
         backgroundColor: isLaunch ? "#FFFFFF" : COLORS.bgTranslucent,
         borderBottom: `1px solid ${COLORS.border}`,
         ...(isLaunch ? {} : blur),
+        transform: mounted ? "translateY(0)" : "translateY(-100%)",
+        opacity: mounted ? 1 : 0,
+        transition: "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
       <nav className="mx-auto flex h-[70px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10">
@@ -121,8 +132,8 @@ function Navbar({ logoSrc }: NavbarProps) {
               <li key={link.label}>
                 <a
                   href={link.href}
-                  className="text-[15px] font-bold transition-colors duration-150 hover:opacity-80"
-                  style={{ color: COLORS.linkText }}
+                  className="text-[15px] text-gray-700 font-bold transition-colors duration-150 hover:text-pink-500"
+                  style={{  }}
                 >
                   {link.label}
                 </a>
@@ -132,41 +143,36 @@ function Navbar({ logoSrc }: NavbarProps) {
           )}
 
           <div className="flex items-center gap-3">
-            {!isLaunch && (
-            <a
-              href="#waitlist"
-              className="rounded-full px-5 py-2 text-[15px] font-semibold transition-opacity duration-150 hover:opacity-90"
-              style={{
-                backgroundColor: COLORS.waitlistBg,
-                color: COLORS.waitlistText,
-              }}
-            >
-              Join waitlist
-            </a>
-            )}
             {loggedIn ? (
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-full border bg-white/80 px-5 py-2 text-[15px] font-semibold transition-colors duration-150 hover:bg-white"
+                className="group relative overflow-hidden rounded-full border px-5 py-2 text-[15px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] hover:scale-105 active:scale-95"
                 style={{
                   borderColor: COLORS.loginBorder,
                   color: COLORS.brandDark,
+                  backgroundColor: "white",
                 }}
               >
-                Log out
+                <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
+                <span
+                  className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
+                  style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
+                />
               </button>
             ) : (
               <button
                 type="button"
+                data-login-trigger
                 onClick={() => setLoginOpen(true)}
-                className="rounded-full border bg-white/80 px-5 py-2 text-[15px] font-semibold transition-colors duration-150 hover:bg-white"
+                className="group relative overflow-hidden rounded-full px-5 py-2 text-[15px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.25)] hover:scale-105 active:scale-95"
                 style={{
-                  borderColor: COLORS.loginBorder,
-                  color: COLORS.brandDark,
+                  background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})`,
+                  color: "white",
                 }}
               >
-                Log in
+                <span className="relative z-10">Log in</span>
+                <span className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-14deg] transition-transform duration-500 group-hover:translate-x-[120%]" />
               </button>
             )}
           </div>
@@ -177,10 +183,14 @@ function Navbar({ logoSrc }: NavbarProps) {
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-full border bg-white px-4 py-2 text-[14px] font-semibold md:hidden"
-            style={{ borderColor: COLORS.loginBorder, color: COLORS.brandDark }}
+            className="group relative overflow-hidden rounded-full border px-4 py-2 text-[14px] font-semibold md:hidden cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] active:scale-95"
+            style={{ borderColor: COLORS.loginBorder, color: COLORS.brandDark, backgroundColor: "white" }}
           >
-            Log out
+            <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
+            <span
+              className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
+              style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
+            />
           </button>
         ) : (
         <button
@@ -224,12 +234,15 @@ function Navbar({ logoSrc }: NavbarProps) {
       </nav>
 
       {/* Mobile dropdown panel */}
-      {open && !isLaunch && (
+      {!isLaunch && (
         <div
-          className="md:hidden"
+          className="md:hidden overflow-hidden"
           style={{
+            maxHeight: open ? "400px" : "0",
+            opacity: open ? 1 : 0,
+            transition: "max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease",
             backgroundColor: COLORS.bgDropdown,
-            borderTop: `1px solid ${COLORS.border}`,
+            borderTop: open ? `1px solid ${COLORS.border}` : "none",
             ...blur,
           }}
         >
@@ -252,41 +265,37 @@ function Navbar({ logoSrc }: NavbarProps) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-full border bg-white px-5 py-2.5 text-center text-[15px] font-semibold"
+                className="group relative overflow-hidden rounded-full border px-5 py-2.5 text-center text-[15px] font-semibold cursor-pointer transition-all duration-300 active:scale-95"
                 style={{
                   borderColor: COLORS.loginBorder,
                   color: COLORS.brandDark,
+                  backgroundColor: "white",
                 }}
               >
-                Log out
+                <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
+                <span
+                  className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
+                  style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
+                />
               </button>
             ) : (
               <button
                 type="button"
+                data-login-trigger
                 onClick={() => {
                   setOpen(false);
                   setLoginOpen(true);
                 }}
-                className="rounded-full border bg-white px-5 py-2.5 text-center text-[15px] font-semibold"
+                className="group relative overflow-hidden rounded-full px-5 py-2.5 text-center text-[15px] font-semibold cursor-pointer transition-all duration-300 active:scale-95"
                 style={{
-                  borderColor: COLORS.loginBorder,
-                  color: COLORS.brandDark,
+                  background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})`,
+                  color: "white",
                 }}
               >
-                Log in
+                <span className="relative z-10">Log in</span>
+                <span className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-14deg] transition-transform duration-500 group-hover:translate-x-[120%]" />
               </button>
             )}
-            <a
-              href="#waitlist"
-              onClick={() => setOpen(false)}
-              className="rounded-full px-5 py-2.5 text-center text-[15px] font-semibold"
-              style={{
-                backgroundColor: COLORS.waitlistBg,
-                color: COLORS.waitlistText,
-              }}
-            >
-              Join waitlist
-            </a>
           </div>
         </div>
       )}

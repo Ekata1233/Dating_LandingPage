@@ -1,6 +1,7 @@
 "use client";
 
 import React, { SVGProps } from "react";
+import { useScrollReveal, staggerDelay } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -131,19 +132,23 @@ const STEPS: {
 ];
 
 function HowItWork() {
+  const [headerRef, headerVisible] = useScrollReveal();
+  const [stepsRef, stepsVisible] = useScrollReveal({ threshold: 0.05 });
+  const [noteRef, noteVisible] = useScrollReveal();
+
   return (
     <section
     id="how-it-works"
      style={{ backgroundColor: C.bg }} className="w-full py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        {/* -------------------- Header -------------------- */}
-        <div className="mx-auto max-w-2xl text-center">
-          <span
-            className="text-[15px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: C.pink }}
-          >
-            How it works
-          </span>
+          {/* -------------------- Header -------------------- */}
+          <div ref={headerRef} className={`mx-auto max-w-2xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
+            <span
+              className="text-[15px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: C.pink }}
+            >
+              How it works
+            </span>
 
           <h2
             className="mt-3 text-3xl leading-tight sm:text-4xl lg:text-[2.5rem]"
@@ -166,128 +171,6 @@ function HowItWork() {
             flips that. You know who someone really is{" "}
             <strong style={{ color: C.headingDark }}>before</strong> your heart,
             or your family, is on the line.
-          </p>
-        </div>
-
-        {/* -------------------- Steps timeline -------------------- */}
-        <div className="mt-12 space-y-5">
-          {STEPS.map((s, i) => {
-            const isLast = i === STEPS.length - 1;
-            return (
-              <div key={s.step} className="flex gap-3 sm:gap-4">
-                {/* Rail: icon circle + connecting line */}
-                <div className="relative flex w-9 flex-none justify-center">
-                  {!isLast && (
-                    <span
-                      className="absolute left-1/2 top-8 -translate-x-1/2"
-                      style={{
-                        width: "1.5px",
-                        bottom: "-1.25rem", // bridge space-y-5 gap
-                        backgroundColor: C.railLine,
-                      }}
-                    />
-                  )}
-                  <span
-                    className="relative z-10 mt-2 flex h-9 w-9 flex-none items-center justify-center rounded-full text-white"
-                    style={{
-                      background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pinkDeep})`,
-                    }}
-                  >
-                    {s.icon}
-                  </span>
-                </div>
-
-                {/* Card */}
-                <div
-                  className="flex-1 rounded-2xl border bg-white p-5 shadow-[0_4px_18px_rgba(43,42,40,0.04)]"
-                  style={{ borderColor: C.cardBorder }}
-                >
-                  {/* Title row */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className="rounded-md px-2 py-0.5 text-[11px] font-bold"
-                      style={{
-                        backgroundColor: C.stepBadgeBg,
-                        color: C.pink,
-                      }}
-                    >
-                      {s.step}
-                    </span>
-                    <h3
-                      className="text-[16px] font-bold"
-                      style={{ color: C.headingDark }}
-                    >
-                      {s.title}
-                    </h3>
-                  </div>
-
-                  {/* Points */}
-                  <ul className="mt-3 space-y-2">
-                    {s.points.map((p, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span
-                          className="mt-0.5 flex-none"
-                          style={{ color: C.pink }}
-                        >
-                          <Icon.Check />
-                        </span>
-                        <span
-                          className="text-[13.5px] leading-relaxed"
-                          style={{ color: C.body }}
-                        >
-                          {p}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* -------------------- Safety note -------------------- */}
-        <div
-          className="mt-6 flex items-start gap-4 rounded-2xl border p-5"
-          style={{
-            backgroundColor: C.noteBg,
-            borderColor: C.noteBorder,
-          }}
-        >
-          <span
-            className="flex h-11 w-11 flex-none items-center justify-center rounded-xl text-white"
-            style={{
-              background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pinkDeep})`,
-            }}
-          >
-            <Icon.ShieldSolid />
-          </span>
-          <p
-            className="text-[13.5px] leading-relaxed"
-            style={{ color: C.body }}
-          >
-            <strong style={{ color: C.headingDark }}>
-              Safety isn&apos;t a feature here — it&apos;s the whole point.
-            </strong>{" "}
-            For every woman and every man, Welvors is built so you meet a
-            genuine, verified, safe life partner. Nothing less.
-          </p>
-        </div>
-
-        {/* -------------------- CTA -------------------- */}
-        <div className="mt-10 text-center">
-          <a
-            href="#waitlist"
-            className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-[15px] font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
-            style={{
-              background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`,
-              boxShadow: "0 12px 24px rgba(179,30,82,0.24)",
-            }}
-          >
-            Join the waitlist
-          </a>
-          <p className="mt-3 text-[12.5px]" style={{ color: C.body }}>
-            Reserve your founding spot · No spam
           </p>
         </div>
       </div>

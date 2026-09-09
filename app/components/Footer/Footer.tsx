@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import React, { SVGProps } from "react";
+import { useScrollReveal } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
 /* ------------------------------------------------------------------ */
 const C = {
-  bg: "#EFEAE4",
-  headingDark: "#2B2A28",
-  pink: "#C21559",
-  body: "#5F5A55",
+  bg: "#2B2A28",
+  headingDark: "#FCF8F4",
+  pink: "#E8587A",
+  body: "#BCB5AE",
   label: "#8A827B",
-  divider: "#DCD5CD",
+  divider: "rgba(252,248,244,0.1)",
+  socialBg: "rgba(252,248,244,0.08)",
+  socialHover: "rgba(232,88,122,0.15)",
 };
 
 /* ------------------------------------------------------------------ */
@@ -128,9 +131,10 @@ const BOTTOM_LINKS = [
 
 function Footer() {
   const year = new Date().getFullYear();
+  const [footerRef, footerVisible] = useScrollReveal({ threshold: 0.1 });
 
   return (
-    <footer style={{ backgroundColor: C.bg }} className="w-full">
+    <footer ref={footerRef} style={{ backgroundColor: C.bg }} className={`w-full ${footerVisible ? "wv-reveal-blur is-visible" : "wv-reveal-blur"}`}>
       {/* Link hover — inline color ko override karne ke liye scoped CSS */}
       <style>{`
         .welvors-footer-link { transition: color .15s ease; }
@@ -177,8 +181,8 @@ function Footer() {
                   aria-label={s.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-sm transition-transform hover:-translate-y-0.5"
-                  style={{ color: C.headingDark }}
+                  className="wv-card-lift flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:scale-110"
+                  style={{ color: C.body, backgroundColor: C.socialBg }}
                 >
                   {s.icon}
                 </a>

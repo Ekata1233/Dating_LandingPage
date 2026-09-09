@@ -4,6 +4,7 @@ import "./globals.css";
 
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
+import ScrollProgress from "./components/ScrollProgress";
 import { WaitlistProvider } from "./context/WaitlistContext";
 import { LaunchProvider } from "./context/launchContext";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Navbar />
+        <ScrollProgress />
 
         <main className="flex-1">
           <WaitlistProvider>

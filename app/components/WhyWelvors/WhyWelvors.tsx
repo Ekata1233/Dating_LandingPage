@@ -1,6 +1,7 @@
 "use client";
 
 import React, { SVGProps } from "react";
+import { useScrollReveal, staggerDelay } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline (Tailwind theme pe depend nahi)                */
@@ -103,15 +104,19 @@ const FEATURES = [
 ];
 
 function WhyWelvors() {
+  const [sectionRef, sectionVisible] = useScrollReveal();
+  const [cardsRef, cardsVisible] = useScrollReveal({ threshold: 0.05 });
+
   return (
     <section
       id="why"
+      ref={sectionRef}
       style={{ backgroundColor: C.bg }}
-      className="w-full scroll-mt-[50px] py-16 sm:py-20"
+      className="w-full scroll-mt-[50px] py-8 sm:py-10"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}
-        <div className="mx-auto max-w-2xl text-center">
+        <div className={`mx-auto max-w-2xl text-center ${sectionVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
           <span
             className="text-[15px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: C.pink }}
@@ -140,37 +145,68 @@ function WhyWelvors() {
         </div>
 
         {/* -------------------- Cards grid -------------------- */}
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {FEATURES.map((f) => (
+        <div ref={cardsRef} className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className="rounded-2xl border bg-white p-7 shadow-[0_4px_20px_rgba(43,42,40,0.04)] transition-shadow hover:shadow-[0_8px_28px_rgba(43,42,40,0.08)]"
-              style={{ borderColor: C.cardBorder }}
+              className={`group relative overflow-hidden rounded-2xl border bg-white p-7 transition-all duration-300 ease-out hover:-translate-y-1 shadow-[0_4px_20px_rgba(43,42,40,0.04)] ${cardsVisible ? "wv-reveal is-visible" : "wv-reveal"
+                }`}
+              style={{
+                borderColor: "rgba(214,40,116,0.12)",
+                ...staggerDelay(i, 100),
+              }}
             >
+              {/* Top highlight line — grows in on hover */}
+              <div
+                className="absolute top-0 left-0 h-[3px] w-full origin-left scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
+                style={{
+                  background: "linear-gradient(90deg, #ff4d8d, #d61c72, #b0146a)",
+                }}
+              />
+
+              {/* Soft pink glow ring on hover */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
+                style={{
+                  boxShadow: "0 0 0 1px rgba(214,28,114,0.25), 0 10px 30px rgba(214,28,114,0.12)",
+                }}
+              />
+
               {/* Icon box */}
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ backgroundColor: f.iconBg, color: f.iconColor }}
+                className="relative flex h-14 w-14 items-center justify-center rounded-2xl
+          transition-all duration-500 ease-out
+          group-hover:scale-110
+          group-hover:rotate-3
+          group-hover:shadow-[0_10px_26px_rgba(214,28,114,0.35)]"
+                style={{
+                  background: "linear-gradient(145deg, #ffe1ec 0%, #ffc2d9 100%)",
+                }}
               >
-                {f.icon}
+                {/* Gradient overlay that fades in on hover */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
+                  style={{
+                    background: "linear-gradient(145deg, #ff5e9c 0%, #d61c72 55%, #a4105f 100%)",
+                  }}
+                />
+
+                {/* Icon — dark pink at rest, white on hover */}
+                <span className="relative z-10 text-[#d61c72] transition-colors duration-500 ease-out group-hover:text-white">
+                  {f.icon}
+                </span>
               </div>
 
               {/* Title */}
               <h3
-                className="mt-5 text-lg font-bold"
-                style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  color: C.headingDark,
-                }}
+                className="relative mt-5 text-lg font-bold text-[#231f20]"
+                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
               >
                 {f.title}
               </h3>
 
               {/* Body */}
-              <p
-                className="mt-3 text-[14px] leading-relaxed"
-                style={{ color: C.body }}
-              >
+              <p className="relative mt-3 text-[14px] leading-relaxed text-slate-500">
                 {f.body}
               </p>
             </div>

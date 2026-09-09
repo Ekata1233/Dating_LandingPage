@@ -1,6 +1,7 @@
 "use client";
 
-import React, { SVGProps } from "react";
+import React, { SVGProps, useCallback, useEffect, useRef, useState } from "react";
+import { useScrollReveal, staggerDelay } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -94,6 +95,16 @@ const Icon = {
       <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2h6c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
     </svg>
   ),
+  ChevronLeft: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  ),
+  ChevronRight: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  ),
 
   /* ---- "What this means for you" section icons ---- */
   ShieldTick: (p: SVGProps<SVGSVGElement>) => (
@@ -142,7 +153,7 @@ const TIERS: {
     icon: <Icon.Phone />,
     progress: 25,
     checks: ["Mobile number", "Email verified", "Location verified"],
-    note: "Stops mass fake signups",
+    note: "Stops fake signups",
     accent: "pink",
   },
   {
@@ -151,7 +162,7 @@ const TIERS: {
     tier: "TIER 2",
     subtitle: "Identity confirmed",
     icon: <Icon.IdCard />,
-    progress: 52,
+    progress: 25,
     checks: ["Government ID", "Face / selfie", "Live video check"],
     note: "Blocks catfish & stolen photos",
     accent: "purple",
@@ -162,8 +173,8 @@ const TIERS: {
     tier: "TIER 3",
     subtitle: "Verified in person",
     icon: <Icon.Video />,
-    progress: 78,
-    checks: ["Education verified", "Profession verified"],
+    progress: 75,
+    checks: ["Education verified", "Profession verified","Income verified"],
     note: "Rules out identity & resume liars",
     accent: "teal",
   },
@@ -175,8 +186,7 @@ const TIERS: {
     icon: <Icon.Star />,
     progress: 100,
     checks: [
-      "Income verified",
-      "Background check via verified third-party partner",
+      "Background check via verified third-party partner", "Emergency contact verified"
     ],
     note: "Designed to filter out scammers",
     accent: "amber",
@@ -209,12 +219,121 @@ const BENEFITS = [
   },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  Horizontal Scroll Timeline Card                                    */
+/* ------------------------------------------------------------------ */
+function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; isActive: boolean }) {
+  const a = ACCENT[tier.accent];
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+    card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+  }, []);
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      className={`wv-glow-card bg-white p-6 transition-all duration-500 ${isActive ? "scale-[1.02] shadow-[0_12px_40px_rgba(0,0,0,0.08)]" : "shadow-[0_4px_20px_rgba(43,42,40,0.04)]"}`}
+      style={{
+        borderColor: a.cardBorder,
+        border: `1px solid ${a.cardBorder}`,
+        minWidth: "320px",
+        maxWidth: "380px",
+      }}
+    >
+      {/* Tier badge + icon */}
+      <div className="flex items-center gap-3">
+        <div
+          className="wv-glow-icon flex h-12 w-12 items-center justify-center rounded-xl"
+          style={{ backgroundColor: a.tint, color: a.main }}
+        >
+          {tier.icon}
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3
+              className="text-lg font-bold"
+              style={{
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                color: C.headingDark,
+              }}
+            >
+              {tier.name}
+            </h3>
+            <span
+              className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+              style={{ backgroundColor: a.badgeBg, color: a.badgeText }}
+            >
+              {tier.tier}
+            </span>
+          </div>
+          <p className="text-[13px]" style={{ color: C.body }}>
+            {tier.subtitle}
+          </p>
+        </div>
+      </div>
+
+      {/* Checks list */}
+      <div className="mt-4 space-y-2.5">
+        {tier.checks.map((check, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <div
+              className="flex h-5 w-5 flex-none items-center justify-center rounded-full"
+              style={{ backgroundColor: a.tint, color: a.main }}
+            >
+              <Icon.Check width="12" height="12" />
+            </div>
+            <span className="text-[13px] font-medium" style={{ color: C.headingDark }}>
+              {check}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Note */}
+      <div
+        className="mt-4 flex items-center gap-2 rounded-lg px-3 py-2"
+        style={{ backgroundColor: a.tint }}
+      >
+        <Icon.Bulb style={{ color: a.main }} />
+        <p className="text-[12px] font-medium" style={{ color: a.badgeText }}>
+          {tier.note}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function VerifiedCommunity() {
+  const [headerRef, headerVisible] = useScrollReveal();
+  const [tiersRef, tiersVisible] = useScrollReveal({ threshold: 0.05 });
+  const [benefitsRef, benefitsVisible] = useScrollReveal({ threshold: 0.05 });
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
+  const [activeTier, setActiveTier] = useState(0);
+
+
+  const scrollTo = useCallback((direction: "left" | "right") => {
+    const track = scrollTrackRef.current;
+    if (!track) return;
+    const cardWidth = 380 + 24;
+    const newScroll = direction === "left"
+      ? track.scrollLeft - cardWidth
+      : track.scrollLeft + cardWidth;
+    track.scrollTo({ left: newScroll, behavior: "smooth" });
+  }, []);
+
+
+
   return (
     <section style={{ backgroundColor: C.bg }} className="w-full py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* -------------------- Header -------------------- */}
-        <div className="mx-auto max-w-4xl text-center">
+        <div ref={headerRef} className={`mx-auto max-w-4xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
           <span
             className="text-[15px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: C.pink }}
@@ -245,150 +364,46 @@ function VerifiedCommunity() {
           </p>
         </div>
 
-        {/* -------------------- Timeline + cards -------------------- */}
-        <div className="mt-12 space-y-6">
-          {TIERS.map((t, i) => {
-            const a = ACCENT[t.accent];
-            const isLast = i === TIERS.length - 1;
-            return (
-              <div key={t.n} className="flex gap-3 sm:gap-5">
-                {/* Rail: number circle + connecting line */}
-                <div className="relative flex w-8 flex-none justify-center">
-                  {/* Vertical line (behind circle) */}
-                  {!isLast && (
-                    <span
-                      className="absolute left-1/2 top-6 -translate-x-1/2"
-                      style={{
-                        width: "2px",
-                        bottom: "-1.5rem", // bridge the gap-6 to next circle
-                        backgroundColor: a.line,
-                        opacity: 0.85,
-                      }}
-                    />
-                  )}
-                  {/* Number circle */}
-                  <span
-                    className="relative z-10 mt-3 flex h-8 w-8 flex-none items-center justify-center rounded-full border-2 bg-white text-[13px] font-semibold"
-                    style={{ borderColor: a.main, color: a.main }}
-                  >
-                    {t.n}
-                  </span>
-                </div>
+        {/* -------------------- Horizontal Scroll Timeline (Desktop) -------------------- */}
+        <div ref={tiersRef} className={`mt-12 ${tiersVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}>
+          {/* Timeline progress line */}
 
-                {/* Card */}
-                <div
-                  className="flex-1 rounded-2xl border bg-white p-5 shadow-[0_4px_20px_rgba(43,42,40,0.04)] sm:p-6"
-                  style={{ borderColor: a.cardBorder }}
-                >
-                  {/* Title row */}
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-11 w-11 flex-none items-center justify-center rounded-xl"
-                      style={{ backgroundColor: a.tint, color: a.main }}
-                    >
-                      {t.icon}
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3
-                          className="text-lg font-bold"
-                          style={{
-                            fontFamily: 'Georgia, "Times New Roman", serif',
-                            color: C.headingDark,
-                          }}
-                        >
-                          {t.name}
-                        </h3>
-                        <span
-                          className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                          style={{ backgroundColor: a.badgeBg, color: a.badgeText }}
-                        >
-                          {t.tier}
-                        </span>
-                      </div>
-                      <p className="text-[13px]" style={{ color: C.body }}>
-                        {t.subtitle}
-                      </p>
-                    </div>
-                  </div>
+          {/* Scroll arrows */}
+          <div className="hidden sm:block">
+            <button
+              type="button"
+              onClick={() => scrollTo("left")}
+              className="wv-hscroll-arrow left"
+              aria-label="Scroll left"
+            >
+              <Icon.ChevronLeft style={{ color: C.headingDark }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollTo("right")}
+              className="wv-hscroll-arrow right"
+              aria-label="Scroll right"
+            >
+              <Icon.ChevronRight style={{ color: C.headingDark }} />
+            </button>
+          </div>
 
-                  {/* Progress bar */}
-                  <div
-                    className="mt-4 h-2 w-full overflow-hidden rounded-full"
-                    style={{ backgroundColor: a.track }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${t.progress}%`, backgroundColor: a.main }}
-                    />
-                  </div>
-
-                  {/* Checklist */}
-                  <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-                    {t.checks.map((c) => (
-                      <span
-                        key={c}
-                        className="inline-flex items-center gap-1.5 text-[13px]"
-                        style={{ color: C.headingDark }}
-                      >
-                        <span style={{ color: C.check }}>
-                          <Icon.Check />
-                        </span>
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Note pill */}
-                  <div
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
-                    style={{ backgroundColor: a.tint, color: a.main }}
-                  >
-                    <Icon.Bulb />
-                    {t.note}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* -------------------- What this means for you -------------------- */}
-        <div className="mt-16">
-          <p
-            className="text-center text-[13px] font-bold uppercase tracking-[0.16em]"
-            style={{ color: C.pink }}
+          {/* Horizontal scroll track */}
+          <div
+            ref={scrollTrackRef}
+            className="wv-hscroll-track hidden md:flex"
+            style={{ padding: "1.5rem 3rem" }}
           >
-            What this means for you
-          </p>
-
-          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {BENEFITS.map((b) => (
-              <div
-                key={b.title}
-                className="flex items-start gap-3 rounded-2xl border bg-white p-5 shadow-[0_4px_20px_rgba(43,42,40,0.04)]"
-                style={{ borderColor: "#F2E3E8" }}
-              >
-                <span className="mt-0.5 flex-none" style={{ color: C.pink }}>
-                  {b.icon}
-                </span>
-                <div>
-                  <h4
-                    className="text-[15px] font-bold"
-                    style={{ color: C.headingDark }}
-                  >
-                    {b.title}
-                  </h4>
-                  <p
-                    className="mt-1 text-[13.5px] leading-relaxed"
-                    style={{ color: C.body }}
-                  >
-                    {b.body}
-                  </p>
-                </div>
-              </div>
+            {TIERS.map((t, i) => (
+              <HorizontalTierCard
+                key={t.n}
+                tier={t}
+                isActive={i === activeTier}
+              />
             ))}
           </div>
+
+
         </div>
       </div>
     </section>
