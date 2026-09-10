@@ -61,6 +61,24 @@ function Navbar({ logoSrc }: NavbarProps) {
     router.push("/");
   };
 
+  const scrollToSection = (href: string) => {
+    const hash = href.split("#")[1];
+    if (!hash) return;
+
+    // If not on home page, navigate to home with hash
+    if (pathname !== "/") {
+      router.push(href);
+      return;
+    }
+
+    // On home page, scroll smoothly and update URL
+    const el = document.getElementById(hash);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+      history.pushState(null, "", href);
+    }
+  };
+
   const handleLoginSuccess = () => {
     setLoggedIn(true);
     setLoginOpen(false);
@@ -132,8 +150,11 @@ function Navbar({ logoSrc }: NavbarProps) {
               <li key={link.label}>
                 <Link
                   href={link.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(link.href);
+                  }}
                   className="text-[15px] text-gray-700 font-bold transition-colors duration-300 hover:text-pink-500"
-                  style={{  }}
                 >
                   {link.label}
                 </Link>
@@ -249,14 +270,18 @@ function Navbar({ logoSrc }: NavbarProps) {
           <ul className="flex flex-col px-4 py-3 sm:px-6">
             {NAV_LINKS.map((link) => (
               <li key={link.label}>
-                <a
+                <Link
                   href={link.href}
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOpen(false);
+                    scrollToSection(link.href);
+                  }}
                   className="block rounded-lg px-2 py-3 text-[15px] font-medium transition-colors hover:bg-[#f6efe9]"
                   style={{ color: COLORS.linkText }}
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
