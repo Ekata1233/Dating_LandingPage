@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import ScrollProgress from "./components/ScrollProgress";
+import HashHandler from "./components/HashHandler";
 import { WaitlistProvider } from "./context/WaitlistContext";
 import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
@@ -43,6 +44,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <IntroVideo>
+        <HashHandler />
 
         <Navbar />
         <ScrollProgress />

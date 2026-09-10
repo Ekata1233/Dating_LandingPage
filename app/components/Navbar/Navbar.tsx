@@ -13,9 +13,9 @@ interface NavbarProps {
 }
 
 const NAV_LINKS = [
-  { label: "Why Welvors", href: "#why" },
-  { label: "Features", href: "#members-see" },
-  { label: "Commitment Mode", href: "#commitment" },
+  { label: "Why Welvors", href: "/#why" },
+  { label: "Features", href: "/#members-see" },
+  { label: "Commitment Mode", href: "/#commitment" },
 ];
 
 // Brand colors inline rakhe hain taaki Tailwind theme pe depend na kare
@@ -130,13 +130,13 @@ function Navbar({ logoSrc }: NavbarProps) {
           <ul className="flex items-center gap-8">
             {NAV_LINKS.map((link) => (
               <li key={link.label}>
-                <a
+                <Link
                   href={link.href}
-                  className="text-[15px] text-gray-700 font-bold transition-colors duration-150 hover:text-pink-500"
+                  className="text-[15px] text-gray-700 font-bold transition-colors duration-300 hover:text-pink-500"
                   style={{  }}
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { SVGProps } from "react";
+import Link from "next/link";
 import { useScrollReveal, staggerDelay } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
@@ -201,8 +202,8 @@ function DateNow() {
 
           {/* CTA */}
           <div className={`mt-8 ${rightVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "400ms" }}>
-            <a
-              href="#waitlist"
+            <Link
+              href="/#waitlist"
               className="wv-cta-magnetic wv-cta-shimmer inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[15px] font-bold text-white shadow-lg"
               style={{
                 background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})`,
@@ -211,7 +212,7 @@ function DateNow() {
             >
               Get early access
               <Icon.Arrow />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

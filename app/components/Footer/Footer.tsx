@@ -89,8 +89,8 @@ const COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "Why Welvors", href: "#why" },
-      { label: "How it works", href: "#how-it-works" },
+      { label: "Why Welvors", href: "/#why" },
+      { label: "How it works", href: "/#how-it-works" },
     ],
   },
   {

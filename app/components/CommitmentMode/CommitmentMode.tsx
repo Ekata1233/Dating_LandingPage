@@ -233,7 +233,7 @@ function CommitmentMode() {
                 </p>
 
                 <p className="mt-3 text-[15px]" style={{ color: "rgba(255,255,255,0.6)" }}>
-                  honeymoon trip on verified marriage
+                  Honeymoon trip on verified marriage
                 </p>
 
                 {/* Tags */}
