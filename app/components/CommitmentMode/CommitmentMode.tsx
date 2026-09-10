@@ -138,7 +138,7 @@ function CommitmentMode() {
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-md">
               <Icon.Sparkles style={{ color: "#D4A853", width: 14, height: 14 }} />
               <span className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#D4A853" }}>
-                World's first
+                Forever Love Programme
               </span>
             </div>
 
@@ -146,13 +146,12 @@ function CommitmentMode() {
               className="mt-8 text-4xl leading-[1.1] sm:text-5xl lg:text-6xl"
               style={{ fontFamily: 'Georgia, "Times New Roman", serif', color: "white" }}
             >
-              Stop guessing.{" "}
-              <span className="italic" style={{ color: "#D4A853" }}>Start knowing.</span>
+              From "Maybe" to{" "}
+              <span className="italic" style={{ color: "#D4A853" }}>Mutual Commitment.</span>
             </h2>
 
             <p className="mt-6 max-w-md text-[16px] leading-relaxed" style={{ color: "rgba(255,255,255,0.6)" }}>
-              The endless &ldquo;what are we?&rdquo; ends here. Both partners lock in
-              their intentions out loud — no confusion, just clarity.
+              When both hearts are certain, make it official. Send a commitment request, become verified partners, and begin your Forever Love journey together.
             </p>
 
             {/* Flow Steps - Horizontal */}
@@ -188,7 +187,7 @@ function CommitmentMode() {
               >
                 <span className="relative z-10 flex items-center gap-2">
                   <Icon.Zap />
-                  Learn More
+                  Start Your Journey
                   <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
@@ -215,7 +214,7 @@ function CommitmentMode() {
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/10 p-8 backdrop-blur-xl sm:p-10">
               {/* Card glow */}
               <div className="pointer-events-none absolute -top-20 -right-20 h-40 w-40 rounded-full opacity-50" style={{ background: "radial-gradient(circle, rgba(212,168,83,0.6) 0%, transparent 70%)" }} />
-              
+
               <div className="relative">
                 {/* Icon */}
                 <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#D4A853] to-[#C9962A] shadow-[0_8px_32px_rgba(212,168,83,0.4)]">

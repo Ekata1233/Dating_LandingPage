@@ -8,6 +8,7 @@ import ScrollProgress from "./components/ScrollProgress";
 import { WaitlistProvider } from "./context/WaitlistContext";
 import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
+import { LegalProvider } from "./context/legalContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,7 +50,9 @@ export default function RootLayout({
         <main className="flex-1">
           <WaitlistProvider>
             <LaunchProvider>
-          {children}
+              <LegalProvider>
+                {children}
+              </LegalProvider>
           </LaunchProvider>
           </WaitlistProvider>
         </main>

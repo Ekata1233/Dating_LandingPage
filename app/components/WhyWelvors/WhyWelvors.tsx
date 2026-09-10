@@ -111,8 +111,9 @@ function WhyWelvors() {
     <section
       id="why"
       ref={sectionRef}
-      style={{ backgroundColor: C.bg }}
-      className="w-full scroll-mt-[50px] py-8 sm:py-10"
+      style={{
+        background: "radial-gradient(circle, #FFB3C7 0%, #FFE8EE 45%, #FFF0F3 70%, #FFF9FA 100%)",
+      }} className="w-full scroll-mt-[50px] py-8 sm:py-10"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}

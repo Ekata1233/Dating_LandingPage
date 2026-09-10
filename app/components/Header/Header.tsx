@@ -22,7 +22,8 @@ const C = {
   ctaTo: "#B31E52",
   badgeBg: "#FBE8EF",
   stripBg: "#EFE8E2",
-  black: "#000000"
+  black: "#000000",
+  lightPink: "#FFF0F3"
 };
 
 /* ------------------------------------------------------------------ */
@@ -271,11 +272,11 @@ const Icon = {
       <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
     </svg>
   ),
-    Phone: (p: SVGProps<SVGSVGElement>) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
-        <rect x="6" y="2" width="12" height="20" rx="2.5" />
-        <path d="M11 18h2" />
-      </svg>),
+  Phone: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="6" y="2" width="12" height="20" rx="2.5" />
+      <path d="M11 18h2" />
+    </svg>),
 };
 
 
@@ -342,8 +343,9 @@ function Header() {
   return (
     <header
       ref={headerRef}
-      style={{ backgroundColor: C.bg }}
-      className="relative w-full  overflow-hidden px-10 pt-20"
+      style={{
+        background: "linear-gradient(to left, #FFF9FA, #FFF0F3, #FFE8EE, #FFD1DD, #FFB3C7)",
+      }} className="relative w-full  overflow-hidden px-10 pt-20"
     >
 
       {/* Soft pink glow top-right */}

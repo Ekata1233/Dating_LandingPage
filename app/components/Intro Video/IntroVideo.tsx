@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface IntroVideoProps {
   children: React.ReactNode;
 }
 
 export default function IntroVideo({ children }: IntroVideoProps) {
+  const pathname = usePathname();
+  const isHome = pathname === '/';
+
   const [showIntro, setShowIntro] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -28,6 +32,13 @@ export default function IntroVideo({ children }: IntroVideoProps) {
       document.body.style.overflow = '';
     };
   }, []);
+
+  // Restore scroll when navigating away from home
+  useEffect(() => {
+    if (!isHome) {
+      document.body.style.overflow = '';
+    }
+  }, [isHome]);
 
   // Entry phase
   useEffect(() => {
@@ -74,7 +85,7 @@ export default function IntroVideo({ children }: IntroVideoProps) {
     setVideoReady(true);
   }, [loadStartTime]);
 
-  if (!showIntro) {
+  if (!isHome || !showIntro) {
     return <>{children}</>;
   }
 

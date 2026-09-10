@@ -1,6 +1,6 @@
 "use client";
 
-import React, { SVGProps, useState } from "react";
+import React, { SVGProps, useState, useEffect } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 
 const C = {
@@ -183,6 +183,14 @@ function DownloadAppFeature() {
     setCurrentImage((prev) => (prev === APP_SCREENSHOTS.length - 1 ? 0 : prev + 1));
   };
 
+  useEffect(() => {
+    if (!phoneVisible) return;
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev === APP_SCREENSHOTS.length - 1 ? 0 : prev + 1));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [phoneVisible]);
+
   return (
     <section
       id="download-app"
@@ -256,12 +264,18 @@ function DownloadAppFeature() {
                   {/* App Screenshot Carousel */}
                   <div className="relative px-3 pb-3">
                     <div className="relative overflow-hidden rounded-[20px] border" style={{ borderColor: C.cardBorder }}>
-                      <div className="relative h-[380px] w-full">
-                        <img
-                          src={APP_SCREENSHOTS[currentImage]}
-                          alt={`App screenshot ${currentImage + 1}`}
-                          className="h-full w-full object-cover transition-all duration-500"
-                        />
+                      <div
+                        className="relative flex h-[380px] w-full transition-transform duration-500 ease-in-out"
+                        style={{ transform: `translateX(-${currentImage * 100}%)` }}
+                      >
+                        {APP_SCREENSHOTS.map((src, i) => (
+                          <img
+                            key={i}
+                            src={src}
+                            alt={`App screenshot ${i + 1}`}
+                            className="h-full w-full flex-none object-cover"
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>

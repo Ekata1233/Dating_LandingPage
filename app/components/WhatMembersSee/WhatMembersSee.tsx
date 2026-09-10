@@ -17,6 +17,7 @@ const C = {
   label: "#9C948C",
   ctaFrom: "#C93B68",
   ctaTo: "#B31E52",
+  lightPink: "#FFF0F3"
 };
 
 /* ------------------------------------------------------------------ */
@@ -183,8 +184,9 @@ function WhatMembersSee() {
     <section
       id="members-see"
       ref={sectionRef}
-      style={{ backgroundColor: C.bg }}
-      className="w-full scroll-mt-[50px] py-14 sm:py-20"
+      style={{
+        background: "linear-gradient(to right, #FFF9FA, #FFF0F3, #FFE8EE, #FFD1DD, #FFB3C7)",
+      }} className="w-full scroll-mt-[50px] py-14 sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}

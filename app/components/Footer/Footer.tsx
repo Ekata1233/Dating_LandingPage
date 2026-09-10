@@ -91,7 +91,6 @@ const COLUMNS = [
     links: [
       { label: "Why Welvors", href: "#why" },
       { label: "How it works", href: "#how-it-works" },
-      { label: "Join waitlist", href: "#waitlist" },
     ],
   },
   {
@@ -107,13 +106,14 @@ const COLUMNS = [
   {
     heading: "Legal & Safety",
     links: [
-      { label: "Privacy Policy", href: "/legalSafty/privacyPolicy" },
-      { label: "Terms & Conditions", href: "/legalSafty/termCondition" },
-      { label: "Cookie Policy", href: "/legalSafty/cookiePolicy" },
-      { label: "Community Guidelines", href: "/legalSafty/community" },
-      { label: "Safety & Trust", href: "/legalSafty/safetyTrust" },
-      { label: "Refund & Cancellation", href: "/legalSafty/refund" },
-      { label: "Grievance Redressal", href: "/legalSafty/grievance" },
+      { label: "Privacy Policy", href: "/legalSafety/privacyPolicy" },
+      { label: "Terms & Conditions", href: "/legalSafety/termCondition" },
+      { label: "Cookie Policy", href: "/legalSafety/cookiePolicy" },
+      { label: "Community Guidelines", href: "/legalSafety/community" },
+      { label: "Safety & Trust", href: "/legalSafety/safetyTrust" },
+      { label: "Refund & Cancellation", href: "/legalSafety/refund" },
+      { label: "Grievance Redressal", href: "/legalSafety/grievance" },
+      { label: "Age Policy", href: "/legalSafety/agePolicy" },
     ],
   },
 ];
