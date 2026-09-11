@@ -18,6 +18,7 @@ const C = {
   stripBg: "#EFE8E2",
   smoothPink: "#FDE8E8",
   mediumPink: "#F9D1D1",
+  btnBg: `#000000`
 };
 
 const APP_SCREENSHOTS = [
@@ -76,7 +77,7 @@ const Icon = {
     </svg>
   ),
   Calendar: (p: SVGProps<SVGSVGElement>) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" />
     </svg>
@@ -151,6 +152,17 @@ const Icon = {
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   ),
+  UserShield: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      {...p}
+    >
+      <path d="M485-240Zm26 80H160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440v80q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32h245q4 21 10.5 41t15.5 39Zm209 80q-73-18-116.5-80T560-298v-102l160-80 160 80v102q0 76-43.5 138T720-80Zm0-84q38-18 59-55t21-79v-52l-80-40-80 40v52q0 42 21 79t59 55ZM367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm169.5-56.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm240 363Z" />
+    </svg>
+  ),
 };
 
 const STRIP = [
@@ -167,7 +179,49 @@ const POINTS = [
   { icon: <Icon.Trophy />, text: "Relationship milestones that reward your journey" },
   { icon: <Icon.ShieldCheck />, text: "Privacy-first design — you control what's visible" },
 ];
-
+{/* Badge → image index mapping: which badge glows on which slide */ }
+const BADGES = [
+  {
+    id: "id-verified",
+    label: "ID verified",
+    icon: "check",
+    iconBg: "#E4F5EA",
+    iconColor: "#3F8F5B",
+    position: "-left-2 top-3 lg:-left-28 lg:top-8",
+    floatClass: "wv-float",
+    imageIndex: 0,
+  },
+  {
+    id: "safeface",
+    label: "SafeFace on",
+    icon: "shield",
+    iconBg: "#FBE8EF",
+    iconColor: C.pink,
+    position: "-right-2 top-[52%] lg:-right-26 lg:top-[52%]",
+    floatClass: "wv-float-delayed",
+    imageIndex: 1,
+  },
+  {
+    id: "date-now",
+    label: "Date now",
+    icon: "clock",
+    iconBg: "#EAEAFB",
+    iconColor: "#5B62B5",
+    position: "-right-2 top-[26%] lg:-right-24 lg:top-4",
+    floatClass: "wv-float",
+    imageIndex: 2,
+  },
+  {
+    id: "events",
+    label: "Events",
+    icon: "calendar",
+    iconBg: "#FFF3D6",
+    iconColor: "#B8860B",
+    position: "-left-2 top-[74%] lg:-left-24 lg:top-[74%]",
+    floatClass: "wv-float-delayed",
+    imageIndex: 3,
+  },
+];
 
 function DownloadAppFeature() {
   const [stripRef, stripVisible] = useScrollReveal({ threshold: 0.1 });
@@ -195,8 +249,9 @@ function DownloadAppFeature() {
     <section
       id="download-app"
       className="w-full overflow-hidden py-12"
-      style={{ backgroundColor: C.bg }}
-    >
+      style={{
+        background: "radial-gradient(ellipse 120% 90% at 50% 0%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
+      }}    >
       <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
@@ -204,68 +259,46 @@ function DownloadAppFeature() {
           <div ref={phoneRef} className="flex justify-center order-1 lg:order-1">
             <div className={`relative ${phoneVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`} style={{ animationDelay: "200ms" }}>
 
-              {/* Floating badge: ID verified */}
-              <div className="wv-float absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] -left-3 top-16 lg:-left-35 lg:top-14 transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_40px_rgba(63,143,91,0.2)]">
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E4F5EA]"
-                  style={{ color: "#3F8F5B" }}
-                >
-                  <Icon.Check />
-                </span>
-                <span
-                  className="text-[13px] font-semibold"
-                  style={{ color: C.headingDark }}
-                >
-                  ID verified
-                </span>
-              </div>
-
-              {/* Floating badge: SafeFace on */}
-              <div
-                className="wv-float-delayed absolute z-20 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] -right-3 top-[72%] lg:-right-32 lg:top-[64%] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_40px_rgba(194,21,89,0.2)]"
-              >
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FBE8EF]"
-                  style={{ color: C.pink }}
-                >
-                  <Icon.Clock />
-                </span>
-                <span
-                  className="text-[13px] font-semibold"
-                  style={{ color: C.headingDark }}
-                >
-                  SafeFace on
-                </span>
-              </div>
-
-              {/* Phone frame */}
-              <div className="relative w-[270px] rounded-[42px] bg-black p-3 shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_20px_rgba(0,0,0,0.08)] sm:w-[290px] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(91,98,181,0.15)] hover:scale-[1.02]">
-                <div className="absolute left-1/2 top-4 z-10 h-6 w-24 -translate-x-1/2 rounded-full bg-black" />
-
-                <div className="overflow-hidden rounded-[34px] bg-white pt-9">
-                  {/* Top bar */}
-                  <div className="flex items-center justify-between px-4 pb-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm" style={{ borderColor: "#EDE4DC", color: C.headingDark }}>
-                      <Icon.Filter />
+              {/* Floating badges */}
+              {BADGES.map((badge) => {
+                const isActive = currentImage === badge.imageIndex;
+                return (
+                  <div
+                    key={badge.id}
+                    className={`${badge.floatClass} absolute z-20 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap rounded-xl lg:rounded-2xl bg-white px-2.5 py-1.5 lg:px-4 lg:py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ${badge.position} transition-all duration-300 hover:scale-105 ${isActive ? "wv-badge-glow" : ""
+                      }`}
+                    style={
+                      isActive
+                        ? ({ "--glow-color": "rgba(194,21,89,0.55)" } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
+                    <span
+                      className="flex h-5 w-5 lg:h-6 lg:w-6 items-center justify-center rounded-full"
+                      style={{ backgroundColor: badge.iconBg, color: badge.iconColor }}
+                    >
+                      {badge.icon === "clock" && <Icon.Clock />}
+                      {badge.icon === "check" && <Icon.Check />}
+                      {badge.icon === "shield" && <Icon.UserShield />}
+                      {badge.icon === "calendar" && <Icon.Calendar />}
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-lg text-white" style={{ backgroundColor: C.pink }}>
-                        <Icon.Heart width="13" height="13" />
-                      </span>
-                      <span className="text-[16px] font-bold" style={{ color: C.headingDark }}>
-                        Wel<span style={{ color: C.pink }}>vors</span>
-                      </span>
-                    </span>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full border bg-white shadow-sm" style={{ borderColor: "#EDE4DC", color: C.headingDark }}>
-                      <Icon.Bell />
+                    <span className="text-[10px] lg:text-[13px] font-semibold" style={{ color: C.headingDark }}>
+                      {badge.label}
                     </span>
                   </div>
+                );
+              })}
 
+              {/* Phone frame */}
+              <div className="relative w-[210px] rounded-[36px] bg-black p-[3px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_20px_rgba(0,0,0,0.08)] sm:w-[225px] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(91,98,181,0.15)] hover:scale-[1.02]">
+                <div className="absolute left-1/2 top-3 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
+
+                <div className="overflow-hidden rounded-[33px] bg-white">
                   {/* App Screenshot Carousel */}
-                  <div className="relative px-3 pb-3">
-                    <div className="relative overflow-hidden rounded-[20px] border" style={{ borderColor: C.cardBorder }}>
+                  <div className="relative">
+                    <div className="relative overflow-hidden">
                       <div
-                        className="relative flex h-[380px] w-full transition-transform duration-500 ease-in-out"
+                        className="relative flex h-[400px] w-full transition-transform duration-500 ease-in-out"
                         style={{ transform: `translateX(-${currentImage * 100}%)` }}
                       >
                         {APP_SCREENSHOTS.map((src, i) => (
@@ -273,7 +306,7 @@ function DownloadAppFeature() {
                             key={i}
                             src={src}
                             alt={`App screenshot ${i + 1}`}
-                            className="h-full w-full flex-none object-cover"
+                            className="h-full w-full flex-none object-cover object-top"
                           />
                         ))}
                       </div>
@@ -281,24 +314,6 @@ function DownloadAppFeature() {
                   </div>
                 </div>
               </div>
-
-              {/* Navigation Arrows */}
-              <button
-                type="button"
-                onClick={goToPrev}
-                className="absolute left-[-24px] top-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-110 hover:shadow-[0_8px_30px_rgba(0,0,0,0.18)] active:scale-95 cursor-pointer"
-                style={{ transform: "translateY(-50%)" }}
-              >
-                <Icon.ChevronLeft style={{ color: C.headingDark }} />
-              </button>
-              <button
-                type="button"
-                onClick={goToNext}
-                className="absolute right-[-24px] top-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all duration-300 hover:scale-110 hover:shadow-[0_8px_30px_rgba(0,0,0,0.18)] active:scale-95 cursor-pointer"
-                style={{ transform: "translateY(-50%)" }}
-              >
-                <Icon.ChevronRight style={{ color: C.headingDark }} />
-              </button>
 
               {/* Pagination Dots */}
               <div className="absolute -bottom-10 mb-3 left-1/2 flex items-center gap-2" style={{ transform: "translateX(-50%)" }}>
@@ -320,7 +335,7 @@ function DownloadAppFeature() {
 
           {/* RIGHT: Text content */}
           <div ref={textRef} className="order-2 lg:order-2 text-center lg:text-left">
-                          <h3
+            <h3
               className={`text-3xl flex flex-col items-center lg:items-start justify-center leading-tight sm:text-4xl lg:text-[2.4rem] ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{
                 fontFamily: 'Georgia, "Times New Roman", serif',
@@ -328,40 +343,40 @@ function DownloadAppFeature() {
                 animationDelay: "100ms",
               }}
             ><span>
-              
-              Meet Your Forever{" "}
-            </span>
+
+                Meet Your Forever{" "}
+              </span>
               <span className="italic" style={{ color: C.pink }}>Anytime. Anywhere.</span>
             </h3>
             <p
               className={`mt-5 text-[15px] leading-relaxed ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ color: C.body, animationDelay: "200ms" }}
             >
-              Download the Ruxsy app and start creating a love story that stands the test of time. Available free for iOS and Android.
+              Download the Welvors app and start creating a love story that stands the test of time. Available free for iOS and Android.
             </p>
 
             {/* App Store Buttons */}
             <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
               <a
                 href="#"
-                className="inline-flex items-center gap-3 rounded-xl px-6 py-3.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` }}
+                className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ background: C.btnBg }}
               >
                 <Icon.Apple />
                 <div className="text-left">
-                  <p className="text-[10px] leading-none opacity-80">Download on the</p>
-                  <p className="text-[14px] font-semibold leading-tight">App Store</p>
+                  <p className="text-[9px] leading-none opacity-80">Download on the</p>
+                  <p className="text-[12px] font-semibold leading-tight">App Store</p>
                 </div>
               </a>
               <a
                 href="#"
-                className="inline-flex items-center gap-3 rounded-xl px-6 py-3.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` }}
+                className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                style={{ background: C.btnBg }}
               >
                 <Icon.PlayStore />
                 <div className="text-left">
-                  <p className="text-[10px] leading-none opacity-80">Get it on</p>
-                  <p className="text-[14px] font-semibold leading-tight">Google Play</p>
+                  <p className="text-[9px] leading-none opacity-80">Get it on</p>
+                  <p className="text-[12px] font-semibold leading-tight">Google Play</p>
                 </div>
               </a>
             </div>

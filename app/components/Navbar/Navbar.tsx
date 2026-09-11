@@ -14,7 +14,8 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { label: "Why Welvors", href: "/#why" },
-  { label: "Features", href: "/#members-see" },
+  { label: "Date Now", href: "/#date-now" },
+  { label: "Events", href: "/#events" },
   { label: "Commitment Mode", href: "/#commitment" },
 ];
 
@@ -145,7 +146,7 @@ function Navbar({ logoSrc }: NavbarProps) {
         {/* Center/Right: Desktop links + actions */}
         <div className="hidden items-center gap-8 md:flex">
           {!isLaunch && (
-          <ul className="flex items-center gap-8">
+          <ul className="flex items-center gap-5">
             {NAV_LINKS.map((link) => (
               <li key={link.label}>
                 <Link

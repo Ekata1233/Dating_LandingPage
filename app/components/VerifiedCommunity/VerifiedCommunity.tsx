@@ -330,7 +330,7 @@ function VerifiedCommunity() {
 
 
   return (
-    <section style={{ backgroundColor: C.bg }} className="w-full py-16 sm:py-20">
+    <section style={{ background: "radial-gradient(ellipse 120% 90% at 50% 0%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FCF8F4 90%)" }} className="w-full py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* -------------------- Header -------------------- */}
         <div ref={headerRef} className={`mx-auto max-w-4xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>

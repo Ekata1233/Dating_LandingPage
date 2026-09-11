@@ -1,0 +1,250 @@
+"use client";
+
+import React, { SVGProps } from "react";
+import { useScrollReveal } from "../useScrollReveal";
+
+const C = {
+  bg: "#FBF7F3",
+  headingDark: "#2B2A28",
+  pink: "#C21559",
+  body: "#6B655F",
+  label: "#9C948C",
+  ctaFrom: "#C93B68",
+  ctaTo: "#B31E52",
+  cardBg: "#FFFFFF",
+  cardBorder: "#F0E8E1",
+  lightPink: "#FFFFFF",
+  accentBg: "#FEF6F0",
+};
+
+const Icon = {
+  Zap: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  ),
+  Send: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M22 2L11 13" />
+      <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+    </svg>
+  ),
+  Wallet: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="2" y="6" width="20" height="14" rx="2" />
+      <path d="M2 10h20" />
+      <circle cx="17" cy="14" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  MessageCircle: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  ),
+  MapPin: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M12 22s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
+      <circle cx="12" cy="11" r="2.5" />
+    </svg>
+  ),
+  Heart: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" {...p}>
+      <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5 8.6 5 10 6.5 12 8c2-1.5 3.4-3 5.5-3C21 5 23.5 8.5 21.5 12.5 19 16.65 12 21 12 21z" />
+    </svg>
+  ),
+  Arrow: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  ),
+  Phone: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="6" y="2" width="12" height="20" rx="2.5" />
+      <path d="M11 18h2" />
+    </svg>
+  ),
+  Sparkles: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    </svg>
+  ),
+  Check: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  ),
+  Users: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="9" cy="7" r="4" />
+      <path d="M3 21c0-4 3-6 6-6" />
+      <circle cx="17" cy="7" r="3" />
+      <path d="M21 21c0-3.5-2.5-5.5-5-5.5" />
+    </svg>
+  ),
+  Clock: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  ),
+  Filter: (p: SVGProps<SVGSVGElement>) => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </svg>
+  ),
+};
+
+const HOW_STEPS = [
+  {
+    num: "01",
+    icon: <Icon.Send />,
+    title: "Post a Plan",
+    desc: "Share where you want to go — pick an activity, venue, bill preference, group size, and who can request to join.",
+  },
+  {
+    num: "02",
+    icon: <Icon.Users />,
+    title: "Browse & Request",
+    desc: "Others see your plan and request to join. You review their profile and decide who gets in.",
+  },
+  {
+    num: "03",
+    icon: <Icon.MessageCircle />,
+    title: "Date Confirmed",
+    desc: "Once approved, an auto date-card lands in your chat with time, place, and location — ready to go.",
+  },
+];
+
+const WALLET_FEATURES = [
+  "Date Plan Wallet — separate balance for posting plans",
+  "₹100 per plan from your wallet",
+  "Tabs: My Plans, Today, Tomorrow, Weekend",
+  "Full control over who joins your plan",
+];
+
+function DateNow() {
+  const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
+
+  const handleDiscover = () => {
+    if (typeof document === "undefined") return;
+    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
+    loginBtn?.click();
+  };
+
+
+  return (
+    <section
+      id="date-now"
+      ref={headerRef}
+      className="relative w-full overflow-hidden px-6 pt-24 pb-12 sm:px-10"
+      style={{
+        background: "radial-gradient(ellipse 120% 90% at 50% 100%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
+      }}
+    >
+      {/* Warm accent glow — top-left */}
+      <div
+        className="pointer-events-none absolute -left-40 -top-20 h-[500px] w-[500px] rounded-full opacity-50 blur-3xl"
+        style={{
+          background: "radial-gradient(circle, rgba(253,236,226,0.7) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
+
+        {/* ---- TOP: TEXT (LEFT) + IMAGE (RIGHT) ---- */}
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+
+          {/* TEXT */}
+          <div className="flex flex-col gap-5 lg:max-w-lg">
+
+            {/* Badge */}
+            <div
+              className={`inline-flex w-fit items-center gap-2 rounded-full border px-4 py-1.5 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{
+                borderColor: C.cardBorder,
+                backgroundColor: C.lightPink,
+                animationDelay: "0ms",
+              }}
+            >
+              <Icon.Zap style={{ color: C.pink, width: 14, height: 14 }} />
+              <span
+                className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: C.pink }}
+              >
+                Date Now on Welvors
+              </span>
+            </div>
+
+            {/* Heading */}
+            <h2
+              className={`text-3xl leading-[1.12] sm:text-4xl lg:text-[2.6rem] ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                color: C.headingDark,
+                animationDelay: "100ms",
+              }}
+            >
+              Have a Plan? Make It a {" "}
+              <span
+                className="wv-gradient-animated italic"
+                style={{ WebkitTextFillColor: "transparent" }}
+              >
+                Date.
+              </span>
+            </h2>
+
+            {/* Body */}
+            <p
+              className={`text-[15px] leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{ color: C.body, animationDelay: "250ms" }}
+            >
+              Got a plan? Turn it into a date.Whether it’s dinner tonight, coffee after work, a weekend outing, or something spontaneous, post your plan with the time, place, activity, and preferences. People who are interested can request to join, you can review their profile, and you stay in control of who you meet. Once you approve, your date is confirmed and the details are automatically shared in chat.
+            </p>
+
+            {/* CTAs */}
+            <div
+              className={`mt-2 flex flex-col sm:flex-row items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{ animationDelay: "500ms" }}
+            >
+              <button
+                type="button"
+                onClick={handleDiscover}
+                className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
+                style={{
+                  background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pink}, ${C.ctaTo})`,
+                  boxShadow: `0 8px 28px ${C.pink}35`,
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
+                  Try Date Now
+                </span>
+                <span className="cm-shimmer pointer-events-none absolute inset-0" />
+              </button>
+            </div>
+          </div>
+
+          {/* IMAGE */}
+          <div className="relative flex justify-center lg:justify-end">
+            <div
+              className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
+              style={{ animationDelay: "200ms" }}
+            >
+              <div className="hero-image-float">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/couple_images.jpg"
+                  alt="Date Now — Post a plan and meet real people"
+                  className="w-[280px] sm:w-[320px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
+export default DateNow;

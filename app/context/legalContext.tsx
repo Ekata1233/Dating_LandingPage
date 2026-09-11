@@ -16,7 +16,7 @@ const AGE_POLICY_18_PLUS_URL = `${BASE}/api/legal/legal-pages/AGE_POLICY_18_PLUS
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
-
+//Seperate types for each block type to allow for more complex structures in the future if needed.
 interface InlineSpan {
     text: string;
     bold?: boolean;

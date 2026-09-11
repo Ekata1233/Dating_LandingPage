@@ -328,6 +328,17 @@ svg {
   background: linear-gradient(90deg, transparent 0%, rgba(194, 21, 89, 0.2) 50%, transparent 100%);
 }
 
+.wv-section-glow::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #C21559 8%, #C21559 92%, transparent 100%);
+  box-shadow: 0 0 6px rgba(194, 21, 89, 0.5), 0 0 14px rgba(194, 21, 89, 0.25), 0 0 28px rgba(194, 21, 89, 0.1);
+}
+
 /* --- Smooth scroll indicator --- */
 @keyframes wv-scroll-bounce {
   0%, 100% { transform: translateY(0) translateX(-50%); opacity: 0.6; }
@@ -756,6 +767,103 @@ svg {
 }
 
 /* ============================================================
+   ANIMATED BORDER — icons pop out from line, drift, fade
+   ============================================================ */
+.wv-animated-border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wv-animated-border__line {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  width: 90%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(194, 21, 89, 0.08) 10%, rgba(194, 21, 89, 0.08) 90%, transparent 100%);
+}
+
+/* --- Base item: starts hidden at the line --- */
+.wv-ab-item {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- UP: pop up, drift, fade out --- */
+.wv-animated-border.is-active .wv-ab-item--up {
+  animation: wv-ab-pop-up var(--wv-ab-dur, 4s) var(--wv-ab-delay, 0s) ease-out infinite;
+}
+
+@keyframes wv-ab-pop-up {
+  0% {
+    transform: translateX(-50%) scale(0) translateY(0);
+    opacity: 0;
+  }
+  8% {
+    transform: translateX(-50%) scale(1.2) translateY(-4px);
+    opacity: var(--wv-ab-op, 0.2);
+  }
+  20% {
+    transform: translateX(-50%) scale(1) translateY(-14px);
+    opacity: var(--wv-ab-op, 0.2);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.85) translateY(-36px);
+    opacity: calc(var(--wv-ab-op, 0.2) * 0.4);
+  }
+  100% {
+    transform: translateX(-50%) scale(0.6) translateY(-50px);
+    opacity: 0;
+  }
+}
+
+/* --- DOWN: pop down, drift, fade out --- */
+.wv-animated-border.is-active .wv-ab-item--down {
+  animation: wv-ab-pop-down var(--wv-ab-dur, 4s) var(--wv-ab-delay, 0s) ease-out infinite;
+}
+
+@keyframes wv-ab-pop-down {
+  0% {
+    transform: translateX(-50%) scale(0) translateY(0);
+    opacity: 0;
+  }
+  8% {
+    transform: translateX(-50%) scale(1.2) translateY(4px);
+    opacity: var(--wv-ab-op, 0.2);
+  }
+  20% {
+    transform: translateX(-50%) scale(1) translateY(14px);
+    opacity: var(--wv-ab-op, 0.2);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.85) translateY(36px);
+    opacity: calc(var(--wv-ab-op, 0.2) * 0.4);
+  }
+  100% {
+    transform: translateX(-50%) scale(0.6) translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .wv-animated-border.is-active .wv-ab-item {
+    animation: none !important;
+    transform: translateX(-50%) scale(1);
+    opacity: var(--wv-ab-op, 0.2);
+  }
+}
+
+/* ============================================================
    HERO IMAGE FLOAT ANIMATION
    ============================================================ */
 @keyframes hero-image-float {
@@ -778,6 +886,51 @@ svg {
   will-change: transform;
 }
 
+/* ============================================================
+   DATE NOW IMAGE — GLOW BREATHE ANIMATION
+   ============================================================ */
+@keyframes wv-glow-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 20px 40px rgba(194, 21, 89, 0.12));
+  }
+  50% {
+    transform: scale(1.015);
+    filter: drop-shadow(0 28px 56px rgba(194, 21, 89, 0.22));
+  }
+}
+
+.wv-glow-breathe {
+  animation: wv-glow-breathe 4s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+/* ============================================================
+   EVENTS IMAGE — DRIFT TILT ANIMATION
+   ============================================================ */
+@keyframes wv-drift-tilt {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-6px) translateX(4px) rotate(0.6deg);
+  }
+  40% {
+    transform: translateY(-10px) translateX(-2px) rotate(-0.4deg);
+  }
+  60% {
+    transform: translateY(-4px) translateX(6px) rotate(0.3deg);
+  }
+  80% {
+    transform: translateY(-8px) translateX(-4px) rotate(-0.5deg);
+  }
+}
+
+.wv-drift-tilt {
+  animation: wv-drift-tilt 7s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* --- Respect reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
   .wv-reveal,
@@ -795,6 +948,12 @@ svg {
     animation: none !important;
   }
   .hero-image-float {
+    animation: none !important;
+  }
+  .wv-glow-breathe {
+    animation: none !important;
+  }
+  .wv-drift-tilt {
     animation: none !important;
   }
   .wv-glow-hover:hover,
@@ -848,4 +1007,16 @@ svg {
   .wv-marquee-track {
     animation: none !important;
   }
+}
+@keyframes wv-badge-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 6px var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.wv-badge-glow {
+  animation: wv-badge-glow-pulse 1.8s ease-in-out infinite;
 }

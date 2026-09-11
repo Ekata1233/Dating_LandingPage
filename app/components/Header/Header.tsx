@@ -344,7 +344,7 @@ function Header() {
     <header
       ref={headerRef}
       style={{
-        background: "linear-gradient(to left, #FFF9FA, #FFF0F3, #FFE8EE, #FFD1DD, #FFB3C7)",
+        background: "radial-gradient(ellipse 120% 90% at 50% 100%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
       }} className="relative w-full  overflow-hidden px-10 pt-20"
     >
 
@@ -418,12 +418,12 @@ function Header() {
 
 
             {/* ---- CTA ---- */}
-            <div className={`mt-4 flex flex-col sm:flex-row items-start mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
+            <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button
                   type="button"
                   onClick={handleDiscover}
-                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-8 py-3.5 text-[14px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
+                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
                   style={{
                     background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pink}, ${C.ctaTo})`,
                     backgroundSize: "200% 200%",
@@ -433,7 +433,6 @@ function Header() {
                   <span className="relative z-10 flex items-center gap-2">
                     <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
                     Discover Welvors
-                    <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                   </span>
                   <span className="cm-shimmer pointer-events-none absolute inset-0" />
                 </button>
@@ -442,7 +441,7 @@ function Header() {
                 <button
                   type="button"
                   onClick={handleDownloadApp}
-                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-8 py-3.5 text-[14px] font-bold shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(43,42,40,0.25)] active:scale-95 border-2"
+                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(43,42,40,0.25)] active:scale-95 border-2"
                   style={{
                     color: C.headingDark,
                     backgroundColor: "white",
@@ -453,7 +452,6 @@ function Header() {
                   <span className="relative z-10 flex items-center gap-2">
                     <Icon.Phone className="transition-transform duration-300 group-hover:scale-125" />
                     Download App
-                    <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                   </span>
                   <span className="cm-shimmer pointer-events-none absolute inset-0" />
                 </button>
