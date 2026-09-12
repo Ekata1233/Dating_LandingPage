@@ -115,18 +115,18 @@ const FEATURES = [
     iconColor: "#C99A22",
   },
   {
+  title: "AI matchmaking",
+  body: "Behaviour-driven compatibility, not just photos. predictive scoring, AI ice-breakers and a self-learning journey built around you.",
+  icon: <Icon.Globe />,
+  iconBg: "#E6EDF9",
+  iconColor: "#3D6FB4",
+},
+  {
     title: "Commitment Mode",
     body: "A world-first loyalty engine. Verify intent up front and enter a drama-free zone.A partner-funded in honeymoon on marriage",
     icon: <Icon.Star />,
     iconBg: "#E4F5EA",
     iconColor: "#3F8F5B",
-  },
-    {
-    title: "AI matchmaking",
-    body: "Behaviour-driven compatibility, not just photos. predictive scoring, AI ice-breakers and a self-learning journey built around you.",
-    icon: <Icon.Globe />,
-    iconBg: "#E6EDF9",
-    iconColor: "#3D6FB4",
   },
 ];
 
@@ -153,13 +153,16 @@ function WhyWelvors() {
           </span>
 
           <h2
-            className="mt-3 text-3xl leading-tight sm:text-4xl lg:text-[2.6rem]"
+            className="mt-3 text-3xl leading-tight sm:text-3xl lg:text-[2.6rem]"
             style={{
               fontFamily: 'Georgia, "Times New Roman", serif',
               color: C.headingDark,
             }}
           >
-            Verified trust, AI matchmaking &amp; real-world connection.
+            Built for Genuine {" "}
+              <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
+                Connections
+              </span>
           </h2>
 
           <p

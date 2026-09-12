@@ -189,7 +189,7 @@ function DateNow() {
                 className="wv-gradient-animated italic"
                 style={{ WebkitTextFillColor: "transparent" }}
               >
-                Date.
+                Date
               </span>
             </h2>
 
@@ -198,7 +198,7 @@ function DateNow() {
               className={`text-[15px] leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ color: C.body, animationDelay: "250ms" }}
             >
-              Got a plan? Turn it into a date.Whether it’s dinner tonight, coffee after work, a weekend outing, or something spontaneous, post your plan with the time, place, activity, and preferences. People who are interested can request to join, you can review their profile, and you stay in control of who you meet. Once you approve, your date is confirmed and the details are automatically shared in chat.
+              Post a plan for tonight, whether it's coffee, dinner, or a weekend event with your preferred time and place. Interested locals send a request to join, leaving you in complete control of who you approve.
             </p>
 
             {/* CTAs */}
@@ -211,7 +211,7 @@ function DateNow() {
                 onClick={handleDiscover}
                 className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
                 style={{
-                  background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pink}, ${C.ctaTo})`,
+                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                   boxShadow: `0 8px 28px ${C.pink}35`,
                 }}
               >
@@ -233,7 +233,7 @@ function DateNow() {
               <div className="hero-image-float">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/couple_images.jpg"
+                  src="/couple_images.png"
                   alt="Date Now — Post a plan and meet real people"
                   className="w-[280px] sm:w-[320px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
                 />

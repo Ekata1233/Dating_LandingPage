@@ -273,7 +273,7 @@ const Icon = {
     </svg>
   ),
   Phone: (p: SVGProps<SVGSVGElement>) => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <rect x="6" y="2" width="12" height="20" rx="2.5" />
       <path d="M11 18h2" />
     </svg>),
@@ -425,7 +425,7 @@ function Header() {
                   onClick={handleDiscover}
                   className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
                   style={{
-                    background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.pink}, ${C.ctaTo})`,
+                    background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                     backgroundSize: "200% 200%",
                     boxShadow: `0 8px 28px ${C.pink}35`,
                   }}
@@ -441,7 +441,7 @@ function Header() {
                 <button
                   type="button"
                   onClick={handleDownloadApp}
-                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(43,42,40,0.25)] active:scale-95 border-2"
+                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(43,42,40,0.25)] active:scale-95 border-1"
                   style={{
                     color: C.headingDark,
                     backgroundColor: "white",

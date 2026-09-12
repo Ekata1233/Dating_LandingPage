@@ -144,24 +144,24 @@ function Navbar({ logoSrc }: NavbarProps) {
         })()}
 
         {/* Center/Right: Desktop links + actions */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {!isLaunch && (
-          <ul className="flex items-center gap-5">
-            {NAV_LINKS.map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(link.href);
-                  }}
-                  className="text-[15px] text-gray-700 font-bold transition-colors duration-300 hover:text-pink-500"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <ul className="flex items-center gap-1"            >
+              {NAV_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(link.href);
+                    }}
+                    className="text-[14px] rounded-full  text-gray-600 font-bold px-4 py-3 transition-all duration-500 hover:text-white hover:bg-[linear-gradient(135deg,#F26FA6_0%,#E11D63_100%)]"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
 
           <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ function Navbar({ logoSrc }: NavbarProps) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="group relative overflow-hidden rounded-full border px-5 py-2 text-[15px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] hover:scale-105 active:scale-95"
+                className="group relative overflow-hidden rounded-full border px-5 py-2 text-[14px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] hover:scale-105 active:scale-95"
                 style={{
                   borderColor: COLORS.loginBorder,
                   color: COLORS.brandDark,
@@ -189,7 +189,7 @@ function Navbar({ logoSrc }: NavbarProps) {
                 onClick={() => setLoginOpen(true)}
                 className="group relative overflow-hidden rounded-full px-5 py-2 text-[15px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.25)] hover:scale-105 active:scale-95"
                 style={{
-                  background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})`,
+                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                   color: "white",
                 }}
               >
@@ -215,43 +215,43 @@ function Navbar({ logoSrc }: NavbarProps) {
             />
           </button>
         ) : (
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg md:hidden"
-          style={{ color: COLORS.brandDark }}
-        >
-          {open ? (
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          ) : (
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <line x1="3" y1="7" x2="21" y2="7" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="17" x2="21" y2="17" />
-            </svg>
-          )}
-        </button>
+          <button
+            type="button"
+            aria-label="Toggle menu"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg md:hidden"
+            style={{ color: COLORS.brandDark }}
+          >
+            {open ? (
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            ) : (
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="3" y1="7" x2="21" y2="7" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="17" x2="21" y2="17" />
+              </svg>
+            )}
+          </button>
         )}
       </nav>
 

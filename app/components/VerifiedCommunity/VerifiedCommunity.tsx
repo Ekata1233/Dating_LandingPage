@@ -145,53 +145,53 @@ const TIERS: {
   note: string;
   accent: AccentKey;
 }[] = [
-  {
-    n: 1,
-    name: "Basic",
-    tier: "TIER 1",
-    subtitle: "Entry level",
-    icon: <Icon.Phone />,
-    progress: 25,
-    checks: ["Mobile number", "Email verified", "Location verified"],
-    note: "Stops fake signups",
-    accent: "pink",
-  },
-  {
-    n: 2,
-    name: "Verified",
-    tier: "TIER 2",
-    subtitle: "Identity confirmed",
-    icon: <Icon.IdCard />,
-    progress: 25,
-    checks: ["Government ID", "Face / selfie", "Live video check"],
-    note: "Blocks catfish & stolen photos",
-    accent: "purple",
-  },
-  {
-    n: 3,
-    name: "Trusted",
-    tier: "TIER 3",
-    subtitle: "Verified in person",
-    icon: <Icon.Video />,
-    progress: 75,
-    checks: ["Education verified", "Profession verified","Income verified"],
-    note: "Rules out identity & resume liars",
-    accent: "teal",
-  },
-  {
-    n: 4,
-    name: "Elite",
-    tier: "TIER 4",
-    subtitle: "Fully vetted",
-    icon: <Icon.Star />,
-    progress: 100,
-    checks: [
-      "Background check via verified third-party partner", "Emergency contact verified"
-    ],
-    note: "Designed to filter out scammers",
-    accent: "amber",
-  },
-];
+    {
+      n: 1,
+      name: "Basic",
+      tier: "TIER 1",
+      subtitle: "Entry level",
+      icon: <Icon.Phone />,
+      progress: 25,
+      checks: ["Mobile number", "Email verified", "Location verified"],
+      note: "Stops fake signups",
+      accent: "pink",
+    },
+    {
+      n: 2,
+      name: "Verified",
+      tier: "TIER 2",
+      subtitle: "Identity confirmed",
+      icon: <Icon.IdCard />,
+      progress: 25,
+      checks: ["Government ID", "Face / selfie", "Live video check"],
+      note: "Blocks catfish & stolen photos",
+      accent: "purple",
+    },
+    {
+      n: 3,
+      name: "Trusted",
+      tier: "TIER 3",
+      subtitle: "Verified in person",
+      icon: <Icon.Video />,
+      progress: 75,
+      checks: ["Education verified", "Profession verified", "Income verified"],
+      note: "Rules out identity & resume liars",
+      accent: "teal",
+    },
+    {
+      n: 4,
+      name: "Elite",
+      tier: "TIER 4",
+      subtitle: "Fully vetted",
+      icon: <Icon.Star />,
+      progress: 100,
+      checks: [
+        "Background check via verified third-party partner", "Emergency contact verified"
+      ],
+      note: "Designed to filter out scammers",
+      accent: "amber",
+    },
+  ];
 
 /* ------------------------------------------------------------------ */
 /*  "What this means for you" benefits                                 */
@@ -348,19 +348,17 @@ function VerifiedCommunity() {
               color: C.headingDark,
             }}
           >
-            Every member clears verification
-            <br />
-            before entering the community.
+            Strict checks. Zero {" "} 
+            <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
+              fake profiles
+            </span>
           </h2>
 
           <p
             className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed"
             style={{ color: C.body }}
           >
-            On Welvors, no one gets in without proving they&apos;re real. Every
-            profile clears a multi-step verification ladder before it ever
-            reaches you — built to keep fakes, catfish and scammers out.
-            Genuine, verified people looking for the same thing you are.
+            No fakes, catfish, or bots. Every profile passes a strict multi-step check so you only match with real people seeking genuine connections.
           </p>
         </div>
 
