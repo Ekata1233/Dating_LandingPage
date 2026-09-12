@@ -248,10 +248,11 @@ function DownloadAppFeature() {
   return (
     <section
       id="download-app"
-      className="w-full overflow-hidden py-12"
+      className="w-full overflow-hidden py-20"
       style={{
-        background: "radial-gradient(ellipse 120% 90% at 50% 0%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
-      }}    >
+        background: "radial-gradient(ellipse 100% 100% at 0% 100%, #F4B183 0%, #F8D1B4 28%, #FBE8D8 55%, #FCF8F4 100%)",
+      }}
+    >
       <div className="mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
@@ -325,7 +326,7 @@ function DownloadAppFeature() {
                     className={`rounded-full transition-all duration-300 cursor-pointer ${i === currentImage ? "h-2.5 w-6" : "h-2.5 w-2.5 hover:opacity-70"
                       }`}
                     style={{
-                      backgroundColor: i === currentImage ? C.pink : C.mediumPink,
+                      backgroundColor: i === currentImage ? C.pink : "#FFFFFF",
                     }}
                   />
                 ))}
@@ -358,7 +359,7 @@ function DownloadAppFeature() {
             {/* App Store Buttons */}
             <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
               <a
-                href="#"
+                href="https://play.google.com"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
@@ -369,7 +370,7 @@ function DownloadAppFeature() {
                 </div>
               </a>
               <a
-                href="#"
+                href="https://play.google.com"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >

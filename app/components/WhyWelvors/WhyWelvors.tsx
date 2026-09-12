@@ -139,7 +139,7 @@ function WhyWelvors() {
       id="why"
       ref={sectionRef}
       style={{
-        background: "radial-gradient(ellipse 120% 90% at 50% 100%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
+        background: "radial-gradient(ellipse 110% 90% at 50% 0%, #FFD0DC 0%, #FFE0E8 28%, #FFF0F4 55%, #FFF8FA 80%, #FFFBFC 100%)",
       }} className="w-full scroll-mt-[50px] py-8 sm:py-10"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

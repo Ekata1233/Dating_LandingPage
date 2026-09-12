@@ -139,7 +139,7 @@ function HowItWork() {
   return (
     <section
     id="how-it-works"
-     style={{ backgroundColor: C.bg }} className="w-full py-16 sm:py-20">
+     style={{ background: "radial-gradient(ellipse 100% 85% at 50% 30%, #FFF0F3 0%, #FFF4F6 25%, #FCF8F4 60%, #FBF7F3 100%)" }} className="w-full py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
           {/* -------------------- Header -------------------- */}
           <div ref={headerRef} className={`mx-auto max-w-2xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>

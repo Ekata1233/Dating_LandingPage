@@ -1007,6 +1007,19 @@ svg {
   .wv-marquee-track {
     animation: none !important;
   }
+  .wv-glass-float {
+    animation: none !important;
+  }
+  .wv-shimmer-slide::after {
+    animation: none !important;
+  }
+  .wv-stagger-children > * {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .wv-border-glow {
+    animation: none !important;
+  }
 }
 @keyframes wv-badge-glow-pulse {
   0%, 100% {
@@ -1019,4 +1032,95 @@ svg {
 
 .wv-badge-glow {
   animation: wv-badge-glow-pulse 1.8s ease-in-out infinite;
+}
+
+/* ============================================================
+   GLASS CARD FLOAT — subtle vertical drift for frosted cards
+   ============================================================ */
+@keyframes wv-glass-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.wv-glass-float {
+  animation: wv-glass-float 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ============================================================
+   SHIMMER SLIDE — light streak sweeps across element
+   ============================================================ */
+@keyframes wv-shimmer-slide {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.wv-shimmer-slide::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.35) 45%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.35) 55%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: wv-shimmer-slide 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ============================================================
+   STAGGER REVEAL — children animate in sequence
+   ============================================================ */
+@keyframes wv-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wv-stagger-children > * {
+  opacity: 0;
+  animation: wv-stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.wv-stagger-children > *:nth-child(2) { animation-delay: 80ms; }
+.wv-stagger-children > *:nth-child(3) { animation-delay: 160ms; }
+.wv-stagger-children > *:nth-child(4) { animation-delay: 240ms; }
+.wv-stagger-children > *:nth-child(5) { animation-delay: 320ms; }
+.wv-stagger-children > *:nth-child(6) { animation-delay: 400ms; }
+
+/* ============================================================
+   BORDER GLOW — animated gradient border for glass cards
+   ============================================================ */
+@keyframes wv-border-glow {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 24px rgba(194, 21, 89, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    border-color: rgba(194, 21, 89, 0.12);
+    box-shadow: 0 4px 24px rgba(194, 21, 89, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+}
+
+.wv-border-glow {
+  animation: wv-border-glow 3s ease-in-out infinite;
 }

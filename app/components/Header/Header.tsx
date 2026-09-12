@@ -344,7 +344,7 @@ function Header() {
     <header
       ref={headerRef}
       style={{
-        background: "radial-gradient(ellipse 120% 90% at 50% 100%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
+        background: "linear-gradient(to left, #FFB3C7, #FFD1DD, #FFF9FA)",
       }} className="relative w-full  overflow-hidden px-10 pt-20"
     >
 

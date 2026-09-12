@@ -242,8 +242,6 @@ function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; 
       style={{
         borderColor: a.cardBorder,
         border: `1px solid ${a.cardBorder}`,
-        minWidth: "320px",
-        maxWidth: "380px",
       }}
     >
       {/* Tier badge + icon */}
@@ -313,24 +311,19 @@ function VerifiedCommunity() {
   const [headerRef, headerVisible] = useScrollReveal();
   const [tiersRef, tiersVisible] = useScrollReveal({ threshold: 0.05 });
   const [benefitsRef, benefitsVisible] = useScrollReveal({ threshold: 0.05 });
-  const scrollTrackRef = useRef<HTMLDivElement>(null);
   const [activeTier, setActiveTier] = useState(0);
 
-
-  const scrollTo = useCallback((direction: "left" | "right") => {
-    const track = scrollTrackRef.current;
-    if (!track) return;
-    const cardWidth = 380 + 24;
-    const newScroll = direction === "left"
-      ? track.scrollLeft - cardWidth
-      : track.scrollLeft + cardWidth;
-    track.scrollTo({ left: newScroll, behavior: "smooth" });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveTier((prev) => (prev === TIERS.length - 1 ? 0 : prev + 1));
+    }, 3500);
+    return () => clearInterval(interval);
   }, []);
 
 
 
   return (
-    <section style={{ background: "radial-gradient(ellipse 120% 90% at 50% 0%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FCF8F4 90%)" }} className="w-full py-16 sm:py-20">
+    <section style={{ background: "radial-gradient(ellipse 125% 95% at 50% 100%, #E0C0E8 0%, #ECD2F0 18%, #F4E2F6 38%, #F8EAF2 55%, #FAF0F0 72%, #FCF4F0 88%, #FCF8F4 100%)" }} className="w-full py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* -------------------- Header -------------------- */}
         <div ref={headerRef} className={`mx-auto max-w-4xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
@@ -350,7 +343,7 @@ function VerifiedCommunity() {
           >
             Strict checks. Zero {" "} 
             <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
-              fake profiles
+              Fake Profiles
             </span>
           </h2>
 
@@ -362,45 +355,50 @@ function VerifiedCommunity() {
           </p>
         </div>
 
-        {/* -------------------- Horizontal Scroll Timeline (Desktop) -------------------- */}
+        {/* -------------------- Tiers -------------------- */}
         <div ref={tiersRef} className={`mt-12 ${tiersVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}>
-          {/* Timeline progress line */}
 
-          {/* Horizontal scroll container with arrows */}
-          <div className="relative">
-            {/* Scroll arrows */}
-            <button
-              type="button"
-              onClick={() => scrollTo("left")}
-              className="wv-hscroll-arrow left"
-              aria-label="Scroll left"
-            >
-              <Icon.ChevronLeft style={{ color: C.headingDark }} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollTo("right")}
-              className="wv-hscroll-arrow right"
-              aria-label="Scroll right"
-            >
-              <Icon.ChevronRight style={{ color: C.headingDark }} />
-            </button>
+          {/* Desktop: static grid */}
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {TIERS.map((t, i) => (
+              <HorizontalTierCard
+                key={t.n}
+                tier={t}
+                isActive={i === activeTier}
+              />
+            ))}
+          </div>
 
-            {/* Horizontal scroll track */}
-            <div
-              ref={scrollTrackRef}
-              className="wv-hscroll-track flex overflow-x-auto"
-            >
-              {TIERS.map((t, i) => (
-                <HorizontalTierCard
-                  key={t.n}
-                  tier={t}
-                  isActive={i === activeTier}
+          {/* Mobile: single-card carousel with dots */}
+          <div className="md:hidden">
+            <div className="relative overflow-hidden">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${activeTier * 100}%)` }}
+              >
+                {TIERS.map((t) => (
+                  <div key={t.n} className="w-full flex-none px-1">
+                    <HorizontalTierCard tier={t} isActive />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Navigation dots */}
+            <div className="mt-6 flex items-center justify-center gap-2">
+              {TIERS.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActiveTier(i)}
+                  className={`rounded-full transition-all duration-300 cursor-pointer ${i === activeTier ? "h-2.5 w-6" : "h-2.5 w-2.5 hover:opacity-70"}`}
+                  style={{
+                    backgroundColor: i === activeTier ? C.pink : "#FFFFFF",
+                  }}
                 />
               ))}
             </div>
           </div>
-
 
         </div>
       </div>

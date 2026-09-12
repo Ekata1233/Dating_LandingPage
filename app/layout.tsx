@@ -6,7 +6,6 @@ import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import ScrollProgress from "./components/ScrollProgress";
 import HashHandler from "./components/HashHandler";
-import { WaitlistProvider } from "./context/WaitlistContext";
 import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
 import { LegalProvider } from "./context/legalContext";
@@ -50,13 +49,11 @@ export default function RootLayout({
         <ScrollProgress />
 
         <main className="flex-1">
-          <WaitlistProvider>
             <LaunchProvider>
               <LegalProvider>
                 {children}
               </LegalProvider>
           </LaunchProvider>
-          </WaitlistProvider>
         </main>
 
         <Footer />

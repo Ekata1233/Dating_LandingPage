@@ -99,7 +99,7 @@ const HOW_STEPS = [
     num: "01",
     icon: <Icon.Send />,
     title: "Post a Plan",
-    desc: "Share where you want to go — pick an activity, venue, bill preference, group size, and who can request to join.",
+    desc: "Share where you want to go. pick an activity, venue, bill preference, group size, and who can request to join.",
   },
   {
     num: "02",
@@ -111,7 +111,7 @@ const HOW_STEPS = [
     num: "03",
     icon: <Icon.MessageCircle />,
     title: "Date Confirmed",
-    desc: "Once approved, an auto date-card lands in your chat with time, place, and location — ready to go.",
+    desc: "Once approved, an auto date-card lands in your chat with time, place, and location.",
   },
 ];
 
@@ -138,7 +138,7 @@ function DateNow() {
       ref={headerRef}
       className="relative w-full overflow-hidden px-6 pt-24 pb-12 sm:px-10"
       style={{
-        background: "radial-gradient(ellipse 120% 90% at 50% 100%, #FFB3C7 0%, #FFD1DD 25%, #FFE8EE 45%, #FFF0F3 65%, #FFF9FA 85%)",
+        background: "radial-gradient(ellipse 130% 100% at 0% 50%, #B8A0E0 0%, #D0C4EE 22%, #E6DAF5 45%, #F2ECF8 65%, #FAF6FC 85%, #FCF8F4 100%)",
       }}
     >
       {/* Warm accent glow — top-left */}
@@ -154,8 +154,18 @@ function DateNow() {
         {/* ---- TOP: TEXT (LEFT) + IMAGE (RIGHT) ---- */}
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
 
-          {/* TEXT */}
-          <div className="flex flex-col gap-5 lg:max-w-lg">
+          {/* TEXT — frosted glass card */}
+          <div
+            className={`flex flex-col gap-5 lg:max-w-lg rounded-2xl p-7 wv-glass-float wv-shimmer-slide relative ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+            style={{
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              backgroundColor: "rgba(255,255,255,0.45)",
+              border: "1px solid rgba(255,255,255,0.6)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+              animationDelay: "0ms",
+            }}
+          >
 
             {/* Badge */}
             <div
@@ -240,6 +250,52 @@ function DateNow() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ---- STEP CARDS ---- */}
+        <div
+          className={`mt-14 grid grid-cols-1 gap-4 sm:grid-cols-3 wv-stagger-children ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+          style={{ animationDelay: "400ms" }}
+        >
+          {HOW_STEPS.map((step, i) => (
+            <div
+              key={i}
+              className="group relative flex flex-col gap-3 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 wv-border-glow"
+              style={{
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                backgroundColor: "rgba(255,255,255,0.5)",
+                border: "1px solid rgba(255,255,255,0.65)",
+              }}
+            >
+              <span
+                className="text-[11px] font-bold uppercase tracking-widest"
+                style={{ color: C.label }}
+              >
+                Step {step.num}
+              </span>
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: C.lightPink, color: C.pink }}
+                >
+                  {step.icon}
+                </span>
+                <h3
+                  className="text-[15px] font-semibold"
+                  style={{ color: C.headingDark }}
+                >
+                  {step.title}
+                </h3>
+              </div>
+              <p
+                className="text-[13px] leading-relaxed"
+                style={{ color: C.body }}
+              >
+                {step.desc}
+              </p>
+            </div>
+          ))}
         </div>
 
       </div>

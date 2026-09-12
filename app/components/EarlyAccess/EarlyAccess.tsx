@@ -105,7 +105,7 @@ function EarlyAccess() {
     <section
       id="waitlist"
       ref={sectionRef}
-      style={{ backgroundColor: C.pageBg }}
+      style={{ background: "radial-gradient(ellipse 110% 85% at 20% 0%, #FFE4EC 0%, #FFF0F3 25%, #FCF8F4 60%, #FBF7F3 100%)" }}
       className="w-full px-4 py-16 sm:px-6 sm:py-20"
     >
       <div
