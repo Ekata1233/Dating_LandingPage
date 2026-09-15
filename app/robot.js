@@ -4,7 +4,6 @@ export default function robots() {
       userAgent: "*",
       allow: "/",
     },
-
-    sitemap: "https://welvors.com/sitemap.xml",
+    sitemap: "https://www.welvors.com/sitemap.xml",
   };
 }

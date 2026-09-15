@@ -143,7 +143,7 @@ function CommitmentMode() {
   return (
     <section
       id="commitment"
-      className="w-full overflow-hidden px-5 py-12 sm:p-5"
+      className="w-full overflow-hidden px-3 py-10 sm:p-5"
       style={{
         background: "linear-gradient(135deg, #1a0a1f 0%, #2d1240 25%, #4a1942 50%, #6b2350 75%, #8b2a50 100%)",
       }}
@@ -158,7 +158,7 @@ function CommitmentMode() {
         </div>
 
         {/* Right: Premium Visual — MOBILE ORDER 1 */}
-        <div className="order-1 lg:order-2 relative flex items-center justify-center px-2 py-10 sm:px-8 sm:py-16 lg:w-1/2 lg:py-0">
+        <div className="order-1 lg:order-2 relative flex items-center justify-center px-1 py-8 sm:px-8 sm:py-16 lg:w-1/2 lg:py-0">
           {/* Background glow */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-[300px] w-[300px] rounded-full opacity-30 sm:h-[500px] sm:w-[500px]" style={{ background: "radial-gradient(circle, rgba(212,168,83,0.4) 0%, transparent 70%)", animation: "breathe 6s ease-in-out infinite" }} />
@@ -167,7 +167,7 @@ function CommitmentMode() {
           {/* Animated Image */}
           <div
             ref={bentoRef}
-            className={`relative w-full max-w-sm sm:max-w-sm ${bentoVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
+            className={`relative w-full max-w-md sm:max-w-sm ${bentoVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
             style={{ animationDelay: "300ms" }}
           >
             {/* Outer glow ring */}
@@ -228,7 +228,7 @@ function CommitmentMode() {
         </div>
 
         {/* Left: Content — MOBILE ORDER 2 */}
-        <div className="order-2 lg:order-1 relative flex flex-col justify-center px-2 py-10 sm:px-8 sm:py-16 lg:px-20 lg:w-3/5">
+        <div className="order-2 lg:order-1 relative flex flex-col justify-center px-1 py-8 sm:px-8 sm:py-16 lg:px-20 lg:w-3/5">
           <div
             ref={headRef}
             className={`${headVisible ? "wv-reveal is-visible" : "wv-reveal"}`}

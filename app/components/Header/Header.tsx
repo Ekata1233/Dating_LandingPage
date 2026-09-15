@@ -345,7 +345,7 @@ function Header() {
       ref={headerRef}
       style={{
         background: "linear-gradient(to left, #FFB3C7, #FFD1DD, #FFF9FA)",
-      }} className="relative w-full overflow-hidden py-10 px-4 sm:px-10 pt-6 sm:pt-14"
+      }} className="relative w-full overflow-hidden py-6 px-2 sm:px-10 pt-6 sm:pt-14"
     >
 
       {/* Soft pink glow top-right */}
@@ -357,7 +357,7 @@ function Header() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-2 px-2 sm:px-4 lg:grid-cols-2 lg:gap-4 lg:px-8 lg:py-10">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-2 px-1 sm:px-4 lg:grid-cols-2 lg:gap-4 lg:px-8 lg:py-10">
         {/*
           COPY WRAPPER
           - Mobile: `contents` => badge (order-1) aur copy (order-3) direct grid items ban jaate hain
@@ -419,25 +419,25 @@ function Header() {
 
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
-              <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
+              <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>                
                 <button
-                  type="button"
-                  onClick={handleDiscover}
-                  className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
-                  style={{
-                    background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
-                    backgroundSize: "200% 200%",
-                    boxShadow: `0 8px 28px ${C.pink}35`,
-                  }}
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
-                    Discover Welvors
-                  </span>
-                  <span className="cm-shimmer pointer-events-none absolute inset-0" />
-                </button>
+                type="button"
+                onClick={handleDiscover}
+                className="cm-cta groupn relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
+                style={{
+                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+                  backgroundSize: "200% 200%",
+                  boxShadow: `0 8px 28px ${C.pink}35`,
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
+                  Discover Welvors
+                </span>
+                <span className="cm-shimmer pointer-events-none absolute inset-0" />
+              </button>
               </div>
-              <div className={`flex flex-col items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
+              <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button
                   type="button"
                   onClick={handleDownloadApp}
@@ -470,7 +470,7 @@ function Header() {
               <img
                 src="/hero_image.png"
                 alt="Welvors App Preview"
-                className="w-[340px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.2),0_8px_24px_rgba(194,21,89,0.15)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.25),0_12px_32px_rgba(194,21,89,0.2)] hover:scale-[1.02]"
+                className="w-[380px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.2),0_8px_24px_rgba(194,21,89,0.15)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.25),0_12px_32px_rgba(194,21,89,0.2)] hover:scale-[1.02]"
               />
             </div>
           </div>
