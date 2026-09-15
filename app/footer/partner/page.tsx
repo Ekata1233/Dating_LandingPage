@@ -261,7 +261,7 @@ export default function PartnerPage() {
     <main style={{ backgroundColor: C.bg }} className="w-full py-10 sm:py-15">
       {/* ==================== Hero ==================== */}
       <div className="w-full border-b" style={{ borderColor: C.border }}>
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 my-5">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>
@@ -316,8 +316,8 @@ export default function PartnerPage() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
             {/* Intro */}
@@ -330,7 +330,7 @@ export default function PartnerPage() {
             </p>
 
             {/* ---- Who we partner with ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="who-we-partner-with">
                 Who we partner with
               </SectionHeading>
@@ -338,7 +338,7 @@ export default function PartnerPage() {
             </div>
 
             {/* ---- Why partner with us ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="why-partner">
                 Why partner with us
               </SectionHeading>
@@ -346,13 +346,13 @@ export default function PartnerPage() {
             </div>
 
             {/* ---- How it works ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="how-it-works">How it works</SectionHeading>
               <BulletList items={HOW} />
             </div>
 
             {/* ---- What we look for ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="what-we-look-for">
                 What we look for
               </SectionHeading>
@@ -360,7 +360,7 @@ export default function PartnerPage() {
             </div>
 
             {/* ---- Apply form ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="apply">Apply to partner</SectionHeading>
 
               <div
@@ -539,39 +539,6 @@ export default function PartnerPage() {
 
            
           </div>
-
-          {/* -------------------- On this page (TOC) -------------------- */}
-          <aside className="order-first lg:order-none">
-            {/* sticky — parent chain me kahin overflow-hidden nahi hona chahiye */}
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[13px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside>
         </div>
       </div>
     </main>

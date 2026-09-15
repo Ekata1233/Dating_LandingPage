@@ -28,12 +28,12 @@ const SUBMIT_ENDPOINT = "/api/contact";
 /*  real aur publicly published hona chahiye.                          */
 /* ------------------------------------------------------------------ */
 const CONTACT_INFO = {
-  supportEmail: "infynod@gmail.com",
+  supportEmail: "support@welvors.com.com",
   inAppPath: "Profile → Help & Support → Live chat",
   responseTime: "within 24 hours",
   grievance: {
     name: "Mr. Satish Jaywant Kadam",
-    email: "infynod@gmail.com",
+    email: "info@infynod.com",
   },
   office: {
     company: "Infynod Tech Private Limited ",
@@ -57,12 +57,12 @@ const TOC_IDS = TOC.map((t) => t.id);
 /*  Team emails                                                        */
 /* ------------------------------------------------------------------ */
 const TEAM_EMAILS: [string, string][] = [
-  ["General enquiries", "infynod@gmail.com"],
-  ["Member support", "infynod@gmail.com"],
-  ["Privacy & data", "infynod@gmail.com"],
-  ["Partnerships", "infynod@gmail.com"],
-  ["Press & media", "infynod@gmail.com"],
-  ["Careers", "infynod@gmail.com"],
+  ["General enquiries", "support@welvors.com"],
+  ["Member support", "support@welvors.com"],
+  ["Privacy & data", "support@welvors.com"],
+  ["Partnerships", "support@welvors.com"],
+  ["Press & media", "support@welvors.com"],
+  ["Careers", "support@welvors.com"],
 ];
 
 const TOPICS = [
@@ -251,7 +251,7 @@ export default function ContactPage() {
     <main style={{ backgroundColor: C.bg }} className="w-full py-10 sm:py-15">
       {/* ==================== Hero ==================== */}
       <div className="w-full border-b" style={{ borderColor: C.border }}>
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 my-5">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>
@@ -305,8 +305,8 @@ export default function ContactPage() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
             {/* Intro */}
@@ -317,7 +317,7 @@ export default function ContactPage() {
             </p>
 
             {/* ---- Member support ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="member-support">Member support</SectionHeading>
               <InfoCard>
                 <Row label="Help &amp; support">
@@ -329,7 +329,7 @@ export default function ContactPage() {
             </div>
 
             {/* ---- Reach the right team ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="right-team">
                 Reach the right team
               </SectionHeading>
@@ -381,7 +381,7 @@ export default function ContactPage() {
             </div>
 
             {/* ---- Grievance officer ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="grievance-officer">
                 Grievance officer
               </SectionHeading>
@@ -412,7 +412,7 @@ export default function ContactPage() {
             </div>
 
             {/* ---- Office ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="office">Office</SectionHeading>
               <div
                 className="mt-5 rounded-xl border bg-white p-5"
@@ -431,7 +431,7 @@ export default function ContactPage() {
             </div>
 
             {/* ---- Send us a message ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="send-message">Send us a message</SectionHeading>
 
               <div
@@ -557,39 +557,6 @@ export default function ContactPage() {
               </div>
             </div>
           </div>
-
-          {/* -------------------- On this page (TOC) -------------------- */}
-          <aside className="order-first lg:order-none">
-            {/* sticky — parent chain me kahin overflow-hidden nahi hona chahiye */}
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[13px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside>
         </div>
       </div>
     </main>

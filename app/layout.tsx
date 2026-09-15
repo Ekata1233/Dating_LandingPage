@@ -9,7 +9,13 @@ import HashHandler from "./components/HashHandler";
 import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
 import { LegalProvider } from "./context/legalContext";
+import { EB_Garamond } from 'next/font/google';
 
+const brandSerif = EB_Garamond({
+  subsets: ['latin'],
+  variable: '--font-brand-serif', // Updated CSS variable name
+  display: 'swap',
+});
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -20,9 +26,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
+  metadataBase: new URL("https://welvors.com"),
+
   title: "Welvors",
-  description: "Welvors Landing Page",
+  description: "Welvors - Official Website",
+
+  alternates: {
+    canonical: "https://welvors.com",
+  },
 };
 
 export default function RootLayout({
@@ -33,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} h-full antialiased`}
     >
       <head>
         {/* Preload video for faster loading */}

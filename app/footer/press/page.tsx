@@ -188,7 +188,7 @@ export default function PressPage() {
     <main style={{ backgroundColor: C.bg }} className="w-full py-10 sm:py-15">
       {/* ==================== Hero ==================== */}
       <div className="w-full border-b" style={{ borderColor: C.border }}>
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 my-5">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>
@@ -243,8 +243,8 @@ export default function PressPage() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
             {/* Intro */}
@@ -256,7 +256,7 @@ export default function PressPage() {
             </p>
 
             {/* ---- About Welvors ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="about-welvors">About Welvors</SectionHeading>
               <p
                 className="mt-4 text-[14.5px] leading-relaxed"
@@ -308,7 +308,7 @@ export default function PressPage() {
             </div>
 
             {/* ---- Facts at a glance ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="facts">Facts at a glance</SectionHeading>
 
               <div className="mt-5 overflow-x-auto">
@@ -358,7 +358,7 @@ export default function PressPage() {
             </div>
 
             {/* ---- Brand & press kit ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="press-kit">Brand &amp; press kit</SectionHeading>
               <p
                 className="mt-4 text-[14.5px] leading-relaxed"
@@ -373,7 +373,7 @@ export default function PressPage() {
             </div>
 
             {/* ---- Story angles ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="story-angles">
                 Story angles we can help with
               </SectionHeading>
@@ -381,7 +381,7 @@ export default function PressPage() {
             </div>
 
             {/* ---- Media contact ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="media-contact">Media contact</SectionHeading>
               <div
                 className="mt-5 rounded-xl border bg-white p-5"

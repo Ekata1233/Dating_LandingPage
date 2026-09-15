@@ -157,8 +157,78 @@ function CommitmentMode() {
           <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #D4A853 0%, transparent 70%)", filter: "blur(60px)" }} />
         </div>
 
-        {/* Left: Content */}
-        <div className="relative flex flex-col justify-center px-2 py-10 sm:px-8 sm:py-16 lg:px-20 lg:w-3/5">
+        {/* Right: Premium Visual — MOBILE ORDER 1 */}
+        <div className="order-1 lg:order-2 relative flex items-center justify-center px-2 py-10 sm:px-8 sm:py-16 lg:w-1/2 lg:py-0">
+          {/* Background glow */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-[300px] w-[300px] rounded-full opacity-30 sm:h-[500px] sm:w-[500px]" style={{ background: "radial-gradient(circle, rgba(212,168,83,0.4) 0%, transparent 70%)", animation: "breathe 6s ease-in-out infinite" }} />
+          </div>
+
+          {/* Animated Image */}
+          <div
+            ref={bentoRef}
+            className={`relative w-full max-w-sm sm:max-w-sm ${bentoVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
+            style={{ animationDelay: "300ms" }}
+          >
+            {/* Outer glow ring */}
+            <div
+              className="absolute -inset-3 rounded-[2rem] opacity-40 sm:-inset-4 sm:rounded-[2.5rem]"
+              style={{
+                background: "linear-gradient(135deg, rgba(212,168,83,0.3), rgba(194,21,89,0.2), rgba(124,58,237,0.2))",
+                filter: "blur(20px)",
+                animation: "breathe 6s ease-in-out infinite",
+              }}
+            />
+
+            {/* Image container */}
+            <div
+              className="relative aspect-square overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500 hover:scale-[1.03]"
+              style={{
+                boxShadow: "0_20px_60px_rgba(0,0,0,0.3), 0_0_40px_rgba(212,168,83,0.15)",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/honeymoon.png"
+                alt="Forever Love — Commitment Mode on Welvors"
+                className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
+              />
+
+              {/* Shimmer sweep on hover */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 hover:opacity-100"
+                style={{
+                  background: "linear-gradient(135deg, transparent 30%, rgba(212,168,83,0.15) 50%, transparent 70%)",
+                  backgroundSize: "200% 200%",
+                }}
+              />
+
+              {/* Bottom gradient fade */}
+              <div
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
+                style={{ background: "linear-gradient(to top, rgba(26,10,31,0.7) 0%, transparent 100%)" }}
+              />
+
+              {/* Bottom label overlay */}
+              <div className="absolute inset-x-0 bottom-0 flex items-end p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px]" style={{ color: "rgba(212,168,83,0.9)" }}>
+                    Forever Love Reward
+                  </p>
+                  <p
+                    className="mt-1 text-2xl font-bold text-white sm:text-3xl"
+                    style={{ fontFamily: 'Georgia, "Times New Roman", serif', textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}
+                  >
+                    ₹5 Lakh
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Left: Content — MOBILE ORDER 2 */}
+        <div className="order-2 lg:order-1 relative flex flex-col justify-center px-2 py-10 sm:px-8 sm:py-16 lg:px-20 lg:w-3/5">
           <div
             ref={headRef}
             className={`${headVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
@@ -223,76 +293,6 @@ function CommitmentMode() {
               <p className="mt-3 text-[12px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                 Programme terms & eligibility apply
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Premium Visual */}
-        <div className="relative flex items-center justify-center px-2 py-10 sm:px-8 sm:py-16 lg:w-1/2 lg:py-0">
-          {/* Background glow */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-[300px] w-[300px] rounded-full opacity-30 sm:h-[500px] sm:w-[500px]" style={{ background: "radial-gradient(circle, rgba(212,168,83,0.4) 0%, transparent 70%)", animation: "breathe 6s ease-in-out infinite" }} />
-          </div>
-
-          {/* Animated Image */}
-          <div
-            ref={bentoRef}
-            className={`relative w-full max-w-xs sm:max-w-sm ${bentoVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
-            style={{ animationDelay: "300ms" }}
-          >
-            {/* Outer glow ring */}
-            <div
-              className="absolute -inset-3 rounded-[2rem] opacity-40 sm:-inset-4 sm:rounded-[2.5rem]"
-              style={{
-                background: "linear-gradient(135deg, rgba(212,168,83,0.3), rgba(194,21,89,0.2), rgba(124,58,237,0.2))",
-                filter: "blur(20px)",
-                animation: "breathe 6s ease-in-out infinite",
-              }}
-            />
-
-            {/* Image container */}
-            <div
-              className="relative aspect-square overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-500 hover:scale-[1.03]"
-              style={{
-                boxShadow: "0_20px_60px_rgba(0,0,0,0.3), 0_0_40px_rgba(212,168,83,0.15)",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/honeymoon.png"
-                alt="Forever Love — Commitment Mode on Welvors"
-                className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
-              />
-
-              {/* Shimmer sweep on hover */}
-              <div
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 hover:opacity-100"
-                style={{
-                  background: "linear-gradient(135deg, transparent 30%, rgba(212,168,83,0.15) 50%, transparent 70%)",
-                  backgroundSize: "200% 200%",
-                }}
-              />
-
-              {/* Bottom gradient fade */}
-              <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
-                style={{ background: "linear-gradient(to top, rgba(26,10,31,0.7) 0%, transparent 100%)" }}
-              />
-
-              {/* Bottom label overlay */}
-              <div className="absolute inset-x-0 bottom-0 flex items-end p-4 sm:p-5">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px]" style={{ color: "rgba(212,168,83,0.9)" }}>
-                    Forever Love Reward
-                  </p>
-                  <p
-                    className="mt-1 text-2xl font-bold text-white sm:text-3xl"
-                    style={{ fontFamily: 'Georgia, "Times New Roman", serif', textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}
-                  >
-                    ₹5 Lakh
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>

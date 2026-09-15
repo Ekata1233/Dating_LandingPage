@@ -136,7 +136,7 @@ function DateNow() {
     <section
       id="date-now"
       ref={headerRef}
-      className="relative w-full overflow-hidden px-6 pt-24 pb-12 sm:px-10"
+      className="relative w-full overflow-hidden px-4 pt-24 pb-5 sm:px-8"
       style={{
         background: "radial-gradient(ellipse 130% 100% at 0% 50%, #B8A0E0 0%, #D0C4EE 22%, #E6DAF5 45%, #F2ECF8 65%, #FAF6FC 85%, #FCF8F4 100%)",
       }}
@@ -149,14 +149,31 @@ function DateNow() {
         }}
       />
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
+      <div className="relative mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
 
-        {/* ---- TOP: TEXT (LEFT) + IMAGE (RIGHT) ---- */}
-        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+        {/* ---- TOP: IMAGE (MOBILE FIRST) + TEXT ---- */}
+        <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-10">
 
-          {/* TEXT — frosted glass card */}
+          {/* IMAGE — MOBILE ORDER 1 */}
+          <div className="order-1 lg:order-2 relative flex justify-center lg:justify-end">
+            <div
+              className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
+              style={{ animationDelay: "200ms" }}
+            >
+              <div className="hero-image-float">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/couple_images.png"
+                  alt="Date Now — Post a plan and meet real people"
+                  className="w-[340px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* TEXT — frosted glass card — MOBILE ORDER 2 */}
           <div
-            className={`flex flex-col gap-5 lg:max-w-lg rounded-2xl p-7 wv-glass-float wv-shimmer-slide relative ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+            className={`order-2 lg:order-1 flex flex-col gap-4 lg:max-w-lg rounded-2xl p-6 wv-glass-float wv-shimmer-slide relative ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
             style={{
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
@@ -231,23 +248,6 @@ function DateNow() {
                 </span>
                 <span className="cm-shimmer pointer-events-none absolute inset-0" />
               </button>
-            </div>
-          </div>
-
-          {/* IMAGE */}
-          <div className="relative flex justify-center lg:justify-end">
-            <div
-              className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
-              style={{ animationDelay: "200ms" }}
-            >
-              <div className="hero-image-float">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/couple_images.png"
-                  alt="Date Now — Post a plan and meet real people"
-                  className="w-[280px] sm:w-[320px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
-                />
-              </div>
             </div>
           </div>
         </div>

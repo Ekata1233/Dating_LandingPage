@@ -87,7 +87,7 @@ function Events() {
     <section
       id="events"
       ref={headerRef}
-      className="relative w-full overflow-hidden  px-6  py-21 sm:px-10"
+      className="relative w-full overflow-hidden px-4 pb-5 py-20 sm:px-8"
       style={{
         background: "radial-gradient(ellipse 135% 95% at 100% 50%, #FFA8BC 0%, #FFBCC8 20%, #FFD4DE 42%, #FFE6ED 62%, #FFF2F5 80%, #FFF9FA 100%)",
 
@@ -101,10 +101,10 @@ function Events() {
         }}
       />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-10">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-2 sm:px-4 lg:grid-cols-2 lg:gap-10 lg:px-8">
 
-        {/* ---- IMAGE COLUMN (LEFT) ---- */}
-        <div className="relative flex justify-center lg:justify-start order-2 lg:order-1">
+        {/* ---- IMAGE COLUMN — MOBILE ORDER 1 ---- */}
+        <div className="relative flex justify-center lg:justify-start order-1 lg:order-1">
           <div
             className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
             style={{ animationDelay: "200ms" }}
@@ -114,15 +114,15 @@ function Events() {
               <img
                 src="/events.png"
                 alt="Welvors Events — Meet people in real life"
-                className="w-[280px] sm:w-[320px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
+                className="w-[340px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
               />
             </div>
           </div>
         </div>
 
-        {/* ---- TEXT COLUMN (RIGHT) — compact frosted glass card ---- */}
+        {/* ---- TEXT COLUMN — compact frosted glass card — MOBILE ORDER 2 ---- */}
         <div
-          className={`flex flex-col gap-3 lg:max-w-md order-1 lg:order-2 rounded-2xl p-6 wv-glass-float wv-shimmer-slide relative ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+          className={`flex flex-col gap-2 lg:max-w-md order-2 lg:order-2 rounded-2xl p-6 wv-glass-float wv-shimmer-slide relative ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
           style={{
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",

@@ -89,8 +89,7 @@ const COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "Why Welvors", href: "/#why" },
-      { label: "How it works", href: "/#how-it-works" },
+      { label: "Welvors", href: "https://play.google.com" },
     ],
   },
   {
@@ -98,7 +97,6 @@ const COLUMNS = [
     links: [
       { label: "About us", href: "/footer/aboutus" },
       { label: "Careers", href: "/footer/careers" },
-      { label: "Press", href: "/footer/press" },
       { label: "Become a partner", href: "/footer/partner" },
       { label: "Contact us", href: "/footer/contact" },
     ],
@@ -119,14 +117,7 @@ const COLUMNS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
-  
-];
-
-const BOTTOM_LINKS = [
-  { label: "Privacy", href: "/privacy" },
-  { label: "Terms", href: "/terms" },
-  { label: "Cookies", href: "/cookies" },
+  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },  
 ];
 
 function Footer() {
@@ -230,11 +221,11 @@ function Footer() {
     U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
     Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
     <a
-      href="mailto:info@infynod.com"
+      href="mailto:support@welvors.com"
       className="welvors-footer-link"
       style={{ color: C.headingDark }}
     >
-      info@infynod.com
+      support@welvors.com
     </a>
   </p>
 
@@ -244,16 +235,6 @@ function Footer() {
     </p>
 
     <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-      {BOTTOM_LINKS.map((l) => (
-        <SmartLink
-          key={l.label}
-          href={l.href}
-          className="welvors-footer-link text-[13px] font-semibold"
-          style={{ color: C.headingDark }}
-        >
-          {l.label}
-        </SmartLink>
-      ))}
 
       <span
         className="flex items-center gap-1.5 text-[13px]"

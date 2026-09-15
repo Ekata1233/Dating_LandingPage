@@ -20,8 +20,8 @@ const C = {
 /*  Careers config — LOCATIONS / EMAIL yahin badlo                     */
 /* ------------------------------------------------------------------ */
 const CAREERS_INFO = {
-  hub: "Bengaluru",
-  email: "infynod@gmail.com",
+  hub: "Pune, Maharashtra",
+  email: "info@infynod.com",
 };
 
 
@@ -79,12 +79,12 @@ const ROLES = [
   {
     role: "Senior Flutter Engineer",
     team: "Mobile",
-    location: `${CAREERS_INFO.hub} / Remote`,
+    location: `${CAREERS_INFO.hub}`,
   },
   {
     role: "Backend Engineer (Node.js)",
     team: "Platform",
-    location: `${CAREERS_INFO.hub} / Remote`,
+    location: `${CAREERS_INFO.hub}`,
   },
   {
     role: "Trust & Safety Lead",
@@ -94,12 +94,12 @@ const ROLES = [
   {
     role: "Product Designer",
     team: "Design",
-    location: `${CAREERS_INFO.hub} / Remote`,
+    location: `${CAREERS_INFO.hub}`,
   },
   {
     role: "Community & Events Manager",
     team: "Growth",
-    location: `${CAREERS_INFO.hub} · Pune · Mumbai`,
+    location: `${CAREERS_INFO.hub}`,
   },
 ];
 
@@ -214,7 +214,7 @@ function CareersPage() {
     <main style={{ backgroundColor: C.bg }} className="w-full py-10 sm:py-15">
       {/* ==================== Hero ==================== */}
       <div className="w-full border-b" style={{ borderColor: C.border }}>
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>
@@ -270,8 +270,8 @@ function CareersPage() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
             {/* Intro */}
@@ -283,19 +283,19 @@ function CareersPage() {
             </p>
 
             {/* ---- Why Welvors ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="why-welvors">Why Welvors</SectionHeading>
               <BulletList items={WHY} />
             </div>
 
             {/* ---- How we work ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="how-we-work">How we work</SectionHeading>
               <BulletList items={HOW_WE_WORK} />
             </div>
 
             {/* ---- Open roles ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="open-roles">Open roles</SectionHeading>
 
               <div className="mt-5 overflow-x-auto">
@@ -370,13 +370,13 @@ function CareersPage() {
             </div>
 
             {/* ---- Benefits ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="benefits">Benefits</SectionHeading>
               <BulletList items={BENEFITS} />
             </div>
 
             {/* ---- Hiring process ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="hiring-process">
                 Our hiring process
               </SectionHeading>
@@ -384,7 +384,7 @@ function CareersPage() {
             </div>
 
             {/* ---- How to apply ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="how-to-apply">How to apply</SectionHeading>
               <div
                 className="mt-5 rounded-xl border bg-white p-5"
@@ -420,39 +420,6 @@ function CareersPage() {
 
           
           </div>
-
-          {/* -------------------- On this page (TOC) -------------------- */}
-          <aside className="order-first lg:order-none">
-            {/* sticky — parent chain me kahin overflow-hidden nahi hona chahiye */}
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[13px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside>
         </div>
       </div>
     </main>

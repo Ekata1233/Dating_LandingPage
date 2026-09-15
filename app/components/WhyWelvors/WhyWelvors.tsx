@@ -139,8 +139,7 @@ function WhyWelvors() {
       id="why"
       ref={sectionRef}
       style={{
-        background: "radial-gradient(ellipse 110% 90% at 50% 0%, #FFD0DC 0%, #FFE0E8 28%, #FFF0F4 55%, #FFF8FA 80%, #FFFBFC 100%)",
-      }} className="w-full scroll-mt-[50px] py-8 sm:py-10"
+background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",      }} className="w-full scroll-mt-[50px] py-8 sm:py-10"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}
@@ -176,11 +175,11 @@ function WhyWelvors() {
         </div>
 
         {/* -------------------- Cards grid -------------------- */}
-        <div ref={cardsRef} className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div ref={cardsRef} className="mt-12  grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className={`group relative overflow-hidden rounded-2xl border bg-white p-7 transition-all duration-300 ease-out hover:-translate-y-1 shadow-[0_4px_20px_rgba(43,42,40,0.04)] ${cardsVisible ? "wv-reveal is-visible" : "wv-reveal"
+              className={`group relative font-brand overflow-hidden rounded-2xl border bg-white p-7 flex flex-col items-center text-center transition-all duration-300 ease-out hover:-translate-y-1 shadow-[0_6px_24px_rgba(43,42,40,0.08)] ${cardsVisible ? "wv-reveal is-visible" : "wv-reveal"
                 }`}
               style={{
                 borderColor: "rgba(214,40,116,0.12)",
@@ -205,7 +204,7 @@ function WhyWelvors() {
 
               {/* Icon box */}
               <div
-                className="relative flex h-14 w-14 items-center justify-center rounded-2xl
+                className="relative flex h-14 w-14 mx-auto text-center items-center justify-center rounded-2xl
           transition-all duration-500 ease-out
           group-hover:scale-110
           group-hover:rotate-3
@@ -216,7 +215,7 @@ function WhyWelvors() {
               >
                 {/* Gradient overlay that fades in on hover */}
                 <div
-                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
+                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 flex items-center justify-center"
                   style={{
                     background: "linear-gradient(145deg, #ff5e9c 0%, #d61c72 55%, #a4105f 100%)",
                   }}
@@ -230,14 +229,14 @@ function WhyWelvors() {
 
               {/* Title */}
               <h3
-                className="relative mt-5 text-lg font-bold text-[#231f20]"
-                style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+                className="relative text-center mt-5 text-lg font-bold text-[#231f20]"
+                style={{ fontFamily: '"Times New Roman", serif' }}
               >
                 {f.title}
               </h3>
 
               {/* Body */}
-              <p className="relative mt-3 text-[14px] leading-relaxed text-slate-500">
+              <p className="relative mt-3 text-[14px] leading-relaxed text-slate-500 text-center">
                 {f.body}
               </p>
             </div>

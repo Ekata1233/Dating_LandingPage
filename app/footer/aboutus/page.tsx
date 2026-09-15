@@ -26,7 +26,7 @@ const COMPANY_INFO = {
   name: "Infynod Tech Private Limited (CIN: U62020PN2026PTC258333) ",
   registeredIn: "India",
   headOffice: "Hadpsar, Pune, Maharashtra, India",
-  email: "infynod@gmail.com",
+  email: "info@infynod.com",
 };
 
 /* ------------------------------------------------------------------ */
@@ -45,17 +45,6 @@ const Icon = {
   ),
 };
 
-/* ------------------------------------------------------------------ */
-/*  "On this page" nav                                                 */
-/* ------------------------------------------------------------------ */
-const TOC = [
-  { label: "Our story", id: "our-story" },
-  { label: "What we believe", id: "what-we-believe" },
-  { label: "How we're different", id: "how-were-different" },
-  { label: "Who we serve", id: "who-we-serve" },
-  { label: "The people behind Welvors", id: "the-team" },
-  { label: "Where we are", id: "where-we-are" },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Beliefs                                                            */
@@ -169,10 +158,8 @@ function SectionHeading({ id, children }: { id: string; children: React.ReactNod
   );
 }
 
-const TOC_IDS = TOC.map((t) => t.id);
 
 function AboutUs() {
-  const active = useActiveSection(TOC_IDS);
 
   return (
     <main
@@ -184,7 +171,7 @@ function AboutUs() {
         className="w-full border-b"
         style={{ borderColor: C.border }}
       >
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 my-5">
+        <div className="mx-auto px-4 sm:px-6 py-6 sm:py-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>
@@ -240,8 +227,8 @@ function AboutUs() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
             {/* Intro */}
@@ -257,7 +244,7 @@ function AboutUs() {
             </p>
 
             {/* ---- Our story ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="our-story">Our story</SectionHeading>
               <p
                 className="mt-4 text-[15px] leading-relaxed"
@@ -283,7 +270,7 @@ function AboutUs() {
             </div>
 
             {/* ---- What we believe ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="what-we-believe">
                 What we believe
               </SectionHeading>
@@ -306,7 +293,7 @@ function AboutUs() {
             </div>
 
             {/* ---- How we're different ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="how-were-different">
                 How we&apos;re different
               </SectionHeading>
@@ -356,7 +343,7 @@ function AboutUs() {
             </div>
 
             {/* ---- Who we serve ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="who-we-serve">Who we serve</SectionHeading>
               <p
                 className="mt-4 text-[15px] leading-relaxed"
@@ -400,7 +387,7 @@ function AboutUs() {
             </div>
 
             {/* ---- The team ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="the-team">
                 The people behind Welvors
               </SectionHeading>
@@ -418,7 +405,7 @@ function AboutUs() {
             </div>
 
             {/* ---- Where we are ---- */}
-            <div className="mt-12">
+            <div className="mt-8">
               <SectionHeading id="where-we-are">Where we are</SectionHeading>
               <div
                 className="mt-5 rounded-xl border bg-white p-5"
@@ -457,39 +444,6 @@ function AboutUs() {
 
            
           </div>
-
-          {/* -------------------- On this page (TOC) -------------------- */}
-          <aside className="order-first lg:order-none">
-            {/* sticky — parent chain me kahin overflow-hidden nahi hona chahiye */}
-            <div className="lg:sticky lg:top-[90px] lg:self-start">
-              <p
-                className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-                style={{ color: C.label }}
-              >
-                On this page
-              </p>
-              <ul className="mt-3 space-y-1">
-                {TOC.map((t) => {
-                  const isActive = active === t.id;
-                  return (
-                    <li key={t.id}>
-                      <a
-                        href={`#${t.id}`}
-                        className="block border-l-2 py-1 pl-3 text-[13px] transition-colors hover:text-[#C21559]"
-                        style={{
-                          borderColor: isActive ? C.pink : "transparent",
-                          color: isActive ? C.pink : C.body,
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </aside>
         </div>
       </div>
 

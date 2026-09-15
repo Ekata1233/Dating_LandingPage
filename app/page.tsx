@@ -10,21 +10,32 @@ import Navbar from "./components/Navbar/Navbar";
 import SectionBorder from "./components/SectionBorder";
 import VerifiedCommunity from "./components/VerifiedCommunity/VerifiedCommunity";
 import WhyWelvors from "./components/WhyWelvors/WhyWelvors";
-
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Welvors",
+  "alternateName": "Welvors",
+  "url": "https://welvors.com"
+};
 
 export default function Home() {
   return (
-    <div>
-      
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteSchema),
+        }}
+      />
       <Header></Header>
-      <DownloadAppFeature/>
+      <DownloadAppFeature />
       <SectionBorder seed={1001} />
-      <WhyWelvors/>
-      <VerifiedCommunity/>
+      <WhyWelvors />
+      <VerifiedCommunity />
       <SectionBorder seed={2002} />
       <DateNow />
       <Events />
-      <CommitmentMode/>
-      
-    </div>  );
+      <CommitmentMode />
+
+    </>);
 }
