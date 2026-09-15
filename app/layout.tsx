@@ -27,13 +27,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://welvors.com"),
+  metadataBase: new URL("https://www.welvors.com"),
 
-  title: "Welvors",
-  description: "Welvors - Official Website",
+  title: "WELVORS",
+  description:
+    "WELVORS - A trust-driven, emotionally intelligent dating ecosystem.",
 
   alternates: {
-    canonical: "https://welvors.com",
+    canonical: "https://www.welvors.com/",
+  },
+
+  openGraph: {
+    title: "WELVORS",
+    description:
+      "A trust-driven, emotionally intelligent dating ecosystem.",
+    url: "https://www.welvors.com/",
+    siteName: "WELVORS",
+    type: "website",
   },
 };
 

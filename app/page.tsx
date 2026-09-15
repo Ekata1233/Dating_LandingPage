@@ -11,11 +11,13 @@ import SectionBorder from "./components/SectionBorder";
 import VerifiedCommunity from "./components/VerifiedCommunity/VerifiedCommunity";
 import WhyWelvors from "./components/WhyWelvors/WhyWelvors";
 const websiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Welvors",
-  "alternateName": "Welvors",
-  "url": "https://welvors.com"
+  __html: JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "WELVORS",
+    alternateName: "Welvors",
+    url: "https://www.welvors.com/",
+  }),
 };
 
 export default function Home() {
@@ -23,9 +25,7 @@ export default function Home() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(websiteSchema),
-        }}
+        dangerouslySetInnerHTML={websiteSchema}
       />
       <Header></Header>
       <DownloadAppFeature />

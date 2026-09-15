@@ -316,7 +316,7 @@ export default function PartnerPage() {
       </div>
 
       {/* ==================== Body + TOC ==================== */}
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
           {/* -------------------- Main content -------------------- */}
           <div className="max-w-3xl">
