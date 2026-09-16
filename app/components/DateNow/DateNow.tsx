@@ -136,7 +136,7 @@ function DateNow() {
     <section
       id="date-now"
       ref={headerRef}
-      className="relative w-full overflow-hidden px-2 pt-20 pb-5 sm:px-8"
+      className="relative w-full overflow-hidden px-2 py-20 sm:px-8"
       style={{
         background: "radial-gradient(ellipse 130% 100% at 0% 50%, #B8A0E0 0%, #D0C4EE 22%, #E6DAF5 45%, #F2ECF8 65%, #FAF6FC 85%, #FCF8F4 100%)",
       }}

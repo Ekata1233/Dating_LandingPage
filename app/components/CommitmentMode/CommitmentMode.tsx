@@ -143,13 +143,13 @@ function CommitmentMode() {
   return (
     <section
       id="commitment"
-      className="w-full overflow-hidden px-3 py-10 sm:p-5"
+      className="w-full overflow-hidden py-10 sm:p-5 px-2"
       style={{
         background: "linear-gradient(135deg, #1a0a1f 0%, #2d1240 25%, #4a1942 50%, #6b2350 75%, #8b2a50 100%)",
       }}
     >
       {/* ---- Hero Area: Split Layout ---- */}
-      <div className="relative flex flex-col lg:min-h-[80vh] lg:flex-row">
+      <div className="relative max-w-[1360px] mx-auto flex flex-col lg:min-h-[80vh] lg:flex-row">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #C21559 0%, transparent 70%)", filter: "blur(80px)" }} />
@@ -245,8 +245,9 @@ function CommitmentMode() {
               className="mt-6 text-5xl leading-[1.1] sm:mt-8 sm:text-5xl lg:text-5xl"
               style={{ fontFamily: 'Georgia, "Times New Roman", serif', color: "white" }}
             >
-              3 Years Together {" "}
-              <span className="italic" style={{ color: "#D4A853" }}>₹5 Lakh Honeymoon</span>
+              Love That Lasts, {" "}<br />
+              <span className="italic" style={{ color: "#D4A853" }}>Rewards {" "}</span>
+             That Matter 
             </h2>
 
             <p className="mt-5 max-w-md text-[14px] leading-relaxed sm:mt-6 sm:text-[16px]" style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -290,7 +291,7 @@ function CommitmentMode() {
                   <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
-              <p className="mt-3 text-[12px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+              <p className="mt-3 px-6 text-[12px] text-gray-100">
                 Programme terms & eligibility apply
               </p>
             </div>

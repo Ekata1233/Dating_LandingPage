@@ -345,7 +345,7 @@ function Header() {
       ref={headerRef}
       style={{
         background: "linear-gradient(to left, #FFB3C7, #FFD1DD, #FFF9FA)",
-      }} className="relative w-full overflow-hidden py-6 px-2 sm:px-10 pt-6 sm:pt-14"
+      }} className="relative flex min-h-screen w-full overflow-hidden px-2 sm:px-10 py-6 sm:py-14"
     >
 
       {/* Soft pink glow top-right */}
@@ -423,7 +423,7 @@ function Header() {
                 <button
                 type="button"
                 onClick={handleDiscover}
-                className="cm-cta groupn relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
+                className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
                 style={{
                   background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                   backgroundSize: "200% 200%",

@@ -143,7 +143,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       // Backend token top-level me deta hai: { success, message, token }
       const token = data?.token;
       if (token) localStorage.setItem("welvors_token", token);
- if (data?.user) localStorage.setItem("welvors_user", JSON.stringify(data.user));
+      if (data?.user) localStorage.setItem("welvors_user", JSON.stringify(data.user));
       setStatus("idle");
       onSuccess?.();
       onClose();
@@ -163,7 +163,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-4"
+      className="fixed inset-0 z-[9999] text-[10px] flex items-center justify-center overflow-y-auto p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Log in"
@@ -176,14 +176,19 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       <div className="relative my-auto w-full max-w-[520px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(43,42,40,0.25)]">
         {/* Top bar — sirf close */}
         <div
-          className="flex items-center justify-end border-b px-6 py-4"
+          className="flex items-center justify-between border-b px-10 py-4"
           style={{ borderColor: C.border }}
         >
+          <p
+            className="text-lg font-extrabold bg-gradient-to-br from-[#F26FA6] to-[#E11D63] bg-clip-text text-transparent uppercase tracking-[0.16em]"
+          >
+            Log in
+          </p>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
+            className="flex h-8 w-8 items-center cursor-pointer justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
             style={{ borderColor: C.border, color: C.headingDark }}
           >
             <Icon.Close />

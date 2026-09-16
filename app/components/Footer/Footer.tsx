@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
-
+import { ChevronRight } from "lucide-react";
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
 /* ------------------------------------------------------------------ */
@@ -50,12 +50,27 @@ const Icon = {
       <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95C21.4 8.75 22 11 22 14.1V21h-4v-6.1c0-1.45-.03-3.3-2-3.3-2 0-2.3 1.57-2.3 3.2V21h-4V9z" />
     </svg>
   ),
+  YouTube: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <rect x="3" y="5" width="18" height="14" rx="4" />
+      <path d="M10 9L16 12L10 15V9Z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
 };
 
 /* ------------------------------------------------------------------ */
 /*  SmartLink                                                          */
-/*  Hash links (#why) ke liye plain <a> — next/link inhe route nav     */
-/*  samajhta hai jisse page reload hota hai. Routes ke liye <Link>.     */
+/*  footer aur legalSafy route ke liye naye tab mein nahi khulega     */
 /* ------------------------------------------------------------------ */
 function SmartLink({
   href,
@@ -68,15 +83,15 @@ function SmartLink({
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
-  if (href.startsWith("#")) {
+  if (href.includes("footer") || href.startsWith("legalSafety")) {
     return (
-      <a href={href} className={className} style={style}>
+      <Link href={href} className={className} style={style}>
         {children}
-      </a>
+      </Link>
     );
   }
   return (
-    <Link href={href} className={className} style={style}>
+    <Link href={href} className={className} style={style} target="_blank" rel="noopener noreferrer">
       {children}
     </Link>
   );
@@ -87,9 +102,11 @@ function SmartLink({
 /* ------------------------------------------------------------------ */
 const COLUMNS = [
   {
-    heading: "Product",
+    heading: "Download App",
     links: [
-      { label: "Welvors", href: "https://play.google.com" },
+      { label: "Google Play", href: "https://play.google.com" },
+      { label: "Apple Store", href: "https://apps.apple.com/" },
+      { label: "Support", href: "mailto:support@welvors.com" },
     ],
   },
   {
@@ -117,7 +134,10 @@ const COLUMNS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },  
+  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
+  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn /> },
+  { label: "X", href: "https://www.x.com/", icon: <Icon.X /> },
+  { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube /> },
 ];
 
 function Footer() {
@@ -132,9 +152,9 @@ function Footer() {
         .welvors-footer-link:hover { color: ${C.pink} !important; }
       `}</style>
 
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-10 lg:px-10">
         {/* ==================== Top grid ==================== */}
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:flex justify-between lg:gap-8">
           {/* ---- Brand column ---- */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
@@ -172,7 +192,7 @@ function Footer() {
                   aria-label={s.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="wv-card-lift flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:scale-110"
+                  className="wv-card-lift flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:scale-105"
                   style={{ color: C.body, backgroundColor: C.socialBg }}
                 >
                   {s.icon}
@@ -185,69 +205,72 @@ function Footer() {
           {COLUMNS.map((col) => (
             <div key={col.heading}>
               <h3
-                className="text-[11.5px] font-semibold uppercase tracking-[0.12em]"
+                className="text-[11.5px]  font-semibold uppercase tracking-[0.12em]"
                 style={{ color: C.label }}
               >
                 {col.heading}
               </h3>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="mt-4 space-y-2.5 ">
                 {col.links.map((l) => (
-                  <li key={l.label}>
+                  <div className="flex flex-row items-center gap-2 transition-transform duration-300 ease-in-out hover:translate-x-1" key={l.label}>
                     <SmartLink
                       href={l.href}
-                      className="welvors-footer-link text-[14px]"
+                      className="welvors-footer-link text-[14px] flex flex-row items-center gap-2"
                       style={{ color: C.body }}
+
                     >
-                      {l.label}
+                      <ChevronRight size={14} color="#E8587A" />
+                      <li>
+                        {l.label}
+                      </li>
                     </SmartLink>
-                  </li>
-                ))}
+                  </div>))}
               </ul>
             </div>
           ))}
         </div>
 
         {/* ==================== Bottom bar ==================== */}
-    
-<div
-  className="mt-12 flex flex-col items-center gap-4 border-t pt-6"
-  style={{ borderColor: C.divider }}
->
-  <p
-    className="text-center text-[12px] leading-5"
-    style={{ color: C.label }}
-  >
-  Welvors is a product of Infynod Tech Private Limited · CIN:
-    U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
-    Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
-    <a
-      href="mailto:support@welvors.com"
-      className="welvors-footer-link"
-      style={{ color: C.headingDark }}
-    >
-      support@welvors.com
-    </a>
-  </p>
 
-  <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-between">
-    <p className="text-[13px]" style={{ color: C.label }}>
-      © {year} {COMPANY} · All rights reserved.
-    </p>
+        <div
+          className="mt-12 flex flex-col items-center gap-4 border-t pt-6"
+          style={{ borderColor: C.divider }}
+        >
+          <p
+            className="text-center text-[12px] leading-5"
+            style={{ color: C.label }}
+          >
+            Welvors is a product of Infynod Tech Private Limited · CIN:
+            U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
+            Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
+            <a
+              href="mailto:support@welvors.com"
+              className="welvors-footer-link"
+              style={{ color: C.headingDark }}
+            >
+              support@welvors.com
+            </a>
+          </p>
 
-    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <p className="text-[13px]" style={{ color: C.label }}>
+              © {year} {COMPANY} · All rights reserved.
+            </p>
 
-      <span
-        className="flex items-center gap-1.5 text-[13px]"
-        style={{ color: C.label }}
-      >
-        Made with care in India
-        <span className="text-[10px] font-semibold tracking-wider">
-          IN
-        </span>
-      </span>
-    </div>
-  </div>
-</div>
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+
+              <span
+                className="flex items-center gap-1.5 text-[13px]"
+                style={{ color: C.label }}
+              >
+                Made with care in India
+                <span className="text-[10px] font-semibold tracking-wider">
+                  IN
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
 
 
       </div>

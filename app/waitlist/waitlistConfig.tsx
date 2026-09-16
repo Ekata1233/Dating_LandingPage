@@ -20,6 +20,7 @@ export const C = {
   dotIdle: "#F3D6DF",
   ctaFrom: "#D0405F",
   ctaTo: "#C21559",
+  gradientPink : "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)"
 };
 
 /* ------------------------------------------------------------------ */

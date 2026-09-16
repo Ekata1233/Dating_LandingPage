@@ -83,12 +83,6 @@ export default function LoginPhone({
 
   return (
     <>
-      <p
-        className="text-[11.5px] font-bold uppercase tracking-[0.16em]"
-        style={{ color: C.pink }}
-      >
-        Log in
-      </p>
 
       <h2
         className="mt-3 text-[27px] leading-tight sm:text-[29px]"
@@ -219,16 +213,18 @@ export default function LoginPhone({
         type="button"
         onClick={() => (otpSent ? onVerify?.() : onSendOtp())}
         disabled={status === "sending"}
-        className="mt-4 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-        style={{ backgroundColor: C.ctaPink }}
+        className="mt-4 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-60"
+        style={{
+          background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+        }}
       >
         {status === "sending"
           ? otpSent
             ? "Verifying…"
             : "Sending…"
           : otpSent
-          ? "Verify & continue"
-          : "Send OTP"}
+            ? "Verify & continue"
+            : "Send OTP"}
       </button>
 
       <p

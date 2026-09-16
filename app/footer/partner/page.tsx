@@ -524,7 +524,7 @@ export default function PartnerPage() {
                       By submitting, you agree that Welvors may contact you
                       about this application. See our{" "}
                       <Link
-                        href="/privacy"
+                        href="/legalSafety/privacyPolicy"
                         className="underline hover:opacity-70"
                         style={{ color: C.pink }}
                       >

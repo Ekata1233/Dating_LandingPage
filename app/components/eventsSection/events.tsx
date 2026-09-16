@@ -87,7 +87,7 @@ function Events() {
     <section
       id="events"
       ref={headerRef}
-      className="relative w-full overflow-hidden px-2 pb-5 py-16 sm:px-8"
+      className="relative w-full overflow-hidden px-2  py-16 sm:px-8"
       style={{
         background: "radial-gradient(ellipse 135% 95% at 100% 50%, #FFA8BC 0%, #FFBCC8 20%, #FFD4DE 42%, #FFE6ED 62%, #FFF2F5 80%, #FFF9FA 100%)",
 

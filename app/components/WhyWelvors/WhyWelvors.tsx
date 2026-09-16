@@ -139,7 +139,7 @@ function WhyWelvors() {
       id="why"
       ref={sectionRef}
       style={{
-background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",      }} className="w-full scroll-mt-[50px] py-8 sm:py-10"
+background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",      }} className="w-full scroll-mt-[50px] py-12 sm:py-12"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}
@@ -236,7 +236,7 @@ background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8
               </h3>
 
               {/* Body */}
-              <p className="relative mt-3 text-[14px] leading-relaxed text-slate-500 text-center">
+              <p className="relative mt-3 text-[14px] leading-relaxed text-gray-800 text-center">
                 {f.body}
               </p>
             </div>

@@ -358,8 +358,9 @@ function DownloadAppFeature() {
 
             {/* App Store Buttons */}
             <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
-              <a
-                href="https://play.google.com"
+              <a target="_blank"
+                rel="noopener noreferrer"
+                href="https://apps.apple.com/"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
@@ -369,7 +370,8 @@ function DownloadAppFeature() {
                   <p className="text-[12px] font-semibold leading-tight">App Store</p>
                 </div>
               </a>
-              <a
+              <a target="_blank"
+                rel="noopener noreferrer"
                 href="https://play.google.com"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}

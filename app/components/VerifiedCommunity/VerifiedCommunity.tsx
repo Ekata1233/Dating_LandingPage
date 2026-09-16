@@ -238,7 +238,7 @@ function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; 
     <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      className={`wv-glow-card bg-white p-6 transition-all duration-500 ${isActive ? "scale-[1.02] shadow-[0_12px_40px_rgba(0,0,0,0.08)]" : "shadow-[0_4px_20px_rgba(43,42,40,0.04)]"}`}
+      className={`group  wv-glow-card bg-white p-6 transition-all duration-500 shadow-[0_12px_40px_rgba(0,0,0,0.08)]"}`}
       style={{
         borderColor: a.cardBorder,
         border: `1px solid ${a.cardBorder}`,
@@ -247,7 +247,7 @@ function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; 
       {/* Tier badge + icon */}
       <div className="flex items-center gap-3">
         <div
-          className="wv-glow-icon flex h-12 w-12 items-center justify-center rounded-xl"
+          className="flex h-12 w-12 items-center group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] justify-center rounded-xl"
           style={{ backgroundColor: a.tint, color: a.main }}
         >
           {tier.icon}
@@ -341,7 +341,7 @@ function VerifiedCommunity() {
               color: C.headingDark,
             }}
           >
-            Strict checks. Zero {" "} 
+            Strict checks. Zero {" "}
             <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
               Fake Profiles
             </span>
