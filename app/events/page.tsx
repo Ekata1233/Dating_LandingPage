@@ -5,8 +5,6 @@ import EventCard from "../components/ui/EventCard";
 import { Event, useEventData } from "../context/EventContext";
 import { MoonLoader } from "react-spinners";
 import Link from "next/link";
-import CategoryCard from "../components/ui/EventCategoryCard";
-import EventCategoryCard from "../components/ui/EventCategoryCard";
 import { formattedDate } from "../components/eventSection/eventSection";
 
 /* ------------------------------------------------------------------ */
