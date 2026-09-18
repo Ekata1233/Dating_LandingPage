@@ -55,9 +55,9 @@ export default function EventsFeed() {
       </div>
       <div className="w-[180px] ">
       </div>
-      <div className="flex gap-6 pt-8 border-t border-stone-300">
+      <div className="flex gap-6 pt-8 border-t border-stone-300 overscroll-x-none overflow-x-auto scrollbar-hide scroll-smooth">
         {events.map((event, i) => (
-          <Link href={`/events/${event.id}`} key={event.id} target="_blank" rel="noopener noreferrer">
+          <Link href={`/events/${event.id}`} key={event.id} >
             <EventCard
               image={event.heroImage}
               date={formattedDate(new Date(event.eventDate))}

@@ -320,7 +320,7 @@ function EventCards() {
                     {/* Desktop: static grid */}
                     <div className="h-[520px] gap-8 relative overscroll-x-none overflow-x-auto scrollbar-hide scroll-smooth flex">
                         {limitedEvents.map((event, i) => (
-                            <Link href={event.id.length > 2 ? `/events/${event.id}` : "/events"} key={event.id ?? i}>
+                            <Link href={event.id.length > 2 ? `/events/${event.id}` : "/events"} key={event.id ?? i} >
                                 <div
                                     className="h-full w-[280px] min-w-[280px] text-black flex flex-col gap-8 justify-center items-center p-5 cursor-pointer"
                                     style={{ backgroundColor: EventUI[i % EventUI.length].accent }}
@@ -353,9 +353,9 @@ function EventCards() {
                                         <div className="mt-auto flex flex-col items-center gap-2">
 
                                             {/* Interested Count */}
-                                            <p className="text-[15px] font-quicksand font-semibold">
+                                            {/* <p className="text-[15px] font-quicksand font-semibold">
                                                 {event.bookedCount} Interested
-                                            </p>
+                                            </p> */}
 
                                             {/* CTA */}
                                             <button className="font-semibold cursor-pointer bg-white px-4 py-2.5 rounded-full">
@@ -370,7 +370,7 @@ function EventCards() {
                             className="h-full w-[200px] min-w-[200px] text-black flex flex-col justify-center items-start p-5"
 
                         >
-                            <Link href={"/events"}>
+                            <Link href={"/events"} >
                             <button className="flex items-center gap-2 font-semibold cursor-pointer bg-white px-4 py-2.5 rounded-full">
                                 More Events
                                 <ArrowRight size={16}/>
