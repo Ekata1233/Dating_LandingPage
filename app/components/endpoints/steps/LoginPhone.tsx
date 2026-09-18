@@ -83,9 +83,8 @@ export default function LoginPhone({
 
   return (
     <>
-
       <h2
-        className="mt-3 text-[27px] leading-tight sm:text-[29px]"
+        className="text-[27px] leading-tight sm:text-[29px]"
         style={{
           fontFamily: 'Georgia, "Times New Roman", serif',
           color: C.headingDark,

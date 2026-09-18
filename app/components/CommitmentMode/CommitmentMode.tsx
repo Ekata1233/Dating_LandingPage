@@ -189,7 +189,7 @@ function CommitmentMode() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/honeymoon.png"
+                src="https://ik.imagekit.io/aezmcynwbe/welvors/honeymoon.png"
                 alt="Forever Love — Commitment Mode on Welvors"
                 className="h-full w-full object-cover transition-transform duration-700 hover:scale-110"
               />
@@ -291,7 +291,8 @@ function CommitmentMode() {
                   <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
-              <p className="mt-3 px-6 text-[12px] text-gray-100">
+              <p className="mt-3 text-[12px] "
+              style={{ color: "rgba(255,255,255,0.8)" }}>
                 Programme terms & eligibility apply
               </p>
             </div>

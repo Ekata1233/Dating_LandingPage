@@ -83,7 +83,7 @@ function SmartLink({
   style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
-  if (href.includes("footer") || href.startsWith("legalSafety")) {
+  if (href.includes("footer") || href.includes("legalSafety")) {
     return (
       <Link href={href} className={className} style={style}>
         {children}

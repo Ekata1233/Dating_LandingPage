@@ -2,6 +2,7 @@ import CommitmentMode from "./components/CommitmentMode/CommitmentMode";
 import DateNow from "./components/DateNow/DateNow";
 import DownloadAppFeature from "./components/DownloadApp/DownloadAppFeature";
 import EarlyAccess from "./components/EarlyAccess/EarlyAccess";
+import EventCards from "./components/EventCards/EventCards";
 import Events from "./components/eventsSection/events";
 import Footer from "./components/Footer/Footer";
 import Header from "./components/Header/Header";
@@ -34,7 +35,8 @@ export default function Home() {
       <VerifiedCommunity />
       <SectionBorder seed={2002} />
       <DateNow />
-      <Events />
+      {/* <Events /> */}
+      <EventCards />
       <CommitmentMode />
 
     </>);

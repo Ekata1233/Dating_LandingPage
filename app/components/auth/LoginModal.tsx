@@ -14,7 +14,20 @@ import {
 } from "./authConfig";
 import LoginPhone from "../endpoints/steps/LoginPhone";
 import LoginOtp from "../endpoints/steps/LoginOtp";
-
+const COLORS = {
+  // Frosted / translucent backgrounds
+  bgTranslucent: "rgba(252, 248, 244, 0.72)", // navbar (see-through + blur)
+  bgDropdown: "rgba(252, 248, 244, 0.92)", // mobile menu (zyada opaque = readable)
+  border: "rgba(43, 42, 40, 0.06)",
+  brandDark: "#2B2A28",
+  brandPink: "#C21559",
+  linkText: "#403B37",
+  loginBorder: "#E7DFD9",
+  waitlistBg: "#FCE1EC",
+  waitlistText: "#C21559",
+  ctaFrom: "#C93B68",
+  ctaTo: "#B31E52",
+};
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -176,14 +189,36 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       <div className="relative my-auto w-full max-w-[520px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(43,42,40,0.25)]">
         {/* Top bar — sirf close */}
         <div
-          className="flex items-center justify-between border-b px-10 py-4"
+          className="flex items-center justify-between px-10 pt-8"
           style={{ borderColor: C.border }}
         >
-          <p
-            className="text-lg font-extrabold bg-gradient-to-br from-[#F26FA6] to-[#E11D63] bg-clip-text text-transparent uppercase tracking-[0.16em]"
-          >
-            Log in
-          </p>
+          <div className="flex flex-row justify-center  items-center gap-2">
+            <span
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl text-sm font-bold text-white shadow-sm"
+              style={{
+                background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+                boxShadow: "0 6px 16px rgba(225,29,99,0.35)",
+              }}
+            >
+              {/* {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt="Welvors"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              "W"
+            )} */}
+              W
+            </span>
+            <span
+              className="text-2xl font-bold tracking-tight"
+              style={{ color: COLORS.brandDark }}
+            >
+              Wel<span style={{ color: COLORS.brandPink }}>vors</span>
+            </span>
+          </div>
+          <div>
           <button
             type="button"
             onClick={onClose}
@@ -193,6 +228,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
           >
             <Icon.Close />
           </button>
+          </div>
 
           {MOCK_MODE && (
             <span

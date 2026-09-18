@@ -12,7 +12,9 @@
   --font-mono: var(--font-geist-mono);
   --font-roboto: "Roboto";
   --font-brand: var(--font-brand-serif), Georgia, serif;
+  --font-quicksand: var(--font-quicksand), "Quicksand", sans-serif;
 }
+
 
 
 @media (prefers-color-scheme: dark) {
@@ -21,12 +23,13 @@
     --foreground: #ededed;
   }
 }
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+
 }
+
 html {
   scroll-behavior: smooth;
 }
@@ -45,7 +48,9 @@ svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* ============================================================
@@ -59,6 +64,7 @@ svg {
     transform: translateY(32px) scale(0.98);
     filter: blur(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -71,6 +77,7 @@ svg {
     opacity: 0;
     filter: blur(6px);
   }
+
   to {
     opacity: 1;
     filter: blur(0px);
@@ -83,6 +90,7 @@ svg {
     transform: translateX(-44px) scale(0.97);
     filter: blur(4px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0) scale(1);
@@ -96,6 +104,7 @@ svg {
     transform: translateX(44px) scale(0.97);
     filter: blur(4px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0) scale(1);
@@ -109,6 +118,7 @@ svg {
     transform: scale(0.88) translateY(12px);
     filter: blur(6px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -122,6 +132,7 @@ svg {
     transform: translateY(-20px);
     filter: blur(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -134,6 +145,7 @@ svg {
     opacity: 0;
     filter: blur(12px);
   }
+
   to {
     opacity: 1;
     filter: blur(0px);
@@ -141,45 +153,99 @@ svg {
 }
 
 @keyframes wv-pulse-soft {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes wv-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes wv-bounce-in {
-  0% { opacity: 0; transform: scale(0.3); }
-  50% { transform: scale(1.08); }
-  70% { transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+
+  70% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes wv-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
 }
 
 @keyframes wv-glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(194, 21, 89, 0.15); }
-  50% { box-shadow: 0 0 32px rgba(194, 21, 89, 0.3); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(194, 21, 89, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 32px rgba(194, 21, 89, 0.3);
+  }
 }
 
 @keyframes wv-rotate-subtle {
-  from { transform: rotate(-1deg); }
-  to { transform: rotate(1deg); }
+  from {
+    transform: rotate(-1deg);
+  }
+
+  to {
+    transform: rotate(1deg);
+  }
 }
 
 @keyframes wv-gradient-sweep {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes wv-progress-fill {
-  from { width: 0%; }
+  from {
+    width: 0%;
+  }
 }
 
 /* --- Animation utility classes --- */
@@ -306,14 +372,37 @@ svg {
 }
 
 /* --- Stagger delays for children --- */
-.wv-stagger > *:nth-child(1) { transition-delay: 0ms; }
-.wv-stagger > *:nth-child(2) { transition-delay: 80ms; }
-.wv-stagger > *:nth-child(3) { transition-delay: 160ms; }
-.wv-stagger > *:nth-child(4) { transition-delay: 240ms; }
-.wv-stagger > *:nth-child(5) { transition-delay: 320ms; }
-.wv-stagger > *:nth-child(6) { transition-delay: 400ms; }
-.wv-stagger > *:nth-child(7) { transition-delay: 480ms; }
-.wv-stagger > *:nth-child(8) { transition-delay: 560ms; }
+.wv-stagger>*:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.wv-stagger>*:nth-child(2) {
+  transition-delay: 80ms;
+}
+
+.wv-stagger>*:nth-child(3) {
+  transition-delay: 160ms;
+}
+
+.wv-stagger>*:nth-child(4) {
+  transition-delay: 240ms;
+}
+
+.wv-stagger>*:nth-child(5) {
+  transition-delay: 320ms;
+}
+
+.wv-stagger>*:nth-child(6) {
+  transition-delay: 400ms;
+}
+
+.wv-stagger>*:nth-child(7) {
+  transition-delay: 480ms;
+}
+
+.wv-stagger>*:nth-child(8) {
+  transition-delay: 560ms;
+}
 
 /* --- Section divider glow --- */
 .wv-section-glow {
@@ -344,8 +433,17 @@ svg {
 
 /* --- Smooth scroll indicator --- */
 @keyframes wv-scroll-bounce {
-  0%, 100% { transform: translateY(0) translateX(-50%); opacity: 0.6; }
-  50% { transform: translateY(8px) translateX(-50%); opacity: 1; }
+
+  0%,
+  100% {
+    transform: translateY(0) translateX(-50%);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateY(8px) translateX(-50%);
+    opacity: 1;
+  }
 }
 
 .wv-scroll-indicator {
@@ -377,7 +475,7 @@ svg {
   overflow: hidden;
   border-radius: 1rem;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, box-shadow;
 }
 
@@ -387,11 +485,9 @@ svg {
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: radial-gradient(
-    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(194, 21, 89, 0.35),
-    transparent 40%
-  );
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(194, 21, 89, 0.35),
+      transparent 40%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -407,11 +503,9 @@ svg {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(
-    500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(194, 21, 89, 0.06),
-    transparent 40%
-  );
+  background: radial-gradient(500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(194, 21, 89, 0.06),
+      transparent 40%);
   opacity: 0;
   transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
@@ -426,12 +520,12 @@ svg {
 .wv-glow-card:hover {
   transform: translateY(-8px) scale(1.015);
   box-shadow: 0 25px 60px rgba(194, 21, 89, 0.12),
-              0 8px 20px rgba(43, 42, 40, 0.06);
+    0 8px 20px rgba(43, 42, 40, 0.06);
 }
 
 .wv-glow-card .wv-glow-icon {
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.4s ease;
+    box-shadow 0.4s ease;
 }
 
 .wv-glow-card:hover .wv-glow-icon {
@@ -520,13 +614,18 @@ svg {
   border-radius: 999px;
   z-index: 0;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
+
 .wv-hscroll-line::after {
   content: "";
   position: absolute;
@@ -550,10 +649,10 @@ svg {
   height: 16px;
   border-radius: 50%;
   border: 3px solid white;
-  box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 2px currentColor, 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 2;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.3s ease;
+    box-shadow 0.3s ease;
   will-change: transform, box-shadow;
 }
 
@@ -573,7 +672,7 @@ svg {
   border-radius: 50%;
   border: none;
   background: white;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -583,19 +682,27 @@ svg {
 
 .wv-hscroll-arrow:hover {
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
 }
 
-.wv-hscroll-arrow.left { left: 0.5rem; }
-.wv-hscroll-arrow.right { right: 0.5rem; }
+.wv-hscroll-arrow.left {
+  left: 0.5rem;
+}
+
+.wv-hscroll-arrow.right {
+  right: 0.5rem;
+}
 
 /* ============================================================
    TEXT GRADIENT ANIMATION
    ============================================================ */
 @keyframes wv-text-gradient {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -614,13 +721,27 @@ svg {
    TYPING / WORD CYCLE ANIMATION
    ============================================================ */
 @keyframes wv-word-enter {
-  0% { opacity: 0; transform: translateY(20px) rotateX(-40deg); }
-  100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+  0% {
+    opacity: 0;
+    transform: translateY(20px) rotateX(-40deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
 }
 
 @keyframes wv-word-exit {
-  0% { opacity: 1; transform: translateY(0) rotateX(0deg); }
-  100% { opacity: 0; transform: translateY(-20px) rotateX(40deg); }
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) rotateX(40deg);
+  }
 }
 
 .wv-word-cycle {
@@ -632,8 +753,13 @@ svg {
    ENHANCED SECTION DIVIDER
    ============================================================ */
 @keyframes wv-section-line {
-  from { width: 0; }
-  to { width: 80px; }
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 80px;
+  }
 }
 
 .wv-section-divider::after {
@@ -654,8 +780,13 @@ svg {
    MAGNETIC CTA BUTTON ENHANCED
    ============================================================ */
 @keyframes wv-cta-shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 .wv-cta-shimmer {
@@ -667,14 +798,12 @@ svg {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.25) 45%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.25) 55%,
-    transparent 60%
-  );
+  background: linear-gradient(105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.25) 45%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0.25) 55%,
+      transparent 60%);
   background-size: 200% 100%;
   animation: wv-cta-shimmer 3s ease-in-out infinite;
   pointer-events: none;
@@ -684,8 +813,15 @@ svg {
    CARD NUMBER / STEP PULSE
    ============================================================ */
 @keyframes wv-step-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(194, 21, 89, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(194, 21, 89, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(194, 21, 89, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(194, 21, 89, 0);
+  }
 }
 
 .wv-step-pulse {
@@ -696,9 +832,19 @@ svg {
    PARALLAX FLOAT EFFECT
    ============================================================ */
 @keyframes wv-parallax-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  33% { transform: translateY(-8px) rotate(1deg); }
-  66% { transform: translateY(4px) rotate(-0.5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+
+  66% {
+    transform: translateY(4px) rotate(-0.5deg);
+  }
 }
 
 .wv-parallax-float {
@@ -715,6 +861,7 @@ svg {
     transform: translateY(30px);
     filter: blur(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -722,26 +869,56 @@ svg {
   }
 }
 
-.wv-stagger-children > * {
+.wv-stagger-children>* {
   opacity: 0;
   will-change: transform, opacity, filter;
 }
 
-.wv-stagger-children.is-visible > *:nth-child(1) { animation: wv-stagger-up 0.6s 0ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(2) { animation: wv-stagger-up 0.6s 80ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(3) { animation: wv-stagger-up 0.6s 160ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(4) { animation: wv-stagger-up 0.6s 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(5) { animation: wv-stagger-up 0.6s 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(6) { animation: wv-stagger-up 0.6s 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(7) { animation: wv-stagger-up 0.6s 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-.wv-stagger-children.is-visible > *:nth-child(8) { animation: wv-stagger-up 0.6s 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.wv-stagger-children.is-visible>*:nth-child(1) {
+  animation: wv-stagger-up 0.6s 0ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(2) {
+  animation: wv-stagger-up 0.6s 80ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(3) {
+  animation: wv-stagger-up 0.6s 160ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(4) {
+  animation: wv-stagger-up 0.6s 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(5) {
+  animation: wv-stagger-up 0.6s 320ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(6) {
+  animation: wv-stagger-up 0.6s 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(7) {
+  animation: wv-stagger-up 0.6s 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.wv-stagger-children.is-visible>*:nth-child(8) {
+  animation: wv-stagger-up 0.6s 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
 
 /* ============================================================
    BORDER GLOW ANIMATION
    ============================================================ */
 @keyframes wv-border-glow {
-  0%, 100% { border-color: rgba(194, 21, 89, 0.15); }
-  50% { border-color: rgba(194, 21, 89, 0.35); }
+
+  0%,
+  100% {
+    border-color: rgba(194, 21, 89, 0.15);
+  }
+
+  50% {
+    border-color: rgba(194, 21, 89, 0.35);
+  }
 }
 
 .wv-border-glow {
@@ -752,8 +929,13 @@ svg {
    INFINITE MARQUEE
    ============================================================ */
 @keyframes wv-marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .wv-marquee {
@@ -817,18 +999,22 @@ svg {
     transform: translateX(-50%) scale(0) translateY(0);
     opacity: 0;
   }
+
   8% {
     transform: translateX(-50%) scale(1.2) translateY(-4px);
     opacity: var(--wv-ab-op, 0.2);
   }
+
   20% {
     transform: translateX(-50%) scale(1) translateY(-14px);
     opacity: var(--wv-ab-op, 0.2);
   }
+
   70% {
     transform: translateX(-50%) scale(0.85) translateY(-36px);
     opacity: calc(var(--wv-ab-op, 0.2) * 0.4);
   }
+
   100% {
     transform: translateX(-50%) scale(0.6) translateY(-50px);
     opacity: 0;
@@ -845,18 +1031,22 @@ svg {
     transform: translateX(-50%) scale(0) translateY(0);
     opacity: 0;
   }
+
   8% {
     transform: translateX(-50%) scale(1.2) translateY(4px);
     opacity: var(--wv-ab-op, 0.2);
   }
+
   20% {
     transform: translateX(-50%) scale(1) translateY(14px);
     opacity: var(--wv-ab-op, 0.2);
   }
+
   70% {
     transform: translateX(-50%) scale(0.85) translateY(36px);
     opacity: calc(var(--wv-ab-op, 0.2) * 0.4);
   }
+
   100% {
     transform: translateX(-50%) scale(0.6) translateY(50px);
     opacity: 0;
@@ -876,15 +1066,20 @@ svg {
    HERO IMAGE FLOAT ANIMATION
    ============================================================ */
 @keyframes hero-image-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
+
   25% {
     transform: translateY(-12px) rotate(0.5deg);
   }
+
   50% {
     transform: translateY(-6px) rotate(-0.3deg);
   }
+
   75% {
     transform: translateY(-14px) rotate(0.2deg);
   }
@@ -899,10 +1094,13 @@ svg {
    DATE NOW IMAGE — GLOW BREATHE ANIMATION
    ============================================================ */
 @keyframes wv-glow-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     filter: drop-shadow(0 20px 40px rgba(194, 21, 89, 0.12));
   }
+
   50% {
     transform: scale(1.015);
     filter: drop-shadow(0 28px 56px rgba(194, 21, 89, 0.22));
@@ -918,18 +1116,24 @@ svg {
    EVENTS IMAGE — DRIFT TILT ANIMATION
    ============================================================ */
 @keyframes wv-drift-tilt {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) translateX(0) rotate(0deg);
   }
+
   20% {
     transform: translateY(-6px) translateX(4px) rotate(0.6deg);
   }
+
   40% {
     transform: translateY(-10px) translateX(-2px) rotate(-0.4deg);
   }
+
   60% {
     transform: translateY(-4px) translateX(6px) rotate(0.3deg);
   }
+
   80% {
     transform: translateY(-8px) translateX(-4px) rotate(-0.5deg);
   }
@@ -942,6 +1146,7 @@ svg {
 
 /* --- Respect reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
+
   .wv-reveal,
   .wv-reveal-left,
   .wv-reveal-right,
@@ -952,19 +1157,24 @@ svg {
     animation: none !important;
     filter: none !important;
   }
+
   .wv-float,
   .wv-float-delayed {
     animation: none !important;
   }
+
   .hero-image-float {
     animation: none !important;
   }
+
   .wv-glow-breathe {
     animation: none !important;
   }
+
   .wv-drift-tilt {
     animation: none !important;
   }
+
   .wv-glow-hover:hover,
   .wv-card-lift:hover,
   .wv-icon-pop:hover,
@@ -972,68 +1182,90 @@ svg {
   .wv-cta-magnetic:active {
     transform: none !important;
   }
+
   .wv-gradient-text {
     animation: none !important;
   }
+
   .wv-scroll-indicator {
     animation: none !important;
   }
+
   .wv-glow-card:hover {
     transform: none !important;
   }
+
   .wv-glow-card:hover::before,
   .wv-glow-card:hover::after {
     opacity: 0 !important;
   }
+
   .wv-glow-card:hover .wv-glow-icon {
     transform: none !important;
   }
+
   .wv-glow-card:hover .wv-glow-title {
     transform: none !important;
   }
+
   .wv-hscroll-arrow:hover {
     transform: translateY(-50%) !important;
   }
+
   .wv-gradient-animated {
     animation: none !important;
   }
+
   .wv-cta-shimmer::after {
     animation: none !important;
   }
+
   .wv-step-pulse {
     animation: none !important;
   }
+
   .wv-parallax-float {
     animation: none !important;
   }
-  .wv-stagger-children > * {
+
+  .wv-stagger-children>* {
     opacity: 1 !important;
     animation: none !important;
   }
+
   .wv-border-glow {
     animation: none !important;
   }
+
   .wv-marquee-track {
     animation: none !important;
   }
+
   .wv-glass-float {
     animation: none !important;
   }
+
   .wv-shimmer-slide::after {
     animation: none !important;
   }
-  .wv-stagger-children > * {
+
+  .wv-stagger-children>* {
     opacity: 1 !important;
     animation: none !important;
   }
+
   .wv-border-glow {
     animation: none !important;
   }
 }
+
 @keyframes wv-badge-glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
   }
+
   50% {
     box-shadow: 0 0 0 6px var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
   }
@@ -1047,9 +1279,12 @@ svg {
    GLASS CARD FLOAT — subtle vertical drift for frosted cards
    ============================================================ */
 @keyframes wv-glass-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-6px);
   }
@@ -1067,6 +1302,7 @@ svg {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -1077,14 +1313,12 @@ svg {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.35) 45%,
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(255, 255, 255, 0.35) 55%,
-    transparent 60%
-  );
+  background: linear-gradient(105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.35) 45%,
+      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0.35) 55%,
+      transparent 60%);
   background-size: 200% 100%;
   animation: wv-shimmer-slide 4s ease-in-out infinite;
   pointer-events: none;
@@ -1098,32 +1332,53 @@ svg {
     opacity: 0;
     transform: translateY(16px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-.wv-stagger-children > * {
+.wv-stagger-children>* {
   opacity: 0;
   animation: wv-stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.wv-stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.wv-stagger-children > *:nth-child(2) { animation-delay: 80ms; }
-.wv-stagger-children > *:nth-child(3) { animation-delay: 160ms; }
-.wv-stagger-children > *:nth-child(4) { animation-delay: 240ms; }
-.wv-stagger-children > *:nth-child(5) { animation-delay: 320ms; }
-.wv-stagger-children > *:nth-child(6) { animation-delay: 400ms; }
+.wv-stagger-children>*:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.wv-stagger-children>*:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.wv-stagger-children>*:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.wv-stagger-children>*:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.wv-stagger-children>*:nth-child(5) {
+  animation-delay: 320ms;
+}
+
+.wv-stagger-children>*:nth-child(6) {
+  animation-delay: 400ms;
+}
 
 /* ============================================================
    BORDER GLOW — animated gradient border for glass cards
    ============================================================ */
 @keyframes wv-border-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     border-color: rgba(255, 255, 255, 0.5);
     box-shadow: 0 4px 24px rgba(194, 21, 89, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
+
   50% {
     border-color: rgba(194, 21, 89, 0.12);
     box-shadow: 0 4px 24px rgba(194, 21, 89, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);

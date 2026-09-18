@@ -163,7 +163,7 @@ function DateNow() {
               <div className="hero-image-float">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/couple_images.png"
+                  src="https://ik.imagekit.io/aezmcynwbe/welvors/couple_images.png"
                   alt="Date Now — Post a plan and meet real people"
                   className="w-[380px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_24px_rgba(194,21,89,0.10)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.2),0_12px_32px_rgba(194,21,89,0.15)] hover:scale-[1.02]"
                 />

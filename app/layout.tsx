@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Playfair_Display } from "next/font/google";
 
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
@@ -10,6 +11,8 @@ import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
 import { LegalProvider } from "./context/legalContext";
 import { EB_Garamond } from 'next/font/google';
+import { Quicksand } from "next/font/google";
+import { EventProvider } from "./context/EventContext";
 
 const brandSerif = EB_Garamond({
   subsets: ['latin'],
@@ -26,6 +29,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
+  subsets: ["latin"],
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 export const metadata = {
   metadataBase: new URL("https://www.welvors.com"),
 
@@ -55,7 +68,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} h-full antialiased`}
+      className={`
+        ${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} ${quicksand.variable} 
+        h-full antialiased`}
     >
       <head>
         {/* Preload video for faster loading */}
@@ -63,22 +78,24 @@ export default function RootLayout({
         {/* Preconnect to CDN if using external hosting */}
         <link rel="dns-prefetch" href="/Intro1.mp4" />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body className={`min-h-full flex flex-col ${brandSerif.variable}`}>
         <IntroVideo>
-        <HashHandler />
+          <HashHandler />
 
-        <Navbar />
-        <ScrollProgress />
+          <Navbar />
+          <ScrollProgress />
 
-        <main className="flex-1">
+          <main className="flex-1">
             <LaunchProvider>
               <LegalProvider>
-                {children}
+                <EventProvider>
+                  {children}
+                </EventProvider>
               </LegalProvider>
-          </LaunchProvider>
-        </main>
+            </LaunchProvider>
+          </main>
 
-        <Footer />
+          <Footer />
         </IntroVideo>
       </body>
     </html>

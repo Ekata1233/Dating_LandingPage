@@ -345,7 +345,7 @@ function Header() {
       ref={headerRef}
       style={{
         background: "linear-gradient(to left, #FFB3C7, #FFD1DD, #FFF9FA)",
-      }} className="relative flex min-h-screen w-full overflow-hidden px-2 sm:px-10 py-6 sm:py-14"
+      }} className="relative flex min-h-screen w-full overflow-hidden px-2 sm:px-10 py-6 sm:py-14 "
     >
 
       {/* Soft pink glow top-right */}
@@ -406,7 +406,7 @@ function Header() {
 
             {/* Body */}
             <p
-              className={`mt-4 text-[15px] leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              className={`mt-4 text-[15px] font-brand leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ color: C.body, animationDelay: "300ms" }}
             >
               Built for people who want something genuine. verified profiles,
@@ -468,7 +468,7 @@ function Header() {
             <div className="hero-image-float">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/hero_image.png"
+                src="https://ik.imagekit.io/aezmcynwbe/welvors/hero_image.png"
                 alt="Welvors App Preview"
                 className="w-[380px] sm:w-[360px] lg:w-[380px] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.2),0_8px_24px_rgba(194,21,89,0.15)] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(0,0,0,0.25),0_12px_32px_rgba(194,21,89,0.2)] hover:scale-[1.02]"
               />

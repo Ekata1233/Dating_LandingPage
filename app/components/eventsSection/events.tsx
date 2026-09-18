@@ -85,7 +85,6 @@ function Events() {
 
   return (
     <section
-      id="events"
       ref={headerRef}
       className="relative w-full overflow-hidden px-2  py-16 sm:px-8"
       style={{
