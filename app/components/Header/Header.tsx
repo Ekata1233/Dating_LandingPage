@@ -364,26 +364,6 @@ function Header() {
           - Desktop: `lg:block` => badge + copy ek hi column me stack (normal 2-col layout, pehle jaisa)
         */}
         <div className="contents lg:block lg:max-w-xl">
-          {/* Launch badge — MOBILE ORDER 1 */}
-          <div
-            className={`order-1 mb-7 inline-flex w-full max-w-md items-center gap-2 rounded-full border px-4 py-2 lg:order-none ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
-            style={{
-              backgroundColor: C.badgeBg,
-              borderColor: C.ctaFrom,
-              animationDelay: "0ms",
-            }}
-          >
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: C.pink }}
-            />
-            <span
-              className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-              style={{ color: C.pink }}
-            >
-              Launching soon · Early access
-            </span>
-          </div>
 
           {/* Copy body — MOBILE ORDER 3 */}
           <div className="order-3 lg:order-none">
@@ -396,9 +376,9 @@ function Header() {
                 animationDelay: "100ms",
               }}
             >
-              We&apos;re not building another dating app. We&apos;re building{" "}
+              Welvors is Built for {" "}
               <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
-                trust.
+                Serious Relationships &amp; Matrimony
               </span>
             </h1>
 
@@ -406,12 +386,13 @@ function Header() {
 
             {/* Body */}
             <p
-              className={`mt-4 text-[15px] font-brand leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
-              style={{ color: C.body, animationDelay: "300ms" }}
+              className={`mt-4 text-[15px] leading-relaxed ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              style={{
+                color: C.body, animationDelay: "300ms",
+
+              }}
             >
-              Built for people who want something genuine. verified profiles,
-              safety built in, and matches who want the same things you do. No
-              biodata. No family pressure. Just you, on your own timeline.
+              Welvors brings together people who are looking for genuine connections and lasting relationships. With verified profiles and intelligent matching, discover someone who fits your values, interests, and intentions.
             </p>
 
 
@@ -419,23 +400,23 @@ function Header() {
 
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
-              <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>                
+              <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button
-                type="button"
-                onClick={handleDiscover}
-                className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
-                style={{
-                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
-                  backgroundSize: "200% 200%",
-                  boxShadow: `0 8px 28px ${C.pink}35`,
-                }}
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
-                  Discover Welvors
-                </span>
-                <span className="cm-shimmer pointer-events-none absolute inset-0" />
-              </button>
+                  type="button"
+                  onClick={handleDiscover}
+                  className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
+                  style={{
+                    background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+                    backgroundSize: "200% 200%",
+                    boxShadow: `0 8px 28px ${C.pink}35`,
+                  }}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
+                    Discover Welvors
+                  </span>
+                  <span className="cm-shimmer pointer-events-none absolute inset-0" />
+                </button>
               </div>
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Playfair_Display } from "next/font/google";
+import { Playfair_Display,Poppins } from "next/font/google";
 
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
@@ -13,7 +13,11 @@ import { LegalProvider } from "./context/legalContext";
 import { EB_Garamond } from 'next/font/google';
 import { Quicksand } from "next/font/google";
 import { EventProvider } from "./context/EventContext";
-
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
 const brandSerif = EB_Garamond({
   subsets: ['latin'],
   variable: '--font-brand-serif', // Updated CSS variable name
@@ -69,7 +73,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`
-        ${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} ${quicksand.variable} 
+        ${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} ${quicksand.variable} ${poppins.variable} 
         h-full antialiased`}
     >
       <head>
@@ -78,7 +82,7 @@ export default function RootLayout({
         {/* Preconnect to CDN if using external hosting */}
         <link rel="dns-prefetch" href="/Intro1.mp4" />
       </head>
-      <body className={`min-h-full flex flex-col ${brandSerif.variable}`}>
+      <body className={`min-h-full flex flex-col`}>
         <IntroVideo>
           <HashHandler />
 

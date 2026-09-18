@@ -135,7 +135,7 @@ const Icon = {
 };
 
 /** Date Formatter */
-function formattedDate(date: Date) {
+export function formattedDate(date: Date) {
     return date.toLocaleDateString('en-US', {
         weekday: 'short', // "Fri"
         month: 'short',   // "Sep"

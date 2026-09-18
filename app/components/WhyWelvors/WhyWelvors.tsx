@@ -100,7 +100,7 @@ const FEATURES = [
     iconBg: "#FBE8EF",
     iconColor: "#C21559",
   },
-    {
+  {
     title: "Date Now",
     body: "Plans-first dating, built for real connections. Post your plans, choose who can join, and turn everyday moments into meaningful dates.",
     icon: <Icon.Clock />,
@@ -115,12 +115,12 @@ const FEATURES = [
     iconColor: "#C99A22",
   },
   {
-  title: "AI matchmaking",
-  body: "Behaviour-driven compatibility, not just photos. predictive scoring, AI ice-breakers and a self-learning journey built around you.",
-  icon: <Icon.Globe />,
-  iconBg: "#E6EDF9",
-  iconColor: "#3D6FB4",
-},
+    title: "AI matchmaking",
+    body: "Behaviour-driven compatibility, not just photos. predictive scoring, AI ice-breakers and a self-learning journey built around you.",
+    icon: <Icon.Globe />,
+    iconBg: "#E6EDF9",
+    iconColor: "#3D6FB4",
+  },
   {
     title: "Commitment Mode",
     body: "A world-first loyalty engine. Verify intent up front and enter a drama-free zone.A partner-funded in honeymoon on marriage",
@@ -139,7 +139,8 @@ function WhyWelvors() {
       id="why"
       ref={sectionRef}
       style={{
-background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",      }} className="w-full scroll-mt-[50px] py-12 sm:py-12"
+        background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",
+      }} className="w-full scroll-mt-[50px] py-12 sm:py-12"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}
@@ -159,9 +160,9 @@ background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8
             }}
           >
             Built for Genuine {" "}
-              <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
-                Connections
-              </span>
+            <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
+              Connections
+            </span>
           </h2>
 
           <p
@@ -230,13 +231,18 @@ background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8
               {/* Title */}
               <h3
                 className="relative text-center mt-5 text-lg font-bold text-[#231f20]"
-                style={{ fontFamily: '"Times New Roman", serif' }}
+                style={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                }}
               >
                 {f.title}
               </h3>
 
               {/* Body */}
-              <p className="relative mt-3 text-[14px] leading-relaxed text-gray-800 text-center">
+              <p className="relative mt-3 text-[14px] leading-relaxed text-gray-800 text-center"
+                              style={{
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                }}>
                 {f.body}
               </p>
             </div>

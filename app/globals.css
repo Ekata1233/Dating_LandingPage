@@ -13,6 +13,8 @@
   --font-roboto: "Roboto";
   --font-brand: var(--font-brand-serif), Georgia, serif;
   --font-quicksand: var(--font-quicksand), "Quicksand", sans-serif;
+  --font-poppins: var(--font-poppins);
+
 }
 
 
