@@ -1,7 +1,7 @@
 "use client";
 
-import React, { SVGProps } from "react";
-import { useScrollReveal, staggerDelay } from "../useScrollReveal";
+import React, { SVGProps, useCallback, useEffect, useRef, useState } from "react";
+import { useScrollReveal } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline (Tailwind theme pe depend nahi)                */
@@ -13,6 +13,82 @@ const C = {
   body: "#6B655F",
   cardBorder: "#F0E8E1",
 };
+
+// How long the hover-style animation stays on after a tap (ms)
+const TAP_ACTIVE_MS = 1200;
+
+/* ------------------------------------------------------------------ */
+/*  Styles                                                             */
+/*  - .wf-reveal : each card rises bottom → top when it scrolls in     */
+/*  - .wf-card   : hover animation. Same look via .is-active, which is */
+/*                 set by mouse hover on desktop and by tap on mobile  */
+/* ------------------------------------------------------------------ */
+const CardStyles = () => (
+  <style>{`
+    /* ---------- Entrance (per card) ---------- */
+    .wf-reveal {
+      opacity: 0;
+      transform: translateY(48px);
+      transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: opacity, transform;
+    }
+    .wf-reveal.is-in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Stagger only when cards sit side by side */
+    @media (min-width: 768px) {
+      .wf-reveal { transition-delay: var(--wf-delay, 0ms); }
+    }
+
+    /* ---------- Card base ---------- */
+    .wf-card {
+      box-shadow: 0 6px 24px rgba(43, 42, 40, 0.08);
+      transition: transform 0.3s ease-out, box-shadow 0.4s ease-out;
+    }
+    .wf-line {
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.5s ease-out;
+    }
+    .wf-glow {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+      box-shadow: 0 0 0 1px rgba(214, 28, 114, 0.25), 0 10px 30px rgba(214, 28, 114, 0.12);
+    }
+    .wf-icon {
+      transition: transform 0.5s ease-out, box-shadow 0.5s ease-out;
+    }
+    .wf-icon-fill {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+    .wf-icon-glyph {
+      color: #d61c72;
+      transition: color 0.5s ease-out;
+    }
+
+    /* ---------- Active state (hover on desktop, tap on mobile) ---------- */
+    .wf-card.is-active {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 40px rgba(214, 28, 114, 0.14);
+    }
+    .wf-card.is-active .wf-line { transform: scaleX(1); }
+    .wf-card.is-active .wf-glow { opacity: 1; }
+    .wf-card.is-active .wf-icon {
+      transform: scale(1.1) rotate(3deg);
+      box-shadow: 0 10px 26px rgba(214, 28, 114, 0.35);
+    }
+    .wf-card.is-active .wf-icon-fill { opacity: 1; }
+    .wf-card.is-active .wf-icon-glyph { color: #ffffff; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .wf-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .wf-card, .wf-line, .wf-glow, .wf-icon, .wf-icon-fill, .wf-icon-glyph { transition: none !important; }
+    }
+  `}</style>
+);
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icons                                                   */
@@ -54,28 +130,12 @@ const Icon = {
     </svg>
   ),
   UserShield: (p: SVGProps<SVGSVGElement>) => (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 -960 960 960"
-      fill="currentColor"
-      {...p}
-    >
+    <svg width="24" height="24" viewBox="0 -960 960 960" fill="currentColor" {...p}>
       <path d="M485-240Zm26 80H160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440v80q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32h245q4 21 10.5 41t15.5 39Zm209 80q-73-18-116.5-80T560-298v-102l160-80 160 80v102q0 76-43.5 138T720-80Zm0-84q38-18 59-55t21-79v-52l-80-40-80 40v52q0 42 21 79t59 55ZM367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm169.5-56.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm240 363Z" />
     </svg>
   ),
   Clock: (p: SVGProps<SVGSVGElement>) => (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...p}
-    >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </svg>
@@ -130,21 +190,156 @@ const FEATURES = [
   },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  Single feature card                                                */
+/* ------------------------------------------------------------------ */
+function FeatureCard({ feature, index }: { feature: (typeof FEATURES)[number]; index: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const tapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerType = useRef<string>("mouse");
+  const [inView, setInView] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+
+  // Rise up once, the first time THIS card scrolls into view
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    };
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    pointerType.current = e.pointerType;
+  }, []);
+
+  // Mouse: hover on / off
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setIsActive(true);
+  }, []);
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setIsActive(false);
+  }, []);
+
+  // Touch / pen: tap plays the same animation, then settles back
+  const handleClick = useCallback(() => {
+    if (pointerType.current === "mouse") return;
+    setIsActive(true);
+    if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    tapTimeout.current = setTimeout(() => setIsActive(false), TAP_ACTIVE_MS);
+  }, []);
+
+  return (
+    // Outer wrapper: scroll-in rise-up (transform #1)
+    <div
+      ref={wrapRef}
+      className={`wf-reveal h-full ${inView ? "is-in" : ""}`}
+      style={{ ["--wf-delay" as string]: `${(index % 3) * 100}ms` }}
+    >
+      {/* Inner card: hover / tap animation (transform #2) */}
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+        onClick={handleClick}
+        className={`wf-card relative h-full font-brand overflow-hidden rounded-2xl border bg-white p-7 flex flex-col items-center text-center cursor-pointer ${
+          isActive ? "is-active" : ""
+        }`}
+        style={{ borderColor: "rgba(214,40,116,0.12)" }}
+      >
+        {/* Top highlight line — grows in when active */}
+        <div
+          className="wf-line absolute top-0 left-0 h-[3px] w-full"
+          style={{
+            background: "linear-gradient(90deg, #ff4d8d, #d61c72, #b0146a)",
+          }}
+        />
+
+        {/* Soft pink glow ring when active */}
+        <div className="wf-glow pointer-events-none absolute inset-0 rounded-2xl" />
+
+        {/* Icon box */}
+        <div
+          className="wf-icon relative flex h-14 w-14 mx-auto text-center items-center justify-center rounded-2xl"
+          style={{
+            background: "linear-gradient(145deg, #ffe1ec 0%, #ffc2d9 100%)",
+          }}
+        >
+          {/* Gradient overlay that fades in when active */}
+          <div
+            className="wf-icon-fill absolute inset-0 rounded-2xl"
+            style={{
+              background: "linear-gradient(145deg, #ff5e9c 0%, #d61c72 55%, #a4105f 100%)",
+            }}
+          />
+
+          {/* Icon — dark pink at rest, white when active */}
+          <span className="wf-icon-glyph relative z-10">{feature.icon}</span>
+        </div>
+
+        {/* Title */}
+        <h3
+          className="relative text-center mt-5 text-lg font-bold text-[#231f20]"
+          style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+        >
+          {feature.title}
+        </h3>
+
+        {/* Body */}
+        <p
+          className="relative mt-3 text-[14px] leading-relaxed text-gray-800 text-center"
+          style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+        >
+          {feature.body}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section                                                            */
+/* ------------------------------------------------------------------ */
 function WhyWelvors() {
   const [sectionRef, sectionVisible] = useScrollReveal();
-  const [cardsRef, cardsVisible] = useScrollReveal({ threshold: 0.05 });
 
   return (
     <section
       id="why"
       ref={sectionRef}
       style={{
-        background: "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",
-      }} className="w-full scroll-mt-[50px] py-12 sm:py-12"
+        background:
+          "linear-gradient(to top, #FFD0DC 0%, #FFE0E8 35%, #FFF0F4 75%, #FFF8FA 88%, #FFFBFC 100%)",
+      }}
+      className="w-full scroll-mt-[50px] py-12 sm:py-12"
     >
+      <CardStyles />
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* -------------------- Header -------------------- */}
-        <div className={`mx-auto max-w-2xl text-center ${sectionVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
+        <div
+          className={`mx-auto max-w-2xl text-center ${
+            sectionVisible ? "wv-reveal is-visible" : "wv-reveal"
+          }`}
+        >
           <span
             className="text-[15px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: C.pink }}
@@ -159,8 +354,11 @@ function WhyWelvors() {
               color: C.headingDark,
             }}
           >
-            Built for Genuine {" "}
-            <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
+            Built for Genuine{" "}
+            <span
+              className="wv-gradient-animated italic"
+              style={{ WebkitTextFillColor: "transparent" }}
+            >
               Connections
             </span>
           </h2>
@@ -169,83 +367,16 @@ function WhyWelvors() {
             className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed"
             style={{ color: C.body }}
           >
-            Welvors isn&apos;t another swipe app. It&apos;s a trust-first
-            ecosystem where every profile is verified, every match is
-            intentional, and every connection can become a real relationship.
+            Welvors isn&apos;t another swipe app. It&apos;s a trust-first ecosystem where every
+            profile is verified, every match is intentional, and every connection can become a real
+            relationship.
           </p>
         </div>
 
         {/* -------------------- Cards grid -------------------- */}
-        <div ref={cardsRef} className="mt-12  grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <div
-              key={f.title}
-              className={`group relative font-brand overflow-hidden rounded-2xl border bg-white p-7 flex flex-col items-center text-center transition-all duration-300 ease-out hover:-translate-y-1 shadow-[0_6px_24px_rgba(43,42,40,0.08)] ${cardsVisible ? "wv-reveal is-visible" : "wv-reveal"
-                }`}
-              style={{
-                borderColor: "rgba(214,40,116,0.12)",
-                ...staggerDelay(i, 100),
-              }}
-            >
-              {/* Top highlight line — grows in on hover */}
-              <div
-                className="absolute top-0 left-0 h-[3px] w-full origin-left scale-x-0 transition-transform duration-500 ease-out group-hover:scale-x-100"
-                style={{
-                  background: "linear-gradient(90deg, #ff4d8d, #d61c72, #b0146a)",
-                }}
-              />
-
-              {/* Soft pink glow ring on hover */}
-              <div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
-                style={{
-                  boxShadow: "0 0 0 1px rgba(214,28,114,0.25), 0 10px 30px rgba(214,28,114,0.12)",
-                }}
-              />
-
-              {/* Icon box */}
-              <div
-                className="relative flex h-14 w-14 mx-auto text-center items-center justify-center rounded-2xl
-          transition-all duration-500 ease-out
-          group-hover:scale-110
-          group-hover:rotate-3
-          group-hover:shadow-[0_10px_26px_rgba(214,28,114,0.35)]"
-                style={{
-                  background: "linear-gradient(145deg, #ffe1ec 0%, #ffc2d9 100%)",
-                }}
-              >
-                {/* Gradient overlay that fades in on hover */}
-                <div
-                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(145deg, #ff5e9c 0%, #d61c72 55%, #a4105f 100%)",
-                  }}
-                />
-
-                {/* Icon — dark pink at rest, white on hover */}
-                <span className="relative z-10 text-[#d61c72] transition-colors duration-500 ease-out group-hover:text-white">
-                  {f.icon}
-                </span>
-              </div>
-
-              {/* Title */}
-              <h3
-                className="relative text-center mt-5 text-lg font-bold text-[#231f20]"
-                style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                }}
-              >
-                {f.title}
-              </h3>
-
-              {/* Body */}
-              <p className="relative mt-3 text-[14px] leading-relaxed text-gray-800 text-center"
-                              style={{
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                }}>
-                {f.body}
-              </p>
-            </div>
+            <FeatureCard key={f.title} feature={f} index={i} />
           ))}
         </div>
       </div>

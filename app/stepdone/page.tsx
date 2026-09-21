@@ -20,7 +20,7 @@ interface DoneData {
 
 /* ---- Waitlist details API (source of truth for payment/spot) ---- */
 const WAITLIST_USER_API =
-  "https://dating-app-backend-plum.vercel.app/api/user/waitlist-user/get";
+  "https://api.welvors.com/api/user/waitlist-user/get";
 
 interface WaitlistUser {
   id: string;

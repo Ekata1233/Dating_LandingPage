@@ -1,7 +1,7 @@
 "use client";
 
 import React, { SVGProps, useCallback, useEffect, useRef, useState } from "react";
-import { useScrollReveal, staggerDelay } from "../useScrollReveal";
+import { useScrollReveal } from "../useScrollReveal";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -55,6 +55,24 @@ const ACCENT = {
 } as const;
 
 type AccentKey = keyof typeof ACCENT;
+
+/* ------------------------------------------------------------------ */
+/*  Animation styles (mobile rise-up on visible card)                  */
+/* ------------------------------------------------------------------ */
+const RiseStyles = () => (
+  <style>{`
+    @keyframes wvRiseUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .wv-rise-up {
+      animation: wvRiseUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s backwards;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wv-rise-up { animation: none; }
+    }
+  `}</style>
+);
 
 /* ------------------------------------------------------------------ */
 /*  Inline SVG icons                                                   */
@@ -145,53 +163,54 @@ const TIERS: {
   note: string;
   accent: AccentKey;
 }[] = [
-    {
-      n: 1,
-      name: "Basic",
-      tier: "TIER 1",
-      subtitle: "Entry level",
-      icon: <Icon.Phone />,
-      progress: 25,
-      checks: ["Mobile number", "Email verified", "Location verified"],
-      note: "Stops fake signups",
-      accent: "pink",
-    },
-    {
-      n: 2,
-      name: "Verified",
-      tier: "TIER 2",
-      subtitle: "Identity confirmed",
-      icon: <Icon.IdCard />,
-      progress: 25,
-      checks: ["Government ID", "Face / selfie", "Live video check"],
-      note: "Blocks catfish & stolen photos",
-      accent: "purple",
-    },
-    {
-      n: 3,
-      name: "Trusted",
-      tier: "TIER 3",
-      subtitle: "Verified in person",
-      icon: <Icon.Video />,
-      progress: 75,
-      checks: ["Education verified", "Profession verified", "Income verified"],
-      note: "Rules out identity & resume liars",
-      accent: "teal",
-    },
-    {
-      n: 4,
-      name: "Elite",
-      tier: "TIER 4",
-      subtitle: "Fully vetted",
-      icon: <Icon.Star />,
-      progress: 100,
-      checks: [
-        "Background check via verified third-party partner", "Emergency contact verified"
-      ],
-      note: "Designed to filter out scammers",
-      accent: "amber",
-    },
-  ];
+  {
+    n: 1,
+    name: "Basic",
+    tier: "TIER 1",
+    subtitle: "Entry level",
+    icon: <Icon.Phone />,
+    progress: 25,
+    checks: ["Mobile number", "Email verified", "Location verified"],
+    note: "Stops fake signups",
+    accent: "pink",
+  },
+  {
+    n: 2,
+    name: "Verified",
+    tier: "TIER 2",
+    subtitle: "Identity confirmed",
+    icon: <Icon.IdCard />,
+    progress: 25,
+    checks: ["Government ID", "Face / selfie", "Live video check"],
+    note: "Blocks catfish & stolen photos",
+    accent: "purple",
+  },
+  {
+    n: 3,
+    name: "Trusted",
+    tier: "TIER 3",
+    subtitle: "Verified in person",
+    icon: <Icon.Video />,
+    progress: 75,
+    checks: ["Education verified", "Profession verified", "Income verified"],
+    note: "Rules out identity & resume liars",
+    accent: "teal",
+  },
+  {
+    n: 4,
+    name: "Elite",
+    tier: "TIER 4",
+    subtitle: "Fully vetted",
+    icon: <Icon.Star />,
+    progress: 100,
+    checks: [
+      "Background check via verified third-party partner",
+      "Emergency contact verified",
+    ],
+    note: "Designed to filter out scammers",
+    accent: "amber",
+  },
+];
 
 /* ------------------------------------------------------------------ */
 /*  "What this means for you" benefits                                 */
@@ -220,25 +239,57 @@ const BENEFITS = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Horizontal Scroll Timeline Card                                    */
+/*  Tier Card                                                          */
 /* ------------------------------------------------------------------ */
-function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; isActive: boolean }) {
+function HorizontalTierCard({ tier }: { tier: (typeof TIERS)[number]; isActive?: boolean }) {
   const a = ACCENT[tier.accent];
   const cardRef = useRef<HTMLDivElement>(null);
+  const [isTapped, setIsTapped] = useState(false);
+  const tapTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  useEffect(() => {
+    return () => {
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    };
+  }, []);
+
+  const setMousePosition = useCallback((x: number, y: number) => {
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
-    card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
-    card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+    card.style.setProperty("--mouse-x", `${x - rect.left}px`);
+    card.style.setProperty("--mouse-y", `${y - rect.top}px`);
   }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      setMousePosition(e.clientX, e.clientY);
+    },
+    [setMousePosition]
+  );
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const touch = e.touches[0];
+      if (touch) {
+        setMousePosition(touch.clientX, touch.clientY);
+      }
+      setIsTapped(true);
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+      tapTimeout.current = setTimeout(() => setIsTapped(false), 700);
+    },
+    [setMousePosition]
+  );
 
   return (
     <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      className={`group  wv-glow-card bg-white p-6 transition-all duration-500 shadow-[0_12px_40px_rgba(0,0,0,0.08)]"}`}
+      onTouchStart={handleTouchStart}
+      className={`group wv-glow-card bg-white p-6 transition-all duration-500 ease-out
+        shadow-[0_12px_40px_rgba(0,0,0,0.08)]
+        md:hover:-translate-y-2 md:hover:shadow-[0_20px_50px_rgba(0,0,0,0.14)]
+        ${isTapped ? "is-active -translate-y-2 shadow-[0_20px_50px_rgba(0,0,0,0.14)]" : ""}`}
       style={{
         borderColor: a.cardBorder,
         border: `1px solid ${a.cardBorder}`,
@@ -247,7 +298,7 @@ function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; 
       {/* Tier badge + icon */}
       <div className="flex items-center gap-3">
         <div
-          className="flex h-12 w-12 items-center group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] justify-center rounded-xl"
+          className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-500 group-hover:scale-105"
           style={{ backgroundColor: a.tint, color: a.main }}
         >
           {tier.icon}
@@ -307,10 +358,12 @@ function HorizontalTierCard({ tier, isActive }: { tier: (typeof TIERS)[number]; 
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Section                                                            */
+/* ------------------------------------------------------------------ */
 function VerifiedCommunity() {
   const [headerRef, headerVisible] = useScrollReveal();
   const [tiersRef, tiersVisible] = useScrollReveal({ threshold: 0.05 });
-  const [benefitsRef, benefitsVisible] = useScrollReveal({ threshold: 0.05 });
   const [activeTier, setActiveTier] = useState(0);
 
   useEffect(() => {
@@ -320,13 +373,24 @@ function VerifiedCommunity() {
     return () => clearInterval(interval);
   }, []);
 
-
-
   return (
-    <section style={{ background: "radial-gradient(ellipse 125% 95% at 50% 100%, #E0C0E8 0%, #ECD2F0 18%, #F4E2F6 38%, #F8EAF2 55%, #FAF0F0 72%, #FCF4F0 88%, #FCF8F4 100%)" }} className="w-full py-16 sm:py-20">
+    <section
+      style={{
+        background:
+          "radial-gradient(ellipse 125% 95% at 50% 100%, #E0C0E8 0%, #ECD2F0 18%, #F4E2F6 38%, #F8EAF2 55%, #FAF0F0 72%, #FCF4F0 88%, #FCF8F4 100%)",
+      }}
+      className="w-full py-16 sm:py-20"
+    >
+      <RiseStyles />
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* -------------------- Header -------------------- */}
-        <div ref={headerRef} className={`mx-auto max-w-4xl text-center wv-section-divider ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}>
+        <div
+          ref={headerRef}
+          className={`mx-auto max-w-4xl text-center wv-section-divider ${
+            headerVisible ? "wv-reveal is-visible" : "wv-reveal"
+          }`}
+        >
           <span
             className="text-[15px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: C.pink }}
@@ -341,8 +405,11 @@ function VerifiedCommunity() {
               color: C.headingDark,
             }}
           >
-            Strict checks. Zero {" "}
-            <span className="wv-gradient-animated italic" style={{ WebkitTextFillColor: "transparent" }}>
+            Strict checks. Zero{" "}
+            <span
+              className="wv-gradient-animated italic"
+              style={{ WebkitTextFillColor: "transparent" }}
+            >
               Fake Profiles
             </span>
           </h2>
@@ -351,34 +418,42 @@ function VerifiedCommunity() {
             className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed"
             style={{ color: C.body }}
           >
-            No fakes, catfish, or bots. Every profile passes a strict multi-step check so you only match with real people seeking genuine connections.
+            No fakes, catfish, or bots. Every profile passes a strict multi-step check so you only
+            match with real people seeking genuine connections.
           </p>
         </div>
 
         {/* -------------------- Tiers -------------------- */}
-        <div ref={tiersRef} className={`mt-12 ${tiersVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}>
-
-          {/* Desktop: static grid */}
+        <div
+          ref={tiersRef}
+          className={`mt-12 ${tiersVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`}
+        >
+          {/* Desktop: static grid (hover lift + glow on each card) */}
           <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {TIERS.map((t, i) => (
-              <HorizontalTierCard
-                key={t.n}
-                tier={t}
-                isActive={i === activeTier}
-              />
+              <HorizontalTierCard key={t.n} tier={t} isActive={i === activeTier} />
             ))}
           </div>
 
-          {/* Mobile: single-card carousel with dots */}
+          {/* Mobile: single-card carousel with rise-up animation + dots */}
           <div className="md:hidden">
             <div className="relative overflow-hidden">
               <div
-                className="flex transition-transform duration-500 ease-in-out"
+                className="flex transition-transform duration-700 ease-out"
                 style={{ transform: `translateX(-${activeTier * 100}%)` }}
               >
-                {TIERS.map((t) => (
-                  <div key={t.n} className="w-full flex-none px-1">
-                    <HorizontalTierCard tier={t} isActive />
+                {TIERS.map((t, i) => (
+                  <div
+                    key={t.n}
+                    className={`w-full flex-none px-1 py-3`}
+                  >
+                    {i === activeTier ? (
+                      <div key={`rise-${activeTier}`} className="wv-rise-up">
+                        <HorizontalTierCard tier={t} isActive />
+                      </div>
+                    ) : (
+                      <HorizontalTierCard tier={t} isActive={false} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -390,8 +465,11 @@ function VerifiedCommunity() {
                 <button
                   key={i}
                   type="button"
+                  aria-label={`Show tier ${i + 1}`}
                   onClick={() => setActiveTier(i)}
-                  className={`rounded-full transition-all duration-300 cursor-pointer ${i === activeTier ? "h-2.5 w-6" : "h-2.5 w-2.5 hover:opacity-70"}`}
+                  className={`rounded-full transition-all duration-300 cursor-pointer ${
+                    i === activeTier ? "h-2.5 w-6" : "h-2.5 w-2.5 hover:opacity-70"
+                  }`}
                   style={{
                     backgroundColor: i === activeTier ? C.pink : "#FFFFFF",
                   }}
@@ -399,7 +477,6 @@ function VerifiedCommunity() {
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </section>

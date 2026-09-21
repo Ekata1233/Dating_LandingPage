@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation"; // ⬅ NEW
+import { API_BASE_URL } from "@/utils/api";
 
 // Types matching your existing config
 export type Status = "idle" | "sending" | "success" | "error";
@@ -101,9 +102,9 @@ const MOCK_MODE = false;
 export const DONE_STORAGE_KEY = "welvors_waitlist_done";
 
 // API Endpoints
-const SEND_OTP_ENDPOINT = "https://dating-app-backend-plum.vercel.app/api/user/send-otp";
-const VERIFY_OTP_ENDPOINT = "https://dating-app-backend-plum.vercel.app/api/user/verify-otp";
-const SAVE_PROFILE_ENDPOINT = "https://dating-app-backend-plum.vercel.app/api/user/profile/basic-info";
+const SEND_OTP_ENDPOINT = `${API_BASE_URL}/api/user/send-otp`;
+const VERIFY_OTP_ENDPOINT = `${API_BASE_URL}/api/user/verify-otp`;
+const SAVE_PROFILE_ENDPOINT = `${API_BASE_URL}/api/user/profile/basic-info`;
 
 const initialProfile: Profile = {
   fullName: "",

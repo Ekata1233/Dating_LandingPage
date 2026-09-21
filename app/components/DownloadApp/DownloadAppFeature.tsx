@@ -291,7 +291,7 @@ function DownloadAppFeature() {
               })}
 
               {/* Phone frame */}
-              <div className="relative w-[210px] rounded-[36px] bg-black p-[3px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_20px_rgba(0,0,0,0.08)] sm:w-[225px] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(91,98,181,0.15)] hover:scale-[1.02]">
+              <div className="relative w-[230px] rounded-[36px] bg-black p-[3px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_20px_rgba(0,0,0,0.08)] sm:w-[225px] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(91,98,181,0.15)] hover:scale-[1.02]">
                 <div className="absolute left-1/2 top-3 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
 
                 <div className="overflow-hidden rounded-[33px] bg-white">
@@ -299,7 +299,7 @@ function DownloadAppFeature() {
                   <div className="relative">
                     <div className="relative overflow-hidden">
                       <div
-                        className="relative flex h-[400px] w-full transition-transform duration-500 ease-in-out"
+                        className="relative flex h-[430px] w-full transition-transform duration-500 ease-in-out"
                         style={{ transform: `translateX(-${currentImage * 100}%)` }}
                       >
                         {APP_SCREENSHOTS.map((src, i) => (

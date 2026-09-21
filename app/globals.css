@@ -287,6 +287,12 @@ svg {
   animation: wv-scale-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@media (max-width: 767px) {
+  .wv-reveal-scale.is-visible {
+    animation-duration: 1.4s;
+  }
+}
+
 .wv-reveal-down {
   opacity: 0;
   will-change: transform, opacity, filter;
@@ -515,14 +521,28 @@ svg {
 }
 
 .wv-glow-card:hover::before,
-.wv-glow-card:hover::after {
+.wv-glow-card:hover::after,
+.wv-glow-card.is-active::before,
+.wv-glow-card.is-active::after {
   opacity: 1;
 }
 
-.wv-glow-card:hover {
+.wv-glow-card:hover,
+.wv-glow-card.is-active {
   transform: translateY(-8px) scale(1.015);
   box-shadow: 0 25px 60px rgba(194, 21, 89, 0.12),
     0 8px 20px rgba(43, 42, 40, 0.06);
+}
+
+.wv-glow-card:active {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 25px 60px rgba(194, 21, 89, 0.12),
+    0 8px 20px rgba(43, 42, 40, 0.06);
+}
+
+.wv-glow-card:active::before,
+.wv-glow-card:active::after {
+  opacity: 1;
 }
 
 .wv-glow-card .wv-glow-icon {
@@ -530,7 +550,8 @@ svg {
     box-shadow 0.4s ease;
 }
 
-.wv-glow-card:hover .wv-glow-icon {
+.wv-glow-card:hover .wv-glow-icon,
+.wv-glow-card.is-active .wv-glow-icon {
   transform: scale(1.12) rotate(5deg);
   box-shadow: 0 6px 20px rgba(194, 21, 89, 0.2);
 }
@@ -539,7 +560,8 @@ svg {
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
-.wv-glow-card:hover .wv-glow-title {
+.wv-glow-card:hover .wv-glow-title,
+.wv-glow-card.is-active .wv-glow-title {
   transform: translateX(4px);
 }
 
@@ -547,7 +569,8 @@ svg {
   transition: color 0.3s ease;
 }
 
-.wv-glow-card:hover .wv-glow-body {
+.wv-glow-card:hover .wv-glow-body,
+.wv-glow-card.is-active .wv-glow-body {
   color: #5F5A55;
 }
 
@@ -1193,20 +1216,39 @@ svg {
     animation: none !important;
   }
 
-  .wv-glow-card:hover {
+  .wv-glow-card:hover,
+  .wv-glow-card.is-active {
+    transform: none !important;
+  }
+
+  .wv-glow-card:active {
     transform: none !important;
   }
 
   .wv-glow-card:hover::before,
-  .wv-glow-card:hover::after {
+  .wv-glow-card:hover::after,
+  .wv-glow-card.is-active::before,
+  .wv-glow-card.is-active::after,
+  .wv-glow-card:active::before,
+  .wv-glow-card:active::after {
     opacity: 0 !important;
   }
 
-  .wv-glow-card:hover .wv-glow-icon {
+  .wv-glow-card:hover .wv-glow-icon,
+  .wv-glow-card.is-active .wv-glow-icon {
     transform: none !important;
   }
 
-  .wv-glow-card:hover .wv-glow-title {
+  .wv-glow-card:active .wv-glow-icon {
+    transform: none !important;
+  }
+
+  .wv-glow-card:hover .wv-glow-title,
+  .wv-glow-card.is-active .wv-glow-title {
+    transform: none !important;
+  }
+
+  .wv-glow-card:active .wv-glow-title {
     transform: none !important;
   }
 

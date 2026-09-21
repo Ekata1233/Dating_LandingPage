@@ -345,7 +345,7 @@ function Header() {
       ref={headerRef}
       style={{
         background: "linear-gradient(to left, #FFB3C7, #FFD1DD, #FFF9FA)",
-      }} className="relative flex min-h-screen w-full overflow-hidden px-2 sm:px-10 py-6 sm:py-14 "
+      }} className="relative flex min-h-screen w-full overflow-hidden px-2 sm:px-10 py-14  "
     >
 
       {/* Soft pink glow top-right */}
@@ -369,7 +369,7 @@ function Header() {
           <div className="order-3 lg:order-none">
             {/* Heading */}
             <h1
-              className={`text-4xl leading-[1.08] sm:text-5xl lg:text-[3.4rem] ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
+              className={`text-[44px] leading-[1.08] sm:text-5xl lg:text-[3.4rem] ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 color: C.headingDark,
@@ -442,7 +442,7 @@ function Header() {
         </div>
 
         {/* -------------------- HERO IMAGE — MOBILE ORDER 2 -------------------- */}
-        <div className="order-2 relative flex justify-center lg:order-none lg:justify-end">
+        <div className="order-2 relative flex justify-center pt-10 lg-pt-0 lg:order-none lg:justify-end">
           <div className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`} style={{ animationDelay: "200ms" }}>
 
             {/* Hero image with continuous animation */}

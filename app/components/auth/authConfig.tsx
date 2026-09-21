@@ -12,8 +12,8 @@ export {
 export const MOCK_MODE = false;
 
 export const LOGIN_SEND_OTP =
-  "https://dating-app-backend-plum.vercel.app/api/user/send-otp";
+  "https://api.welvors.com/api/user/send-otp";
 export const LOGIN_VERIFY_OTP =
-  "https://dating-app-backend-plum.vercel.app/api/user/verify-otp";
+  "https://api.welvors.com/api/user/verify-otp";
 
 export type Status = "idle" | "sending" | "error";

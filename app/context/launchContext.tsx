@@ -1,13 +1,13 @@
 "use client";
 
+import { API_BASE_URL } from "@/utils/api";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-const BASE = "https://dating-app-backend-plum.vercel.app";
 
-const REFER_EARN_URL = `${BASE}/api/onboarding/referEarn/get`;
-const WAITLIST_URL = `${BASE}/api/user/waitlist/get`;
-const REFERRAL_DASHBOARD_URL = `${BASE}/api/user/referral/dashboard`;
-const REFERRAL_HISTORY_URL = `${BASE}/api/user/referral/history`;
+const REFER_EARN_URL = `${API_BASE_URL}/api/onboarding/referEarn/get`;
+const WAITLIST_URL = `${API_BASE_URL}/api/user/waitlist/get`;
+const REFERRAL_DASHBOARD_URL = `${API_BASE_URL}/api/user/referral/dashboard`;
+const REFERRAL_HISTORY_URL = `${API_BASE_URL}/api/user/referral/history`;
 
 export interface ReferEarn {
   signupReward: string;

@@ -1,21 +1,15 @@
 import { useState } from "react";
 
 export interface EventCardProps {
-  /** Banner image url */
   image?: string;
-  /** e.g. "Sat, 26 Sep" */
   date?: string;
-  /** e.g. "07:00 PM" */
   startTime?: string;
   endTime?: string;
-  /** e.g. 1 -> "+ 1 More" */
   title?: string;
   venue?: string;
   interested?: number;
-  /** shown instead of "Free" when isFree is false */
   price?: string;
   onClick?: () => void;
-  /** initial saved/star state */
   saved?: boolean;
 }
 
@@ -35,7 +29,7 @@ export default function EventCard({
 
   return (
     <div
-    className="cursor-pointer hover:scale-[1.02] transition-all duration-300 "
+    className="cursor-pointer hover:scale-[1.01] transition-transform duration-300 ease-out origin-center"
       onClick={onClick}
       style={{
         width: 240,
@@ -88,7 +82,7 @@ export default function EventCard({
           fontWeight: 700,
           color: "#161616",
           lineHeight: 1.3,
-        //   whiteSpace: "nowrap",
+          whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}

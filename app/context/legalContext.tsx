@@ -2,16 +2,15 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
-const BASE = "https://dating-app-backend-plum.vercel.app";
-
-const PRIVACY_POLICY_URL = `${BASE}/api/legal/legal-pages/PRIVACY_POLICY`;
-const TERMS_OF_SERVICE_URL = `${BASE}/api/legal/legal-pages/TERMS_OF_SERVICE`;
-const COOKIE_POLICY_URL = `${BASE}/api/legal/legal-pages/COOKIE_POLICY`;
-const COMMUNITY_GUIDELINES_URL = `${BASE}/api/legal/legal-pages/COMMUNITY_GUIDELINES`;
-const SAFETY_AND_TRUST_URL = `${BASE}/api/legal/legal-pages/DATING_SAFETY_TIPS`;
-const REFUND_AND_CANCELLATION_URL = `${BASE}/api/legal/legal-pages/REFUND_CANCELLATION_POLICY`;
-const GRIEVANCE_REDRESSAL_URL = `${BASE}/api/legal/legal-pages/GRIEVANCE_OFFICER_REDRESSAL`;
-const AGE_POLICY_18_PLUS_URL = `${BASE}/api/legal/legal-pages/AGE_POLICY_18_PLUS`;
+import { API_BASE_URL } from "@/utils/api";
+const PRIVACY_POLICY_URL = `${API_BASE_URL}/api/legal/legal-pages/PRIVACY_POLICY`;
+const TERMS_OF_SERVICE_URL = `${API_BASE_URL}/api/legal/legal-pages/TERMS_OF_SERVICE`;
+const COOKIE_POLICY_URL = `${API_BASE_URL}/api/legal/legal-pages/COOKIE_POLICY`;
+const COMMUNITY_GUIDELINES_URL = `${API_BASE_URL}/api/legal/legal-pages/COMMUNITY_GUIDELINES`;
+const SAFETY_AND_TRUST_URL = `${API_BASE_URL}/api/legal/legal-pages/DATING_SAFETY_TIPS`;
+const REFUND_AND_CANCELLATION_URL = `${API_BASE_URL}/api/legal/legal-pages/REFUND_CANCELLATION_POLICY`;
+const GRIEVANCE_REDRESSAL_URL = `${API_BASE_URL}/api/legal/legal-pages/GRIEVANCE_OFFICER_REDRESSAL`;
+const AGE_POLICY_18_PLUS_URL = `${API_BASE_URL}/api/legal/legal-pages/AGE_POLICY_18_PLUS`;
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */

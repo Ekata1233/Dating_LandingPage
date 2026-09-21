@@ -33,7 +33,7 @@ interface Props {
 
 /* ---- Price API (display only — charged amount server-side order se aata hai) ---- */
 const WAITLIST_API =
-  "https://dating-app-backend-plum.vercel.app/api/user/waitlist/get";
+  "https://api.welvors.com/api/user/waitlist/get";
 const inr = (n: number | string) => "₹" + Number(n).toLocaleString("en-IN");
 
 /* ------------------------------------------------------------------ */

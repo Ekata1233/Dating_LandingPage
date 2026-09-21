@@ -2,8 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
-const BASE = "https://dating-app-backend-plum.vercel.app";
-const EVENTS_URL = `https://api.welvors.com/api/admin/events/get-all`;
+import { API_BASE_URL } from "@/utils/api";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -53,6 +52,8 @@ export interface Event {
 }
 interface EventContextValue {
     events: Event[];
+    filter: string;
+    setFilter: React.Dispatch<React.SetStateAction<string>>;
     loading: boolean;
     error: string | null;
 }
@@ -64,6 +65,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const token = process.env.NEXT_PUBLIC_API_TOKEN;
+    const [filter, setFilter] = useState("ALL")
 
     useEffect(() => {
         let alive = true;
@@ -81,7 +83,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         (async () => {
             try {
                 const [r1] = await Promise.all(
-                    [publicGet(EVENTS_URL)]);
+                    [publicGet(`${API_BASE_URL}/api/admin/events/get?eventType=${filter}`)]);
                 if (!alive) return;
                 if (r1?.success && r1.data) {
                     console.log(r1.data)
@@ -98,11 +100,11 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         return () => {
             alive = false;
         };
-    }, []);
+    }, [filter]);
 
     return (
         <EventContext.Provider value={{
-            events, loading, error
+            events, loading, error,filter, setFilter
         }}>
             {children}
         </EventContext.Provider>
