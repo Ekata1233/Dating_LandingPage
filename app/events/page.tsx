@@ -108,7 +108,7 @@ export default function EventsFeed() {
   }
 
   return (
-    <div className="flex font-sans flex-col gap-2 bg-white min-h-screen px-12 py-24 text-black">
+    <div className="flex font-sans flex-col gap-2 bg-white min-h-screen px-3 lg:px-12  py-24 text-black">
       <div className="flex flex-col sm:flex-row gap-2  sm:items-center sm:justify-between">
         <h1 className="font-bold text-[28px] font-poppins lg:px-5" >Events near Pune</h1>
         <div className="flex items-center gap-1 border border-gray-400 px-2.5 py-1 rounded-full cursor-pointer max-w-[90px]">

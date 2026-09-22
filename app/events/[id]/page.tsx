@@ -238,14 +238,7 @@ export default function EventDetails() {
         <button type="button" onClick={() => router.back()} aria-label="Go back" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white shadow-md transition hover:scale-105" style={{ color: C.headingDark }}>
           <BackIcon />
         </button>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setIsSaved(!isSaved)} aria-label={isSaved ? "Unsave" : "Save"} className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white shadow-md transition hover:scale-105" style={{ color: isSaved ? C.pink : C.body }}>
-            <HeartIcon filled={isSaved} />
-          </button>
-          <button type="button" onClick={() => setModal("share")} aria-label="Share event" className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white shadow-md transition hover:scale-105" style={{ color: C.headingDark }}>
-            <ShareIcon />
-          </button>
-        </div>
+
       </div>
 
       {/* CONTENT */}
