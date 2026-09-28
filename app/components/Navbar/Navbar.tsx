@@ -3,8 +3,9 @@
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { setLoggedIn, useAuth } from "../authState";
+import { useAuth } from "../authState";
 import LoginModal from "../auth/LoginModal";
+import { deleteSession, verifySession } from "@/app/lib/sessions";
 
 
 interface NavbarProps {
@@ -45,7 +46,7 @@ function Navbar({ logoSrc }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const loggedIn = useAuth();
+  const [loggedIn, setLoggedIn] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -56,8 +57,17 @@ function Navbar({ logoSrc }: NavbarProps) {
     return () => clearTimeout(t);
   }, []);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    async function checkAuth() {
+      const result = await verifySession();
+      setLoggedIn(result.result);
+    }
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
     setLoggedIn(false);
+    await deleteSession();
     setOpen(false);
     router.push("/");
   };
@@ -82,8 +92,9 @@ function Navbar({ logoSrc }: NavbarProps) {
 
   const handleLoginSuccess = () => {
     setLoggedIn(true);
+
     setLoginOpen(false);
-    router.push("/lauch");
+    router.push("/app");
   };
 
   return (

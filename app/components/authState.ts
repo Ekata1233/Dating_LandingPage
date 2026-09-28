@@ -1,30 +1,35 @@
 "use client";
 
 /* ------------------------------------------------------------------ */
-/*  FRONTEND-ONLY auth flag.                                           */
-/*  ⚠️  Ye SECURITY nahi hai — koi bhi localStorage set kar sakta hai. */
-/*  Sirf UI ke liye (Login vs Logout button dikhana).                 */
-/*  Real auth: httpOnly cookie + server session/JWT.                  */
+/*  FRONTEND-ONLY auth flag using cookies.                             */
+/*  ⚠️  Ye SECURITY nahi hai — sirf UI ke liye (Login vs Logout).      */
+/*  Real auth: httpOnly cookie + server session/JWT.                   */
 /* ------------------------------------------------------------------ */
 
-const KEY = "welvors_auth";
+import { useEffect, useState } from "react";
+
 const EVENT = "welvors-auth-change";
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 export function setLoggedIn(value: boolean) {
   if (typeof window === "undefined") return;
-  if (value) localStorage.setItem(KEY, "1");
-  else localStorage.removeItem(KEY);
+  // We don't set any cookie here — the session cookie is httpOnly (set by server).
+  // This just triggers a re-render for UI components.
   window.dispatchEvent(new Event(EVENT));
 }
 
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(KEY) === "1";
+  // Check if the session cookie exists
+  return getCookie("session") !== null;
 }
 
 /** React hook — login/logout hone pe auto update */
-import { useEffect, useState } from "react";
-
 export function useAuth() {
   const [loggedIn, setState] = useState(false);
 

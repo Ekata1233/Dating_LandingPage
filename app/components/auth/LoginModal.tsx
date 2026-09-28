@@ -14,6 +14,7 @@ import {
 } from "./authConfig";
 import LoginPhone from "../endpoints/steps/LoginPhone";
 import LoginOtp from "../endpoints/steps/LoginOtp";
+import { createSession } from "@/app/lib/sessions";
 const COLORS = {
   // Frosted / translucent backgrounds
   bgTranslucent: "rgba(252, 248, 244, 0.72)", // navbar (see-through + blur)
@@ -154,9 +155,8 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
         return fail(data?.error || data?.message || "That code didn't match. Please try again.");
 
       // Backend token top-level me deta hai: { success, message, token }
-      const token = data?.token;
-      if (token) localStorage.setItem("welvors_token", token);
-      if (data?.user) localStorage.setItem("welvors_user", JSON.stringify(data.user));
+      const token = data?.data.token;
+      if (token)         await createSession(token);
       setStatus("idle");
       onSuccess?.();
       onClose();

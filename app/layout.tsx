@@ -1,28 +1,36 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Poppins } from "next/font/google";
+import { EB_Garamond } from "next/font/google";
+import { Quicksand } from "next/font/google";
+import { Figtree } from "next/font/google";
 import "./globals.css";
-import { Playfair_Display,Poppins } from "next/font/google";
 
-import Navbar from "./components/Navbar/Navbar";
-import Footer from "./components/Footer/Footer";
 import ScrollProgress from "./components/ScrollProgress";
 import HashHandler from "./components/HashHandler";
-import { LaunchProvider } from "./context/launchContext";
 import IntroVideo from "./components/Intro Video/IntroVideo";
+
+import { LaunchProvider } from "./context/launchContext";
 import { LegalProvider } from "./context/legalContext";
-import { EB_Garamond } from 'next/font/google';
-import { Quicksand } from "next/font/google";
 import { EventProvider } from "./context/EventContext";
+
+import ConditionalNavbar from "@/app/components/ui/ConditionalNavbar";
+import ConditionalFooter from "./components/ui/ConditionalFooter";
+import { ActiveSectionProvider } from "./context/ActiveSectionContext";
+import { UsersProvider } from "./context/UsersContext";
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-poppins",
 });
+
 const brandSerif = EB_Garamond({
-  subsets: ['latin'],
-  variable: '--font-brand-serif', // Updated CSS variable name
-  display: 'swap',
+  subsets: ["latin"],
+  variable: "--font-brand-serif",
+  display: "swap",
 });
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,16 +45,22 @@ const quicksand = Quicksand({
   variable: "--font-quicksand",
   subsets: ["latin"],
 });
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+});
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
-export const metadata = {
+
+export const metadata: Metadata = {
   metadataBase: new URL("https://www.welvors.com"),
 
   title: "WELVORS",
+
   description:
     "WELVORS - A trust-driven, emotionally intelligent dating ecosystem.",
 
@@ -73,33 +87,48 @@ export default function RootLayout({
     <html
       lang="en"
       className={`
-        ${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} ${quicksand.variable} ${poppins.variable} 
-        h-full antialiased`}
+        ${geistSans.variable}
+        ${geistMono.variable}
+        ${brandSerif.variable}
+        ${quicksand.variable}
+        ${poppins.variable}
+        ${figtree.variable}
+        h-full
+        antialiased
+      `}
     >
       <head>
-        {/* Preload video for faster loading */}
-        <link rel="preload" href="/Intro1.mp4" as="video" type="video/mp4" />
-        {/* Preconnect to CDN if using external hosting */}
+        <link
+          rel="preload"
+          href="/Intro1.mp4"
+          as="video"
+          type="video/mp4"
+        />
+
         <link rel="dns-prefetch" href="/Intro1.mp4" />
       </head>
-      <body className={`min-h-full flex flex-col`}>
+
+      <body className="flex min-h-full flex-col">
         <IntroVideo>
           <HashHandler />
 
-          <Navbar />
+          <ConditionalNavbar />
+
           <ScrollProgress />
 
           <main className="flex-1">
-            <LaunchProvider>
+            <UsersProvider>
               <LegalProvider>
                 <EventProvider>
-                  {children}
+                  <ActiveSectionProvider>
+                    {children}
+                  </ActiveSectionProvider>
                 </EventProvider>
               </LegalProvider>
-            </LaunchProvider>
+            </UsersProvider>
           </main>
 
-          <Footer />
+          <ConditionalFooter />
         </IntroVideo>
       </body>
     </html>

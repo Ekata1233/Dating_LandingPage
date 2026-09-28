@@ -16,10 +16,11 @@ interface FeatureTag {
     displayOrder: number;
 }
 
-export interface Event {
+export interface Event_Type {
     id: string;
     eventType?: EventType;
     title: string;
+    city:string;
     eventDate: string;
     startTime?: string;
     endTime?: string;
@@ -51,17 +52,16 @@ export interface Event {
     last24HoursText?: string;
 }
 interface EventContextValue {
-    events: Event[];
+    events: Event_Type[];
     filter: string;
     setFilter: React.Dispatch<React.SetStateAction<string>>;
     loading: boolean;
     error: string | null;
 }
-
 const EventContext = createContext<EventContextValue | undefined>(undefined);
 
 export function EventProvider({ children }: { children: React.ReactNode }) {
-    const [events, setEvents] = useState<Event[] | []>([]);
+    const [events, setEvents] = useState<Event_Type[] | []>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const token = process.env.NEXT_PUBLIC_API_TOKEN;
@@ -87,8 +87,8 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
                 if (!alive) return;
                 if (r1?.success && r1.data) {
                     console.log(r1.data)
-                    setEvents(r1.data as Event[]);
-                    // setEvents([] as Event[]);
+                    setEvents(r1.data as Event_Type[]);
+                    // setEvents([] as Event_Type[]);
                 } else {
                     setError("Couldn't load events");
                 }
@@ -104,7 +104,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <EventContext.Provider value={{
-            events, loading, error,filter, setFilter
+            events, loading, error, filter, setFilter
         }}>
             {children}
         </EventContext.Provider>

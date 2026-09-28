@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useEventData, Event } from "@/app/context/EventContext";
+import { useEventData, Event_Type } from "@/app/context/EventContext";
 import { MoonLoader } from "react-spinners";
 
 const C = {
@@ -43,7 +43,7 @@ function formatTime(time?: string): string {
   return `${hr}:${String(m).padStart(2, "0")} ${ampm} IST`;
 }
 
-function getPrice(ev: Event): string | null {
+function getPrice(ev: Event_Type): string | null {
   const prices = [ev.menEntryPrice, ev.womenEntryPrice, ev.otherEntryPrice].filter(Boolean);
   if (prices.length === 0) return null;
   const nums = prices.map((p) => parseFloat(p!)).filter((n) => !isNaN(n));
@@ -54,7 +54,7 @@ function getPrice(ev: Event): string | null {
   return "\u20B9" + min + " \u2013 \u20B9" + max;
 }
 
-function getSpotsText(ev: Event): string {
+function getSpotsText(ev: Event_Type): string {
   if (ev.spotsLeft != null && ev.spotsLeft > 0) return ev.spotsLeft + " spots left";
   if (ev.totalCapacity != null) return (ev.totalCapacity - ev.bookedCount) + " spots left";
   return "";

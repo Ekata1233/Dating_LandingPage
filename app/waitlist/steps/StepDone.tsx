@@ -9,7 +9,7 @@ interface Props {
   phone: string;
   city: string;
   spotNumber: number | null;
-  userId?: string;
+  welvors_token?: string;
   paymentId?: string;
   amountPaid?: string;
   onClose: () => void;
@@ -21,7 +21,7 @@ export default function StepDone({
   phone,
   city,
   spotNumber,
-  userId,
+  welvors_token,
   paymentId,
   amountPaid,
 }: Props) {
@@ -112,7 +112,7 @@ export default function StepDone({
               v: amountPaid ? `₹${Number(amountPaid).toLocaleString("en-IN")}` : "",
             },
             { k: "Payment ID", v: paymentId || "" },
-            { k: "Account ID", v: userId || "" },
+            { k: "Account ID", v: welvors_token || "" },
           ]
             .filter((r) => r.v)
             .map((r) => (
