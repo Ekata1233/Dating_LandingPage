@@ -1,11 +1,11 @@
 import React from 'react'
-import PremiumPlusCard from '../PremiumPlusCard'
-import VipExclusiveCard from '../VipExclusiveCard'
-import VipEliteCard from '../VipEliteCard'
-import MyBalances from '../MyBalances'
+import PremiumPlusCard from '../cards/PremiumPlusCard'
+import VipExclusiveCard from '../cards/VipExclusiveCard'
+import VipEliteCard from '../cards/VipEliteCard'
+import MyBalances from '../cards/MyBalances'
 
-import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY, MOCK_PLANS } from './shared/mockData'
-import type { BalanceItem, DatePlansSummary, Plan } from './shared/types'
+import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY, MOCK_PLANS } from '../shared/mockData'
+import type { BalanceItem, DatePlansSummary, Plan } from '../shared/types'
 
 export type WalletTab = "wallet" | "plans";
 

@@ -17,6 +17,8 @@ export interface MobileSheetProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  /** Merged onto the root element, so the shell can hide it on desktop. */
+  className?: string;
 }
 
 const MobileSheet: React.FC<MobileSheetProps> = ({
@@ -24,6 +26,7 @@ const MobileSheet: React.FC<MobileSheetProps> = ({
   onClose,
   title,
   children,
+  className = "",
 }) => {
   /* Lock the body behind the scrim so the page does not scroll under it. */
   useEffect(() => {
@@ -46,7 +49,11 @@ const MobileSheet: React.FC<MobileSheetProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" role="dialog" aria-modal="true">
+    <div
+      className={`fixed inset-0 z-50 flex items-end ${className}`}
+      role="dialog"
+      aria-modal="true"
+    >
       <button
         type="button"
         aria-label="Close"

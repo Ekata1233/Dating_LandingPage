@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import DateNowMain from "../DateNowMain";
-import DateNowSidebar from "../DateNowSidebar";
+import DateNowMain from "../desktop/DateNowMain";
+import DateNowSidebar from "../panels/DateNowSidebar";
 import { BRAND } from "../shared/theme";
 import type { DateAvailability, DateType } from "../shared/types";
 
@@ -39,7 +39,7 @@ const MobileDateNowSection: React.FC<MobileDateNowSectionProps> = ({
       }}
     >
       <DateNowSidebar
-        showHeader={false}
+        showHeader={true}
         layout="inline"
         availability={availability}
         dateType={dateType}

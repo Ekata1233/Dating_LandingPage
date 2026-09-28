@@ -3,9 +3,9 @@
 import React from "react";
 
 import type { ActiveSection } from "@/app/context/ActiveSectionContext";
-import type { NavItem, NavSlot } from "@/app/app/appConfig";
-import { navSlotFor } from "@/app/app/appConfig";
-import { BRAND, STRIP_ACTIVE } from "./shared/theme";
+import type { NavItem, NavSlot } from "../config/sections";
+import { navSlotFor } from "../config/sections";
+import { BRAND, STRIP_ACTIVE } from "../shared/theme";
 
 /* -------------------------------------------------------------------------- */
 /*  The pink navigation strip.                                                 */
@@ -25,6 +25,8 @@ export interface SidebarHeaderStripProps {
   profileAvatar: string;
   /** Safe-area padding for the bottom variant. Defaults to true. */
   safeArea?: boolean;
+  /** Merged onto the root element, so the shell can hide one variant. */
+  className?: string;
 }
 
 const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
@@ -34,6 +36,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
   onSelect,
   profileAvatar,
   safeArea = true,
+  className = "",
 }) => {
   const isBottom = variant === "bottom";
 
@@ -50,7 +53,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
     const iconItems = items.filter((item) => item.kind === "icon");
 
     return (
-      <div className="flex flex-row items-center justify-between px-2 min-h-[60px] bg-[#E7477D]">
+      <div className={`flex flex-row items-center justify-between px-2 min-h-[60px] bg-[#E7477D] ${className}`}>
         {avatarItem && (
           <button
             onClick={() => onSelect(avatarItem.section)}
@@ -116,7 +119,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
     <div
       className={`flex items-stretch w-full bg-[#E7477D] ${
         safeArea ? "pb-[env(safe-area-inset-bottom)]" : ""
-      }`}
+      } ${className}`}
     >
       {items.map((item) => {
         const isActive = isItemActive(item);

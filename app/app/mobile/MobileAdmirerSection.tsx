@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import AdmiererSidebar from "../AdmirersSidebar";
-import type { AdmiererSidebarProps, AdmirersTab } from "../AdmirersSidebar";
+import AdmiererSidebar from "../panels/AdmirersSidebar";
+import type { AdmiererSidebarProps, AdmirersTab } from "../panels/AdmirersSidebar";
 
 /* -------------------------------------------------------------------------- */
 /*  Admirers – the Received / Sent grid the desktop sidebar used to own.        */
@@ -12,7 +12,7 @@ import type { AdmiererSidebarProps, AdmirersTab } from "../AdmirersSidebar";
 const MobileAdmirerSection: React.FC<
   Omit<AdmiererSidebarProps, "showHeader">
 > = ({ className = "", ...rest }) => (
-  <AdmiererSidebar showHeader={false} className={className} {...rest} />
+  <AdmiererSidebar showHeader={true} className={className} {...rest} />
 );
 
 export type { AdmirersTab };

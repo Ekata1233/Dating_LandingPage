@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 
-import ChatMain from "../ChatMain";
-import ChatSideBar, { DEFAULT_CONVERSATIONS } from "../ChatSideBar";
+import ChatMain from "../desktop/ChatMain";
+import ChatSideBar, { DEFAULT_CONVERSATIONS } from "../panels/ChatSideBar";
 import type { Conversation } from "../shared/types";
 
 /* -------------------------------------------------------------------------- */

@@ -1,15 +1,67 @@
 /* -------------------------------------------------------------------------- */
-/*  /app — route configuration                                                  */
+/*  /app — section ⇄ URL map and navigation configuration                      */
 /*                                                                            */
-/*  Single source of truth for the navigation strip (which is rendered at the   */
-/*  top of the desktop sidebar and at the bottom of the mobile shell) and for  */
-/*  the per-section chrome of the mobile top bar.                               */
+/*  Single source of truth for three things:                                   */
+/*    1. SECTION_PATH / sectionFromPathname — the URL of every section, so the  */
+/*       address bar and the rendered view can never disagree.                  */
+/*    2. NAV_ITEMS / navSlotFor — the five bottom-nav slots rendered at the top */
+/*       of the desktop sidebar and at the bottom of the mobile shell.          */
+/*    3. SECTION_META — the per-section chrome of the mobile top bar.          */
 /* -------------------------------------------------------------------------- */
 
 import type { ReactNode } from "react";
 import { CirclePlay, Heart, House, MessageSquare } from "lucide-react";
 
-import type { ActiveSection } from "../context/ActiveSectionContext";
+/* --------------------------------- routing -------------------------------- */
+
+/** Every destination under /app. One folder, one entry. */
+export type ActiveSection =
+  | "home"
+  | "date-now"
+  | "admirer"
+  | "chat"
+  | "profile"
+  | "edit-profile"
+  | "refer-earn"
+  | "help"
+  | "logout";
+
+/** The section /app itself redirects to. */
+export const APP_ROOT = "/app";
+
+export const DEFAULT_SECTION: ActiveSection = "home";
+
+export const SECTION_PATH: Record<ActiveSection, string> = {
+  home: "/app/home",
+  "date-now": "/app/date-now",
+  admirer: "/app/admirers",
+  chat: "/app/chats",
+  profile: "/app/profile",
+  "edit-profile": "/app/profile/edit",
+  "refer-earn": "/app/profile/refer-earn",
+  help: "/app/profile/help",
+  logout: "/app/profile/logout",
+};
+
+const SECTION_BY_PATH: Record<string, ActiveSection> = Object.fromEntries(
+  (
+    Object.entries(SECTION_PATH) as [ActiveSection, string][]
+  ).map(([section, path]) => [path, section])
+);
+
+/**
+ * Resolves the section a pathname belongs to. `/app` itself is Home, and any
+ * unknown path under /app falls back to Home rather than rendering nothing.
+ */
+export function sectionFromPathname(pathname: string): ActiveSection {
+  const path = pathname.replace(/\/+$/, "") || APP_ROOT;
+
+  return SECTION_BY_PATH[path] ?? DEFAULT_SECTION;
+}
+
+/** The URL that renders a section. */
+export const pathForSection = (section: ActiveSection): string =>
+  SECTION_PATH[section];
 
 /* ------------------------------- navigation -------------------------------- */
 
@@ -64,7 +116,6 @@ export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
   "date-now": "date-now",
   admirer: "admirer",
   chat: "chat",
-  plans: "home",
   profile: "you",
   "edit-profile": "you",
   "refer-earn": "you",
@@ -78,49 +129,23 @@ export const navSlotFor = (section: ActiveSection): NavSlot =>
 
 /* ------------------------------ section chrome ----------------------------- */
 
-/** Buttons that can appear on the right of the mobile top bar. */
-export type TopAction = "wallet" | "menu" | "none";
-
+/** Per-section chrome of the mobile top bar. */
 export interface SectionMeta {
   /** Omitted on Home, where the wordmark takes the left slot instead. */
   title?: string;
-  /** Slot that stays highlighted in the bottom nav. */
-  navSlot: NavSlot;
   /** Renders a back chevron that navigates to this section. */
   backTo?: ActiveSection;
-  topAction: TopAction;
 }
 
 export const SECTION_META: Record<ActiveSection, SectionMeta> = {
-  home: { navSlot: "home", topAction: "none" },
-  "date-now": { title: "Date Plans", navSlot: "date-now", topAction: "none" },
-  admirer: { title: "Admirers", navSlot: "admirer", topAction: "none" },
-  plans: { title: "Plans", navSlot: "home", backTo: "home", topAction: "none" },
-  chat: { title: "Chats", navSlot: "chat", topAction: "none" },
+  home: {},
+  "date-now": { title: "Date Plans" },
+  admirer: { title: "Admirers" },
+  chat: { title: "Chats" },
   /* The account sheet this used to open is gone — profile is a full page now. */
-  profile: { title: "My Profile", navSlot: "you", topAction: "none" },
-  "edit-profile": {
-    title: "Edit Profile",
-    navSlot: "you",
-    backTo: "profile",
-    topAction: "none",
-  },
-  "refer-earn": {
-    title: "Refer & Earn",
-    navSlot: "you",
-    backTo: "profile",
-    topAction: "none",
-  },
-  help: {
-    title: "Help & Support",
-    navSlot: "you",
-    backTo: "profile",
-    topAction: "none",
-  },
-  logout: {
-    title: "Log out",
-    navSlot: "you",
-    backTo: "profile",
-    topAction: "none",
-  },
+  profile: { title: "My Profile" },
+  "edit-profile": { title: "Edit Profile", backTo: "profile" },
+  "refer-earn": { title: "Refer & Earn", backTo: "profile" },
+  help: { title: "Help & Support", backTo: "profile" },
+  logout: { title: "Log out", backTo: "profile" },
 };

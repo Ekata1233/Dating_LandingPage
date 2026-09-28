@@ -1,7 +1,7 @@
 import React from "react";
 
-import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "./main/shared/mockData";
-import type { BalanceItem, DatePlansSummary } from "./main/shared/types";
+import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
+import type { BalanceItem, DatePlansSummary } from "../shared/types";
 
 export interface BalanceItemProps {
   label: string;

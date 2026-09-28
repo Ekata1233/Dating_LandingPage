@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import HomeMain from "../HomeMain";
+import HomeMain from "../desktop/HomeMain";
 import type { Profile } from "../shared/types";
 
 /* -------------------------------------------------------------------------- */

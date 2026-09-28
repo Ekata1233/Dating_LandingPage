@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ROSE_IMAGE } from "./shared/mockData";
-import { Loader, Notice } from "./shared/Loader";
-import { mapUsersToProfiles, mergeUserDetails } from "./shared/mapUser";
-import type { Profile, SwipeHandlers } from "./shared/types";
+import { ROSE_IMAGE } from "../shared/mockData";
+import { Loader, Notice } from "../shared/Loader";
+import { mapUsersToProfiles, mergeUserDetails } from "../shared/mapUser";
+import type { Profile, SwipeHandlers } from "../shared/types";
 import { useUserDetails, useUsersData } from "@/app/context/UsersContext";
 import ProfileDetailSections, { Section } from "./ProfileDetailSections";
 import {
@@ -343,7 +343,7 @@ function HomeMain({
   const isOnline = Boolean(enriched.isOnline);
 
   return (
-    <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
+    <main className={`flex-1 flex px-2 py-2 flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
       {/* Card container – fills remaining height */}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
         {/* Profile card */}

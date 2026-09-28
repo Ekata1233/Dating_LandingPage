@@ -6,16 +6,16 @@
 /*  through props; no component reaches for a global store.                   */
 /* -------------------------------------------------------------------------- */
 
-import type { AdmirerReciveCardProps } from "@/app/components/ui/AdmirerReciveCard";
-import type { AdmirerSentCardProps } from "@/app/components/ui/AdmirerSentCard";
+import type { AdmirerReciveCardProps } from "../cards/AdmirerReciveCard";
+import type { AdmirerSentCardProps } from "../cards/AdmirerSentCard";
 import type {
   Conversation,
   FilterTab,
-} from "@/app/components/ui/main/ChatSideBar";
+} from "../panels/ChatSideBar";
 import type {
   ChatMessage,
   ChatTab,
-} from "@/app/components/ui/main/ChatMain";
+} from "../desktop/ChatMain";
 
 /* --------------------------------- profile --------------------------------- */
 

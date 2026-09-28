@@ -2,28 +2,24 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
-  useState,
+  useMemo,
   type ReactNode,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-export type ActiveSection =
-  | "home"
-  | "date-now"
-  | "admirer"
-  | "plans"
-  | "profile"
-  | "edit-profile"
-  | "help"
-  | "logout"
-  | "chat"
-  | "refer-earn";
+import {
+  pathForSection,
+  sectionFromPathname,
+  type ActiveSection,
+} from "@/app/app/config/sections";
+
+export type { ActiveSection };
 
 interface ActiveSectionContextType {
   activeSection: ActiveSection;
-  setActiveSection: Dispatch<SetStateAction<ActiveSection>>;
+  setActiveSection: (section: ActiveSection) => void;
 }
 
 export const ActiveSectionContext =
@@ -33,16 +29,37 @@ interface ActiveSectionProviderProps {
   children: ReactNode;
 }
 
+/**
+ * The active section is not state — it is the URL. Reading it off
+ * `usePathname()` means a deep link, a refresh and the back button all land on
+ * the view the user expects, and `setActiveSection` is just navigation.
+ */
 export function ActiveSectionProvider({
   children,
 }: ActiveSectionProviderProps) {
-  const [activeSection, setActiveSection] =
-    useState<ActiveSection>("home");
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const activeSection = sectionFromPathname(pathname);
+
+  const setActiveSection = useCallback(
+    (section: ActiveSection) => {
+      /* Re-pushing the current URL would drop the query string and reset the
+         scroll position for no reason. */
+      if (section === sectionFromPathname(pathname)) return;
+
+      router.push(pathForSection(section), { scroll: false });
+    },
+    [pathname, router]
+  );
+
+  const value = useMemo(
+    () => ({ activeSection, setActiveSection }),
+    [activeSection, setActiveSection]
+  );
 
   return (
-    <ActiveSectionContext.Provider
-      value={{ activeSection, setActiveSection }}
-    >
+    <ActiveSectionContext.Provider value={value}>
       {children}
     </ActiveSectionContext.Provider>
   );

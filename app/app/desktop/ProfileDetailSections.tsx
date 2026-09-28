@@ -1,8 +1,8 @@
 import type { UserDetailsState } from "@/app/context/UsersContext";
 import React from "react";
 
-import { FactIcon } from "./shared/factIcons";
-import type { Profile, ProfileFact } from "./shared/types";
+import { FactIcon } from "../shared/factIcons";
+import type { Profile, ProfileFact } from "../shared/types";
 
 /* -------------------------------------------------------------------------- */
 /*  Deep-profile sections.                                                     */

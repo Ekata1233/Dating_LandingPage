@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import AdmirerReciveCard from '../AdmirerReciveCard'
-import AdmirerSentCard from '../AdmirerSentCard'
+import AdmirerReciveCard from '../cards/AdmirerReciveCard'
+import AdmirerSentCard from '../cards/AdmirerSentCard'
 
-import { MOCK_ADMIRERS_RECEIVED, MOCK_ADMIRERS_SENT } from './shared/mockData'
-import type { AdmirerReceived, AdmirerSent } from './shared/types'
+import { MOCK_ADMIRERS_RECEIVED, MOCK_ADMIRERS_SENT } from '../shared/mockData'
+import type { AdmirerReceived, AdmirerSent } from '../shared/types'
 
 const C = {
     pink: "#e23a6a",
@@ -61,14 +61,14 @@ function AdmiererSidebar({
     return (
         <div className={`flex flex-col px-3 py-4 w-full h-full min-h-0 ${className}`}>
             {showHeader && (
-                <header
+                <header className='px-2'
                     style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                     }}
                 >
-                    <h1 className='text-[22px]'
+                    <h1 className='text-[30px] md:text-[22px]'
                         style={{
                             margin: 0,
                             fontWeight: 800,

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { MOCK_PLANS } from "./main/shared/mockData";
+import { MOCK_PLANS } from "../shared/mockData";
 import type { PlanCardProps } from "./PremiumPlusCard";
 
 const CheckIcon = () => (

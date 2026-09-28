@@ -2,8 +2,8 @@
 
 import React from "react";
 
-import HomeSidebar from "../HomeSidebar";
-import ProfileSidebar from "../ProfileSidebar";
+import HomeSidebar from "../panels/HomeSidebar";
+import ProfileSidebar from "../panels/ProfileSidebar";
 import { Loader, Notice } from "../shared/Loader";
 import {
   MOCK_BALANCES,

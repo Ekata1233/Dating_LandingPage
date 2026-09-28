@@ -372,12 +372,12 @@ export default function ChatSideBar({
                 }}
             >
                 {/* header */}
-                <header
+                <header className="px-5 py-3"
                     style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        padding: `${U(5)} ${U(5)} ${U(2.5)}`,
+                        // padding: `${U(5)} ${U(5)} ${U(2.5)}`,
                     }}
                 >
                     <h1

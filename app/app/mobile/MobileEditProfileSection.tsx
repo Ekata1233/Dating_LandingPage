@@ -2,8 +2,8 @@
 
 import React, { useCallback, useState } from "react";
 
-import ProfileEditCard from "../ProfileEditMain";
-import ProfileMain from "../ProfileMain";
+import ProfileEditCard from "../desktop/ProfileEditMain";
+import ProfileMain from "../desktop/ProfileMain";
 import { Loader, Notice } from "../shared/Loader";
 import { BRAND } from "../shared/theme";
 import type { Profile } from "../shared/types";

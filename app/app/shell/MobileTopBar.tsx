@@ -20,16 +20,19 @@ export interface MobileTopBarProps {
   onBack?: () => void;
   /** Extra buttons rendered at the far right. */
   actions?: React.ReactNode;
+  /** Merged onto the root element, so the shell can hide it on desktop. */
+  className?: string;
 }
 
 const MobileTopBar: React.FC<MobileTopBarProps> = ({
   title,
   onBack,
   actions,
+  className = "",
 }) => {
   return (
     <header
-      className="shrink-0 z-30 bg-white/95 backdrop-blur-md border-b"
+      className={`shrink-0 z-30 bg-white/95 backdrop-blur-md border-b ${className}`}
       style={{ borderColor: BRAND.border }}
     >
       <div

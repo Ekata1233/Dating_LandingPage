@@ -1,7 +1,7 @@
 import React from "react";
 
-import { MOCK_PLANS } from "./main/shared/mockData";
-import type { Plan } from "./main/shared/types";
+import { MOCK_PLANS } from "../shared/mockData";
+import type { Plan } from "../shared/types";
 
 export interface PlanCardProps {
   /** Plan content. Defaults to the seeded Premium+ tier. */

@@ -1,8 +1,8 @@
 import React, { useRef } from 'react'
 
-import { FactIcon } from "./shared/factIcons";
-import { MOCK_MY_PROFILE } from "./shared/mockData";
-import type { Profile } from "./shared/types";
+import { FactIcon } from "../shared/factIcons";
+import { MOCK_MY_PROFILE } from "../shared/mockData";
+import type { Profile } from "../shared/types";
 
 export interface ProfileMainProps {
     /** The profile being shown. Defaults to the logged-in user. */

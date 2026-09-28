@@ -1,5 +1,5 @@
 import React from 'react'
-import DateNowCard from '../DateNowCard'
+import DateNowCard from '../cards/DateNowCard'
 
 export interface DateNowMainProps {
     /** Fill the parent and scroll one card at a time (mobile). */
