@@ -196,15 +196,18 @@ svg {
   }
 }
 
+/* Uses the individual `translate` property (not `transform`) so that
+   :hover transforms can still compose with the float animation.
+   Animation values otherwise beat every normal author declaration. */
 @keyframes wv-float {
 
   0%,
   100% {
-    transform: translateY(0);
+    translate: 0 0;
   }
 
   50% {
-    transform: translateY(-14px);
+    translate: 0 -14px;
   }
 }
 
@@ -324,6 +327,20 @@ svg {
 }
 
 /* --- Interactive hover effects --- */
+.wv-badge-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, box-shadow;
+}
+
+.wv-badge-hover:hover {
+  transform: scale(1.07);
+  box-shadow: 0 12px 34px rgba(194, 21, 89, 0.18), 0 0 0 1px rgba(194, 21, 89, 0.08);
+}
+
+.wv-badge-hover:active {
+  transform: scale(1.02);
+}
+
 .wv-glow-hover {
   transition: box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, box-shadow;
@@ -1201,6 +1218,8 @@ svg {
   }
 
   .wv-glow-hover:hover,
+  .wv-badge-hover:hover,
+  .wv-badge-hover:active,
   .wv-card-lift:hover,
   .wv-icon-pop:hover,
   .wv-cta-magnetic:hover,
@@ -1307,16 +1326,26 @@ svg {
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 0 3px var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
   }
 
   50% {
-    box-shadow: 0 0 0 6px var(--glow-color), 0 8px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 0 9px var(--glow-soft), 0 0 20px var(--glow-soft), 0 8px 30px rgba(0, 0, 0, 0.08);
   }
 }
 
 .wv-badge-glow {
   animation: wv-badge-glow-pulse 1.8s ease-in-out infinite;
+}
+
+/* The `animation` shorthand above would drop the float, so re-declare both
+   animations together. `wv-float` is declared first to keep its delay at 0. */
+.wv-float.wv-badge-glow {
+  animation: wv-float 3.2s ease-in-out infinite, wv-badge-glow-pulse 1.8s ease-in-out infinite;
+}
+
+.wv-float-delayed.wv-badge-glow {
+  animation: wv-float 3.2s ease-in-out 1.6s infinite, wv-badge-glow-pulse 1.8s ease-in-out 0s infinite;
 }
 
 /* ============================================================

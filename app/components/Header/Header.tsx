@@ -2,6 +2,7 @@
 
 import React, { SVGProps, useEffect, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
 /*  Mockup profile photo — apni image /public me daal ke path yahan     */
@@ -301,6 +302,13 @@ const AVATARS = [
 /* ------------------------------------------------------------------ */
 const STAT_PILLS = ["92% Match", "98% Trust", "~5m Reply"];
 
+const handleDownloadApp = () => {
+  if (typeof document === "undefined") return;
+  const downloadSection = document.getElementById("download-app");
+  if (downloadSection) {
+    downloadSection.scrollIntoView({ behavior: "smooth" });
+  }
+};
 function Header() {
   const [waitlistCount, setWaitlistCount] = useState(515);
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
@@ -311,13 +319,6 @@ function Header() {
     loginBtn?.click();
   };
 
-  const handleDownloadApp = () => {
-    if (typeof document === "undefined") return;
-    const downloadSection = document.getElementById("download-app");
-    if (downloadSection) {
-      downloadSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   useEffect(() => {
     const BASE = 515;
@@ -401,9 +402,10 @@ function Header() {
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
-                <button
+                <a href="https://play.google.com">
+                  <button
                   type="button"
-                  onClick={handleDiscover}
+                  // onClick={handleDownloadApp}
                   className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
                   style={{
                     background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
@@ -417,6 +419,7 @@ function Header() {
                   </span>
                   <span className="cm-shimmer pointer-events-none absolute inset-0" />
                 </button>
+                </a>
               </div>
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button

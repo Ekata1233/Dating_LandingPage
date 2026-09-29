@@ -171,7 +171,7 @@ function AboutUs() {
         className="w-full border-b"
         style={{ borderColor: C.border }}
       >
-        <div className="mx-auto px-4 sm:px-6 py-6 sm:py-6 lg:px-8">
+        <div className="mx-auto pt-10 px-4 sm:px-6 py-6 sm:py-6 lg:px-8">
           {/* Breadcrumb */}
           <div className="flex items-center justify-between gap-4">
             <p className="text-[11.5px]" style={{ color: C.label }}>

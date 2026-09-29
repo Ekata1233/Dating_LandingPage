@@ -22,10 +22,11 @@ const C = {
 };
 
 const APP_SCREENSHOTS = [
-  "/download.jpg",
-  "/download2.jpg",
-  "/download3.jpg",
-  "/download.jpg",
+  "https://ik.imagekit.io/aezmcynwbe/welvors/phoneMockup5.png",
+  "https://ik.imagekit.io/aezmcynwbe/welvors/wmremove-transformed%20(1).png",
+  "https://ik.imagekit.io/aezmcynwbe/welvors/datePlanMockUp.jpeg",
+  "https://ik.imagekit.io/aezmcynwbe/welvors/EventsMockUp.jpeg",
+  "https://ik.imagekit.io/aezmcynwbe/welvors/phoneMockUp7.png"
 ];
 
 const Icon = {
@@ -147,6 +148,21 @@ const Icon = {
       <path d="M12 7v5l3 2" />
     </svg>
   ),
+  Chat: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  ),
   Zap: (p: SVGProps<SVGSVGElement>) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -183,11 +199,12 @@ const POINTS = [
 const BADGES = [
   {
     id: "id-verified",
-    label: "ID verified",
+    label: "Trust Score",
     icon: "check",
     iconBg: "#E4F5EA",
     iconColor: "#3F8F5B",
-    position: "-left-16 top-3 lg:-left-28 lg:top-8",
+    glowColor: "#3F8F5B",
+    position: "-left-16 top-3 lg:-left-28 lg:top-6",
     floatClass: "wv-float",
     imageIndex: 0,
   },
@@ -197,7 +214,8 @@ const BADGES = [
     icon: "shield",
     iconBg: "#FBE8EF",
     iconColor: C.pink,
-    position: "-right-16 top-[52%] lg:-right-26 lg:top-[52%]",
+    glowColor: C.pink,
+    position: "-right-16 top-[58%] lg:-right-26 lg:top-[56%]",
     floatClass: "wv-float-delayed",
     imageIndex: 1,
   },
@@ -207,7 +225,8 @@ const BADGES = [
     icon: "clock",
     iconBg: "#EAEAFB",
     iconColor: "#5B62B5",
-    position: "-right-16 top-[26%] lg:-right-24 lg:top-4",
+    glowColor: "#5B62B5",
+    position: "-right-16 top-[24%] lg:-right-24 lg:top-4",
     floatClass: "wv-float",
     imageIndex: 2,
   },
@@ -217,9 +236,21 @@ const BADGES = [
     icon: "calendar",
     iconBg: "#FFF3D6",
     iconColor: "#B8860B",
-    position: "-left-16 top-[74%] lg:-left-24 lg:top-[74%]",
+    glowColor: "#B8860B",
+    position: "-left-16 top-[46%] lg:-left-24 lg:top-[44%]",
     floatClass: "wv-float-delayed",
     imageIndex: 3,
+  },
+  {
+    id: "chat",
+    label: "Chat",
+    icon: "chat",
+    iconBg: "#E2F4F1",
+    iconColor: "#14857A",
+    glowColor: "#14857A",
+    position: "-left-16 top-[80%] lg:-left-28 lg:top-[76%]",
+    floatClass: "wv-float",
+    imageIndex: 4,
   },
 ];
 
@@ -266,11 +297,14 @@ function DownloadAppFeature() {
                 return (
                   <div
                     key={badge.id}
-                    className={`${badge.floatClass} absolute z-20 flex items-center gap-1.5 lg:gap-2 whitespace-nowrap rounded-xl lg:rounded-2xl bg-white px-2.5 py-1.5 lg:px-4 lg:py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ${badge.position} transition-all duration-300 hover:scale-105 ${isActive ? "wv-badge-glow" : ""
+                    className={`${badge.floatClass} absolute flex items-center gap-1.5 lg:gap-2 whitespace-nowrap rounded-xl lg:rounded-2xl bg-white px-2.5 py-1.5 lg:px-4 lg:py-3 shadow-[0_8px_30px_rgba(0,0,0,0.08)] ${badge.position} wv-badge-hover ${isActive ? "wv-badge-glow z-30" : "z-20"
                       }`}
                     style={
                       isActive
-                        ? ({ "--glow-color": "rgba(194,21,89,0.55)" } as React.CSSProperties)
+                        ? ({
+                          "--glow-color": badge.glowColor,
+                          "--glow-soft": `${badge.glowColor}59`,
+                        } as React.CSSProperties)
                         : undefined
                     }
                   >
@@ -279,6 +313,7 @@ function DownloadAppFeature() {
                       style={{ backgroundColor: badge.iconBg, color: badge.iconColor }}
                     >
                       {badge.icon === "clock" && <Icon.Clock />}
+                      {badge.icon === "chat" && <Icon.Chat />}
                       {badge.icon === "check" && <Icon.Check />}
                       {badge.icon === "shield" && <Icon.UserShield />}
                       {badge.icon === "calendar" && <Icon.Calendar />}
@@ -292,7 +327,7 @@ function DownloadAppFeature() {
 
               {/* Phone frame */}
               <div className="relative w-[230px] rounded-[36px] bg-black p-[3px] shadow-[0_20px_60px_rgba(0,0,0,0.15),0_8px_20px_rgba(0,0,0,0.08)] sm:w-[225px] transition-all duration-500 hover:shadow-[0_30px_80px_rgba(91,98,181,0.15)] hover:scale-[1.02]">
-                <div className="absolute left-1/2 top-3 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
+                {/* <div className="absolute left-1/2 top-3 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" /> */}
 
                 <div className="overflow-hidden rounded-[33px] bg-white">
                   {/* App Screenshot Carousel */}

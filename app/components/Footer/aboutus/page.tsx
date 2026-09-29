@@ -25,7 +25,7 @@ const C = {
 const COMPANY_INFO = {
   name: "Infynod Tech Private Limited (CIN: U62020PN2026PTC258333) ",
   registeredIn: "India",
-  headOffice: "Hadpsar, Pune, Maharashtra, India",
+  headOffice: "Office No. 307, 3rd Floor, Amanora Chamber, Hadapsar, Pune, Maharashtra – 411028",
   email: "infynod@gmail.com",
 };
 
@@ -152,7 +152,7 @@ function AboutUs() {
   const year = new Date().getFullYear();
 
   return (
-    <main style={{ backgroundColor: C.bg }} className="w-full">
+    <main style={{ backgroundColor: C.bg }} className="w-full ">
       {/* ==================== Hero ==================== */}
       <div
         className="w-full border-b"

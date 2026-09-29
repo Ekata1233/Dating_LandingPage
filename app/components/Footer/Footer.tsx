@@ -40,6 +40,21 @@ const Icon = {
       <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
     </svg>
   ),
+  Facebook: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v3H6v4h3v6h4v-6h3l1-4h-4V9c0-.6.4-1 1-1z" />
+    </svg>
+  ),
   X: (p: SVGProps<SVGSVGElement>) => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" {...p}>
       <path d="M17.5 3h3.2l-7 8 8.2 10h-6.4l-5-6.2L4.7 21H1.5l7.5-8.6L1.2 3h6.6l4.5 5.7L17.5 3zm-1.1 16h1.8L7.7 4.9H5.8L16.4 19z" />
@@ -135,6 +150,7 @@ const COLUMNS = [
 
 const SOCIALS = [
   { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
+  { label: "Facebook", href: "https://www.facebook.com/", icon: <Icon.Facebook /> },
   { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn /> },
   { label: "X", href: "https://www.x.com/", icon: <Icon.X /> },
   { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube /> },
@@ -179,10 +195,15 @@ function Footer() {
               className="mt-4 max-w-xs text-[14px] leading-relaxed"
               style={{ color: C.body }}
             >
-              Dating, done right. Real people, verified profiles, and a safer
-              way to meet someone who actually gets you.
-            </p>
+              A modern platform built for genuine connections, meaningful conversations, and relationships with purpose. Welvors places authenticity, privacy, security, and trust at the heart of every connection.
 
+              </p>
+            <p
+              className="mt-2 max-w-xs text-[14px] leading-relaxed"
+              style={{ color: C.body }}
+            >                              Welvors is owned and operated by Infynod Tech Private Limited (CIN U62020PN2026PTC258333), Pune.            
+
+              </p>
             {/* Socials */}
             <div className="mt-5 flex items-center gap-3">
               {SOCIALS.map((s) => (
@@ -236,21 +257,6 @@ function Footer() {
           className="mt-12 flex flex-col items-center gap-4 border-t pt-6"
           style={{ borderColor: C.divider }}
         >
-          <p
-            className="text-center text-[12px] leading-5"
-            style={{ color: C.label }}
-          >
-            Welvors is a product of Infynod Tech Private Limited · CIN:
-            U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
-            Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
-            <a
-              href="mailto:support@welvors.com"
-              className="welvors-footer-link"
-              style={{ color: C.headingDark }}
-            >
-              support@welvors.com
-            </a>
-          </p>
 
           <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <p className="text-[13px]" style={{ color: C.label }}>

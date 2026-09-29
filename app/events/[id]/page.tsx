@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useEventData, Event } from "@/app/context/EventContext";
+import { useEventData, Event_Type } from "@/app/context/EventContext";
 import { MoonLoader } from "react-spinners";
+import ContactModal from "@/app/components/ContactForm";
+import { API_BASE_URL } from "@/utils/api";
 
 const C = {
   bg: "#FCF8F4",
@@ -43,18 +45,45 @@ function formatTime(time?: string): string {
   return `${hr}:${String(m).padStart(2, "0")} ${ampm} IST`;
 }
 
-function getPrice(ev: Event): string | null {
-  const prices = [ev.menEntryPrice, ev.womenEntryPrice, ev.otherEntryPrice].filter(Boolean);
-  if (prices.length === 0) return null;
-  const nums = prices.map((p) => parseFloat(p!)).filter((n) => !isNaN(n));
-  if (nums.length === 0) return prices[0] ?? null;
-  const min = Math.min(...nums);
-  const max = Math.max(...nums);
-  if (min === max) return "\u20B9" + min;
-  return "\u20B9" + min + " \u2013 \u20B9" + max;
+function firstValue(...values: Array<string | undefined>): string | undefined {
+  return values.find((v) => v != null && v !== "");
 }
 
-function getSpotsText(ev: Event): string {
+/* Per-tier prices: what the member actually pays, or the undiscounted entry price. */
+function tierPrices(ev: Event_Type, useDiscounted: boolean): { nums: number[]; raw: string[] } {
+  const tiers: Array<[string | undefined, string | undefined]> = [
+    [ev.menEntryPrice, ev.menDiscountedPrice],
+    [ev.womenEntryPrice, ev.womenDiscountedPrice],
+    [ev.otherEntryPrice, ev.otherDiscountedPrice],
+  ];
+  const raw = tiers
+    .map(([entry, discounted]) => (useDiscounted ? firstValue(discounted, entry) : entry))
+    .filter((p): p is string => p != null);
+  return { nums: raw.map((p) => parseFloat(p)).filter((n) => !isNaN(n)), raw };
+}
+
+function formatAmount(nums: number[], raw: string[]): string | null {
+  if (nums.length === 0) return raw[0] ?? null;
+  return "\u20B9" + Math.max(...nums);
+}
+
+/* Highest price across all tiers — never a min–max range. */
+function getPrice(ev: Event_Type): string | null {
+  const { nums, raw } = tierPrices(ev, true);
+  return formatAmount(nums, raw);
+}
+
+/* Same top tier before the discount; hidden when nothing was actually reduced. */
+function getOriginalPrice(ev: Event_Type): string | null {
+  const entry = tierPrices(ev, false);
+  const payable = tierPrices(ev, true);
+  if (entry.nums.length === 0 || payable.nums.length === 0) return null;
+  const maxEntry = Math.max(...entry.nums);
+  if (Math.max(...payable.nums) >= maxEntry) return null;
+  return "\u20B9" + maxEntry;
+}
+
+function getSpotsText(ev: Event_Type): string {
   if (ev.spotsLeft != null && ev.spotsLeft > 0) return ev.spotsLeft + " spots left";
   if (ev.totalCapacity != null) return (ev.totalCapacity - ev.bookedCount) + " spots left";
   return "";
@@ -157,6 +186,8 @@ export default function EventDetails() {
   const [modal, setModal] = useState<ModalType>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [contactStatus, setContactStatus] = useState("idle");
 
   const event = useMemo(() => {
     if (!params?.id) return null;
@@ -215,19 +246,49 @@ export default function EventDetails() {
   }
 
   const price = getPrice(event);
+  const originalPrice = getOriginalPrice(event);
   const spotsText = getSpotsText(event);
   const dateStr = formatDate(event.eventDate);
   const startTimeStr = formatTime(event.startTime);
   const endTimeStr = formatTime(event.endTime);
   const timeRange = startTimeStr && endTimeStr ? startTimeStr + " \u2013 " + endTimeStr : startTimeStr || endTimeStr || "";
   const handleBookNow = () => {
-    if (typeof document === "undefined") return;
-    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    loginBtn?.click();
+    setOpen(true)
+    // if (typeof document === "undefined") return;
+    // const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
+    // loginBtn?.click();
   };
   return (
     <main style={{ background: C.bg, color: C.headingDark, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }} className="pt-16">
       {/* HERO IMAGE */}
+      <ContactModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onSubmit={async (data) => {
+          try {
+            // const response = await fetch(`http://localhost:3000/api/contact`, {
+            const response = await fetch(`https://www.welvors.com/api/contact`, {
+              method: 'POST', // 1. Specify the HTTP method
+              headers: {
+                'Content-Type': 'application/json' // 2. Tell the server to expect JSON
+              },
+              body: JSON.stringify(data) // 3. Convert JS object to a JSON string
+            });
+
+            // Network errors won't trigger the catch block if the server responds (e.g., 404 or 500)
+            // You must manually check if the response status is OK (200-299)
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.json(); // 4. Parse the JSON response
+            console.log('Success:', result);
+
+          } catch (error) {
+            console.error('Network or Parsing Error:', error);
+          }
+        }}
+      />
       <div className="relative w-full overflow-hidden" style={{ background: C.border }}>
         <img src={event.heroImage} alt={event.title} className="h-[240px] w-full object-cover sm:h-[340px] md:h-[400px]" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
@@ -306,8 +367,9 @@ export default function EventDetails() {
             <section className="mb-8">
               <h2 className="mb-4 text-base font-extrabold uppercase tracking-wide" style={{ color: C.headingDark }}>About this event</h2>
               <div className="rounded-2xl p-5 sm:p-6" style={{ background: C.white, border: "1px solid " + C.border }}>
-                <p className="text-[15px] leading-relaxed" style={{ color: C.body }}>
-                  {event.title}. Join verified members for an exclusive in-person experience. All attendees go through Welvors trust verification. No pressure, no awkwardness, just real people looking for genuine connections.
+                <p className="text-[15px] leading-relaxed whitespace-pre-line" style={{ color: C.body }}>
+                  {event.description?.trim() ||
+                    "Join verified members for an exclusive in-person experience. All attendees go through Welvors trust verification. No pressure, no awkwardness, just real people looking for genuine connections."}
                 </p>
                 {event.eventIntent && (
                   <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -389,7 +451,12 @@ export default function EventDetails() {
                 {price ? (
                   <div className="mb-4">
                     <p className="text-xs font-bold uppercase tracking-wide" style={{ color: C.label }}>Price</p>
-                    <p className="mt-1 text-2xl font-extrabold" style={{ color: C.headingDark }}>{price}</p>
+                    <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-2xl font-extrabold" style={{ color: C.headingDark }}>
+                      <span>{price}</span>
+                      {originalPrice && (
+                        <span className="text-[15px] font-bold line-through" style={{ color: C.label }}>{originalPrice}</span>
+                      )}
+                    </p>
                     {event.discountPercentage && parseFloat(event.discountPercentage) > 0 && (
                       <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold" style={{ background: C.badgeBg, color: C.pink }}>
                         {event.discountPercentage}% off
@@ -403,8 +470,8 @@ export default function EventDetails() {
                 )}
 
                 <button
-                 onClick={handleBookNow}
-                 type="button" className="wv-cta-magnetic wv-cta-shimmer px-2 mb-3 flex h-[48px] cursor-pointer items-center justify-center gap-2 rounded-xl border-0 text-[15px] font-extrabold text-white" style={{ background: "linear-gradient(135deg, " + C.ctaFrom + ", " + C.ctaTo + ")" }}>
+                  onClick={handleBookNow}
+                  type="button" className="wv-cta-magnetic wv-cta-shimmer px-2 mb-3 flex h-[48px] cursor-pointer items-center justify-center gap-2 rounded-xl border-0 text-[15px] font-extrabold text-white" style={{ background: "linear-gradient(135deg, " + C.ctaFrom + ", " + C.ctaTo + ")" }}>
                   <TicketIcon />
                   Book Now
                 </button>
@@ -478,12 +545,18 @@ export default function EventDetails() {
       <div className="fixed inset-x-0 bottom-0 z-50 flex items-center gap-3 border-t px-4 py-3 lg:hidden" style={{ background: C.white, borderColor: C.border }}>
         <div className="flex-1">
           {price ? (
-            <p className="text-lg font-extrabold" style={{ color: C.headingDark }}>{price}</p>
+            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-lg font-extrabold" style={{ color: C.headingDark }}>
+              <span>{price}</span>
+              {originalPrice && (
+                <span className="text-[13px] font-bold line-through" style={{ color: C.label }}>{originalPrice}</span>
+              )}
+            </p>
           ) : (
             <p className="text-lg font-extrabold" style={{ color: C.headingDark }}>Free</p>
           )}
         </div>
-        <button type="button" className="wv-cta-magnetic flex h-[44px] cursor-pointer items-center gap-2 rounded-xl border-0 px-6 text-sm font-extrabold text-white" style={{ background: "linear-gradient(135deg, " + C.ctaFrom + ", " + C.ctaTo + ")" }}>
+        <button type="button" className="wv-cta-magnetic flex h-[44px] cursor-pointer items-center gap-2 rounded-xl border-0 px-6 text-sm font-extrabold text-white" style={{ background: "linear-gradient(135deg, " + C.ctaFrom + ", " + C.ctaTo + ")" }}
+        onClick={handleBookNow}>
           <TicketIcon />
           Register
         </button>

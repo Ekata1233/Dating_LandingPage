@@ -13,6 +13,7 @@ type MusicCardProps = {
     imagePosition?: string;
     className?: string;
     onClick?: () => void;
+    isActive?: boolean;
 };
 
 /**
@@ -30,6 +31,7 @@ export default function FilterCard({
     imagePosition = "right bottom",
     className,
     onClick,
+    isActive = false,
 }: MusicCardProps) {
     const radius = "3.7cqw";
 
@@ -53,9 +55,13 @@ export default function FilterCard({
                     position: "relative",
                     width: "100%",
                     aspectRatio: "1220 / 615",
-                    background:
-                        "linear-gradient(180deg, #F9DCE8 0%, #FBE4ED 55%, #FDEFF4 100%)",
-                    boxShadow: "0 1px 2px rgba(20, 30, 80, 0.06)",
+                    background: isActive
+                        ? "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)"
+                        : "linear-gradient(180deg, #F9DCE8 0%, #FBE4ED 55%, #FDEFF4 100%)",
+                    boxShadow: isActive
+                        ? "0 4px 12px rgba(194, 21, 89, 0.4)"
+                        : "0 1px 2px rgba(20, 30, 80, 0.06)",
+                    transform: isActive ? "scale(1.02)" : undefined,
                 }}
             >
                 {/* PINK PANEL */}
@@ -86,7 +92,7 @@ export default function FilterCard({
                         fontSize: "9.6cqw",
                         lineHeight: 1,
                         letterSpacing: "-0.03em",
-                        color: "#050a3d",
+                        color: isActive ? "#FFFFFF" : "#050a3d",
                         whiteSpace: "normal",
                         overflowWrap: "break-word",
                         textAlign: "left",

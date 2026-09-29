@@ -165,7 +165,7 @@ function Navbar({ logoSrc }: NavbarProps) {
           )}
 
           <div className="flex items-center gap-3">
-            {loggedIn ? (
+            {/* {loggedIn ? (
               <button
                 type="button"
                 onClick={handleLogout}
@@ -196,7 +196,7 @@ function Navbar({ logoSrc }: NavbarProps) {
                 <span className="relative z-10">Log in</span>
                 <span className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-14deg] transition-transform duration-500 group-hover:translate-x-[120%]" />
               </button>
-            )}
+            )} */}
           </div>
         </div>
 
