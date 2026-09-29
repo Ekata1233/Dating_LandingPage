@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useScrollReveal } from "../useScrollReveal";
 import { useEventData } from "@/app/context/EventContext";
-import { Event } from "@/app/context/EventContext";
+import { Event_Type } from "@/app/context/EventContext";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import EventCard from "../ui/EventCard";
@@ -30,13 +30,14 @@ export function formattedDate(date: Date) {
 }
 
 // Events (Static for now, needs to be dynamic)
-const EventsFallback: Event[] = [
+const EventsFallback: Event_Type[] = [
     {
         id: "1",
         title: "New Year Party",
         eventDate: "2026-09-17",
         fullAddress: "Kothrud, Pune",
         bookedCount: 25,
+        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/party.jpg?updatedAt=1789705931343",
     },
     {
@@ -45,6 +46,7 @@ const EventsFallback: Event[] = [
         eventDate: "2026-09-19",
         fullAddress: "Koregaon Park, Pune",
         bookedCount: 42,
+        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/concert.jpg?updatedAt=1789705931443",
     },
     {
@@ -53,6 +55,7 @@ const EventsFallback: Event[] = [
         eventDate: "2026-09-20",
         fullAddress: "Baner, Pune",
         bookedCount: 68,
+        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/comedy.jpg?updatedAt=1789705931333",
     },
 ];
@@ -143,7 +146,7 @@ function EventCards() {
     const { events: contextEvents } = useEventData();
 
     // Derive events from context, falling back only when context has none.
-    const [events, setEvents] = useState<Event[]>(() =>
+    const [events, setEvents] = useState<Event_Type[]>(() =>
         contextEvents && contextEvents.length > 0 ? contextEvents : EventsFallback
     );
     const limitedEvents = events.slice(0, 5);
