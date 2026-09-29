@@ -103,7 +103,7 @@ export default function EventsFeed() {
         </h1>
 
         {/* CITY DROPDOWN */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative w-fit sm:ml-auto" ref={dropdownRef}>
           <button
             onClick={() =>
               setIsCityDropdownOpen(!isCityDropdownOpen)
@@ -122,7 +122,7 @@ export default function EventsFeed() {
           </button>
 
           {isCityDropdownOpen && (
-            <div className="absolute right-0 z-50 mt-2 max-h-60 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute left-0 z-50 mt-2 max-h-60 w-48 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg sm:left-auto sm:right-0">
               {cities.map((city) => (
                 <button
                   key={city}

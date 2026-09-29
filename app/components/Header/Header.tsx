@@ -402,7 +402,7 @@ function Header() {
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
-                <a href="https://play.google.com">
+                <a href="https://play.google.com" className="w-full">
                   <button
                   type="button"
                   // onClick={handleDownloadApp}
@@ -413,7 +413,7 @@ function Header() {
                     boxShadow: `0 8px 28px ${C.pink}35`,
                   }}
                 >
-                  <span className="relative z-10 flex items-center gap-2">
+                  <span className="relative z-10 flex items-center">
                     <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
                     Discover Welvors
                   </span>
