@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const NEXT_PUBLIC_MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI!;
 
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not defined");
+if (!NEXT_PUBLIC_MONGODB_URI) {
+  throw new Error("NEXT_PUBLIC_MONGODB_URI is not defined");
 }
 
 export async function connectDB() {
@@ -11,5 +11,5 @@ export async function connectDB() {
     return;
   }
 
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(NEXT_PUBLIC_MONGODB_URI);
 }
