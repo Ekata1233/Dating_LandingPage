@@ -1,10 +1,9 @@
 import React from 'react'
+import ProfileBasicsSteps from './steps/Basics'
 
 function page() {
   return (
-    <div className='w-screen h-screen'>
-      
-    </div>
+    <></>
   )
 }
 
