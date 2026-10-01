@@ -86,7 +86,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
                     [publicGet(`${API_BASE_URL}/api/admin/events/get?eventType=${filter}`)]);
                 if (!alive) return;
                 if (r1?.success && r1.data) {
-                    console.log(r1.data)
                     setEvents(r1.data as Event_Type[]);
                     // setEvents([] as Event_Type[]);
                 } else {

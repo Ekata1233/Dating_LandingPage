@@ -1,486 +1,192 @@
-import React from "react";
+"use client";
 
-/**
- * YourPhotosStep
- * ---------------
- * Independent, dependency-free (React only) component for
- * "Step 7 of 11 – Your photos".
- *
- * Responsiveness:
- *  - Root fills 100% of its parent's width and height.
- *  - Every inner size (fonts, tiles, icons, button) is expressed in
- *    "design units" where 1 unit = 1/720 of the component's own width
- *    (CSS container query units), so small elements resize with their parent.
- *
- * Usage:
- *   <div style={{ width: 360, height: 700 }}>
- *     <YourPhotosStep minPhotos={2} onChange={(photos) => console.log(photos)} />
- *   </div>
- */
+import { cn } from "cn";
+import { ImagePlus, Loader2, X } from "lucide-react";
+import * as React from "react";
 
-// 1 design unit = component width / 720 (width of the reference design)
-const u = (n: number) => `calc(var(--yph-u) * ${n})`;
+import { StepFooter } from "../OnboardingFields";
+import { useStepForm } from "../../context/OnboardingFormContext";
+import { StepShell } from "../StepShell";
+import { STEP_SCHEMAS } from "../stepSchemas";
 
-const css = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+/* -------------------------------------------------------------------------- */
+/*  Step 7 — Photos.                                                            */
+/*                                                                            */
+/*  This is the one step whose data is not JSON. A photo is a `File`, and a    */
+/*  `File` cannot be put in a request body. Two consequences, both deliberate:  */
+/*                                                                            */
+/*  1. The `File` objects stay in the step's own data object on the client, and  */
+/*     the object URLs used for the previews are revoked on unmount so a long   */
+/*     session doesn't leak a dozen blobs.                                     */
+/*  2. What gets POSTed is the metadata (name / size / type / order), not the    */
+/*     bytes. Real upload needs a presigned-URL or multipart endpoint; the      */
+/*     placeholder route just records what it was given.                        */
+/* -------------------------------------------------------------------------- */
 
-.yph-wrap {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  container-type: inline-size;
-  box-sizing: border-box;
-}
-.yph-wrap *, .yph-wrap *::before, .yph-wrap *::after { box-sizing: border-box; }
-
-.yph-root {
-  --yph-u: calc(100cqw / 720);
-  --yph-pink: #e23d68;
-  --yph-ink: #1c1a17;
-  --yph-muted: #8a8378;
-  --yph-line: #efe7dd;
-  --yph-track: #efe7dd;
-  --yph-btn: #efeae3;
-  --yph-tile: #fdf2ef;
-  --yph-tile-line: #f2b9be;
-
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0 ${u(30)};
-  background: #fff;
-  color: var(--yph-ink);
-  font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+interface PhotoValue {
+  name: string;
+  size: number;
+  type: string;
+  /** Local object URL, for the preview only. Never serialised. */
+  previewUrl: string;
 }
 
-/* ---------- header ---------- */
-.yph-header {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${u(16)};
-  padding-top: ${u(24)};
-}
-.yph-back {
-  flex: none;
-  width: ${u(80)};
-  height: ${u(80)};
-  border-radius: 50%;
-  border: ${u(2)} solid var(--yph-line);
-  background: #fff;
-  box-shadow: 0 ${u(4)} ${u(14)} rgba(60, 40, 20, 0.08);
-  display: grid;
-  place-items: center;
-  padding: 0;
-  cursor: pointer;
-  color: var(--yph-ink);
-}
-.yph-back svg { width: ${u(30)}; height: ${u(30)}; }
-.yph-titles { flex: 1; min-width: 0; text-align: center; }
-.yph-step {
-  margin: 0;
-  font-size: ${u(19)};
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--yph-pink);
-}
-.yph-title {
-  margin: ${u(6)} 0 0;
-  font-size: ${u(30)};
-  font-weight: 500;
-  line-height: 1.2;
-}
-.yph-ring { flex: none; position: relative; width: ${u(72)}; height: ${u(72)}; }
-.yph-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.yph-ring span {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: ${u(19)};
-  font-weight: 600;
-}
-.yph-progress {
-  flex: none;
-  height: ${u(12)};
-  margin-top: ${u(28)};
-  border-radius: 999px;
-  background: var(--yph-track);
-  overflow: hidden;
-}
-.yph-progress > i {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--yph-pink);
-}
+const SCHEMA = STEP_SCHEMAS.photos;
+const FIELD = SCHEMA.fields.find((f) => f.name === "photos")!;
+const SLOT_COUNT = FIELD.max ?? 6;
+const MIN_PHOTOS = FIELD.min ?? 2;
 
-/* ---------- body ---------- */
-.yph-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: ${u(30)} 0 ${u(24)};
-  scrollbar-width: none;
-}
-.yph-body::-webkit-scrollbar { display: none; }
+export default function PhotoStep() {
+  const form = useStepForm("photos");
+  const photos = (form.get<PhotoValue[]>("photos") ?? []).filter(Boolean);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = React.useState(false);
 
-.yph-eyebrow {
-  margin: ${u(8)} 0 0;
-  font-size: ${u(21)};
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--yph-pink);
-}
-.yph-h1 {
-  margin: ${u(18)} 0 0;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  font-size: ${u(58)};
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-.yph-sub {
-  margin: ${u(22)} 0 0;
-  font-size: ${u(26)};
-  line-height: 1.5;
-  color: var(--yph-muted);
-}
+  /* Object URLs outlive React unless we hand them back. */
+  React.useEffect(() => {
+    return () => {
+      for (const p of photos) URL.revokeObjectURL(p.previewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-.yph-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: ${u(20)};
-  margin-top: ${u(48)};
-}
-.yph-tile {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4.4;
-  border-radius: ${u(28)};
-  border: ${u(3)} dashed var(--yph-tile-line);
-  background: var(--yph-tile);
-  overflow: hidden;
-  padding: 0;
-  cursor: pointer;
-  display: block;
-}
-.yph-tile.has-photo { border-style: solid; border-color: var(--yph-line); }
-.yph-tile img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.yph-tile input[type="file"] {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-.yph-plus {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: ${u(64)};
-  height: ${u(64)};
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 ${u(6)} ${u(16)} rgba(60, 40, 20, 0.1);
-  display: grid;
-  place-items: center;
-  color: var(--yph-pink);
-  pointer-events: none;
-}
-.yph-plus svg { width: ${u(28)}; height: ${u(28)}; }
-.yph-main-badge {
-  position: absolute;
-  top: ${u(16)};
-  left: ${u(16)};
-  padding: ${u(8)} ${u(16)};
-  border-radius: ${u(10)};
-  background: rgba(28, 26, 23, 0.75);
-  color: #fff;
-  font-size: ${u(19)};
-  font-weight: 600;
-  pointer-events: none;
-}
-.yph-remove {
-  position: absolute;
-  top: ${u(14)};
-  right: ${u(14)};
-  width: ${u(46)};
-  height: ${u(46)};
-  border-radius: 50%;
-  border: none;
-  background: rgba(28, 26, 23, 0.65);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  z-index: 2;
-}
-.yph-remove svg { width: ${u(22)}; height: ${u(22)}; }
+  const setPhotos = (next: PhotoValue[]) => form.set("photos", next);
 
-.yph-status {
-  display: flex;
-  align-items: center;
-  gap: ${u(18)};
-  margin-top: ${u(44)};
-}
-.yph-status-dot {
-  flex: none;
-  width: ${u(38)};
-  height: ${u(38)};
-  border-radius: 50%;
-  border: ${u(3)} solid #e0d7c8;
-  display: grid;
-  place-items: center;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-.yph-status-dot svg { width: ${u(22)}; height: ${u(22)}; color: #fff; opacity: 0; transition: opacity 0.15s ease; }
-.yph-status.is-ready .yph-status-dot { border-color: var(--yph-pink); background: var(--yph-pink); }
-.yph-status.is-ready .yph-status-dot svg { opacity: 1; }
-.yph-status-text {
-  font-size: ${u(26)};
-  color: var(--yph-muted);
-}
-.yph-status-text b { color: var(--yph-ink); font-weight: 700; }
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    setBusy(true);
 
-/* ---------- footer ---------- */
-.yph-footer { flex: none; padding: ${u(16)} 0 ${u(36)}; }
-.yph-continue {
-  width: 100%;
-  height: ${u(94)};
-  border: ${u(3)} solid #e6dfd5;
-  border-radius: ${u(28)};
-  background: var(--yph-btn);
-  color: #5c564e;
-  font: inherit;
-  font-size: ${u(28)};
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.yph-continue:disabled { cursor: not-allowed; }
-.yph-continue:not(:disabled) {
-  background: var(--yph-pink);
-  border-color: var(--yph-pink);
-  color: #fff;
-}
-.yph-continue:focus-visible,
-.yph-back:focus-visible,
-.yph-tile:focus-within { outline: ${u(4)} solid var(--yph-pink); outline-offset: ${u(3)}; }
+    const incoming = Array.from(files).slice(0, SLOT_COUNT - photos.length);
+    const added: PhotoValue[] = incoming.map((file) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      previewUrl: URL.createObjectURL(file),
+    }));
 
-@media (prefers-reduced-motion: reduce) {
-  .yph-status-dot, .yph-status-dot svg, .yph-continue { transition: none; }
-}
-`;
-
-/* ---------- icons ---------- */
-const BackIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M15 5l-7 7 7 7" />
-  </svg>
-);
-const PlusIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-);
-const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-/* ---------- component ---------- */
-export interface PhotoSlot {
-  /** Data/object URL used for the preview. */
-  url: string;
-  /** The original File, when picked from disk. */
-  file?: File;
-}
-
-export interface YourPhotosStepProps {
-  step?: number;
-  totalSteps?: number;
-  percent?: number;
-  /** Total number of slots in the grid. */
-  slotCount?: number;
-  /** Minimum photos required before Continue is enabled. */
-  minPhotos?: number;
-  /** Controlled photos, indexed by slot. Omit to let the component manage its own state. */
-  value?: (PhotoSlot | null)[];
-  onChange?: (photos: (PhotoSlot | null)[]) => void;
-  onBack?: () => void;
-  onContinue?: (photos: PhotoSlot[]) => void;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-const YourPhotosStep: React.FC<YourPhotosStepProps> = ({
-  step = 7,
-  totalSteps = 11,
-  percent = 63,
-  slotCount = 6,
-  minPhotos = 2,
-  value,
-  onChange,
-  onBack,
-  onContinue,
-  className,
-  style,
-}) => {
-  const [inner, setInner] = React.useState<(PhotoSlot | null)[]>(Array.from({ length: slotCount }, () => null));
-  const photos = value ?? inner;
-
-  const setPhotos = (next: (PhotoSlot | null)[]) => {
-    if (value === undefined) setInner(next);
-    onChange?.(next);
+    setPhotos([...photos, ...added]);
+    setBusy(false);
   };
 
-  const handlePick = (index: number, file: File | undefined) => {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
+  const removeAt = (index: number) => {
+    const target = photos[index];
+    if (target) URL.revokeObjectURL(target.previewUrl);
+    setPhotos(photos.filter((_, i) => i !== index));
+  };
+
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= photos.length) return;
     const next = photos.slice();
-    next[index] = { url, file };
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
     setPhotos(next);
   };
 
-  const handleRemove = (index: number) => {
-    const current = photos[index];
-    if (current?.url) URL.revokeObjectURL(current.url);
-    const next = photos.slice();
-    next[index] = null;
-    setPhotos(next);
-  };
-
-  const filledCount = photos.filter(Boolean).length;
-  const ready = filledCount >= minPhotos;
-  const r = 32;
-  const c = 2 * Math.PI * r;
+  const full = photos.length >= SLOT_COUNT;
+  const enough = photos.length >= MIN_PHOTOS;
 
   return (
-    <div className={`yph-wrap${className ? " " + className : ""}`} style={style}>
-      <style>{css}</style>
-      <section className="yph-root" aria-label={`Step ${step} of ${totalSteps}: Your photos`}>
-        <div className="yph-header">
-          <button type="button" className="yph-back" aria-label="Go back" onClick={onBack}>
-            <BackIcon />
-          </button>
-          <div className="yph-titles">
-            <p className="yph-step">
-              Step {step} of {totalSteps}
-            </p>
-            <h2 className="yph-title">Your photos</h2>
-          </div>
-          <div className="yph-ring" role="img" aria-label={`${percent}% complete`}>
-            <svg viewBox="0 0 72 72">
-              <circle cx="36" cy="36" r={r} fill="none" stroke="#efe7dd" strokeWidth="5" />
-              <circle
-                cx="36"
-                cy="36"
-                r={r}
-                fill="none"
-                stroke="#e23d68"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeDasharray={`${(c * percent) / 100} ${c}`}
-              />
-            </svg>
-            <span>{percent}%</span>
-          </div>
-        </div>
-        <div className="yph-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
-          <i style={{ width: `${(step / totalSteps) * 100}%` }} />
-        </div>
-
-        <div className="yph-body">
-          <p className="yph-eyebrow">Your profile</p>
-          <h1 className="yph-h1">Add a few photos.</h1>
-          <p className="yph-sub">
-            Profiles with three or more clear photos get noticed more. Add up to {slotCount} — your first one is
-            your main.
-          </p>
-
-          <div className="yph-grid">
-            {photos.map((photo, i) => {
-              const id = `yph-file-${i}`;
-              return (
-                <div key={i} className={`yph-tile${photo ? " has-photo" : ""}`}>
-                  {photo ? (
-                    <>
-                      <img src={photo.url} alt={`Photo ${i + 1}`} />
-                      <button
-                        type="button"
-                        className="yph-remove"
-                        aria-label={`Remove photo ${i + 1}`}
-                        onClick={() => handleRemove(i)}
-                      >
-                        <CloseIcon />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        id={id}
-                        type="file"
-                        accept="image/*"
-                        aria-label={i === 0 ? "Add main photo" : `Add photo ${i + 1}`}
-                        onChange={(e) => handlePick(i, e.target.files?.[0])}
-                      />
-                      <span className="yph-plus" aria-hidden="true">
-                        <PlusIcon />
-                      </span>
-                    </>
-                  )}
-                  {i === 0 && <span className="yph-main-badge">Main</span>}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className={`yph-status${ready ? " is-ready" : ""}`}>
-            <span className="yph-status-dot" aria-hidden="true">
-              <CheckIcon />
+    <StepShell
+      eyebrow="Photos"
+      title="Add a few photos."
+      subtitle={`At least ${MIN_PHOTOS} — profiles with ${MIN_PHOTOS}+ photos get far more replies. Your first photo is the one people see first.`}
+      footer={
+        <StepFooter
+          onSubmit={() => form.submit()}
+          submitting={form.submitState === "submitting"}
+          submitError={form.submitError}
+          isValid={form.isValid}
+        />
+      }
+    >
+      <div className="grid grid-cols-3 gap-2">
+        {photos.map((photo, i) => (
+          <div
+            key={photo.previewUrl}
+            className="group relative aspect-3/4 overflow-hidden rounded-xl border border-border bg-muted"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.previewUrl}
+              alt={photo.name}
+              className="size-full object-cover"
+            />
+            <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
+              {i === 0 ? "MAIN" : i + 1}
             </span>
-            <p className="yph-status-text">
-              <b>
-                {filledCount} of {slotCount}
-              </b>{" "}
-              added · need at least {minPhotos}
-            </p>
+            <button
+              type="button"
+              onClick={() => removeAt(i)}
+              aria-label={`Remove ${photo.name}`}
+              className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
+            <div className="absolute inset-x-1 bottom-1 flex justify-between opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => move(i, i - 1)}
+                disabled={i === 0}
+                aria-label="Move earlier"
+                className="grid size-6 place-items-center rounded-full bg-black/60 text-xs text-white disabled:opacity-30"
+              >
+                &larr;
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, i + 1)}
+                disabled={i === photos.length - 1}
+                aria-label="Move later"
+                className="grid size-6 place-items-center rounded-full bg-black/60 text-xs text-white disabled:opacity-30"
+              >
+                &rarr;
+              </button>
+            </div>
           </div>
-        </div>
+        ))}
 
-        <div className="yph-footer">
+        {!full && (
           <button
             type="button"
-            className="yph-continue"
-            disabled={!ready}
-            onClick={() => onContinue?.(photos.filter((p): p is PhotoSlot => !!p))}
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+            className={cn(
+              "flex aspect-3/4 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border",
+              "text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            )}
           >
-            Continue
+            {busy ? (
+              <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <ImagePlus className="size-5" aria-hidden="true" />
+            )}
+            <span className="text-[10px] font-semibold">Add photo</span>
           </button>
-        </div>
-      </section>
-    </div>
-  );
-};
+        )}
+      </div>
 
-export default YourPhotosStep;
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
+
+      {form.errors.photos && (
+        <p role="alert" className="text-[11px] font-medium text-destructive">
+          {form.errors.photos}
+        </p>
+      )}
+
+      <p className="text-[11px] text-muted-foreground">
+        {photos.length} of {SLOT_COUNT} added
+        {!enough && ` · ${MIN_PHOTOS - photos.length} more to continue`}
+      </p>
+    </StepShell>
+  );
+}

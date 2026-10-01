@@ -103,10 +103,10 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
           min-width: 0;
         }
         .mc-avatar {
-          width: 16cqw;
-          height: 16cqw;
-          min-width: 40px;
-          min-height: 40px;
+          width: 10cqw;
+          height: 10cqw;
+          min-width: 30px;
+          min-height: 30px;
           border-radius: 50%;
           object-fit: cover;
           flex-shrink: 0;

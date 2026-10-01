@@ -60,7 +60,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
 
   return (
     <div
-      className={`relative cursor-pointer w-full h-50 min-h-0 min-w-0 rounded-[20px] overflow-hidden shadow-xl select-none ${className}`}
+      className={`relative cursor-pointer w-full h-70 md:h-50 min-h-0 min-w-0 rounded-[20px] overflow-hidden shadow-xl select-none ${className}`}
       role={onOpenProfile ? "button" : undefined}
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={onOpenProfile}
@@ -131,7 +131,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
         <div className={`text-base text-[14px] font-semibold leading-tight truncate ${isRevealed ? "" :"blur-2xl" }`}>
           {name}, {age}
         </div>
-        <div className="mt-1 text-[9px] text-white/90 truncate ">
+        <div className="mt-1 text-[8px] text-white/90 truncate ">
           {matchPercent}% Match · {distance}
         </div>
       </div>
@@ -141,13 +141,13 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
         type="button"
         onClick={handleLike}
         aria-label="Like"
-        className={`absolute right-3 bottom-3 cursor-pointer flex items-center justify-center w-8 h-8 rounded-full bg-pink-500 text-white shadow-lg hover:bg-pink-600 active:scale-95 transition ${isRevealed ? "" : "hidden"}`}
+        className={`absolute right-3 bottom-3 cursor-pointer flex items-center justify-center w-8 h-8 md:w-6 md:h-6 rounded-full bg-pink-500 text-white shadow-lg hover:bg-pink-600 active:scale-95 transition ${isRevealed ? "" : "hidden"}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="currentColor"
-          className="w-5 h-5"
+          className="md:w-4 md:h-4 w-5 h-5"
         >
           <path d="M12 21s-6.716-4.35-9.428-8.06C.86 10.42 1.02 6.9 3.6 5.06c2.2-1.57 4.98-1.02 6.4.98L12 8l2-1.96c1.42-2 4.2-2.55 6.4-.98 2.58 1.84 2.74 5.36 1.03 7.88C18.716 16.65 12 21 12 21z" />
         </svg>

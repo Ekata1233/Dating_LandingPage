@@ -18,6 +18,7 @@ import {
   Ruler,
   Users,
 } from "lucide-react";
+import ComplimentingModal, { GiftOption } from "@/app/components/ui/ComplimentingModal";
 
 /** Horizontal drag distance (px) that commits a like / nope. */
 const SWIPE_THRESHOLD = 88;
@@ -62,12 +63,18 @@ function HomeMain({
   onOpenProfile,
 }: HomeMainProps) {
   const [current, setCurrent] = useState(0);
+  const [roseOpen, setRoseOpen] = useState(false);
   const [swipeDir, setSwipeDir] = useState<SwipeDir | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
   const { users, loading, error, refetch } = useUsersData();
   const cardScrollRef = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<number | null>(null);
+  function sendCompliment(text: string, gift: GiftOption) {
 
+  }
+  function handleRoseOpen() {
+
+  }
   /* Pointer bookkeeping. `engaged` only flips once the gesture is clearly
      horizontal, so vertical scrolling of the card body keeps working. */
   const gesture = useRef({ startX: 0, startY: 0, engaged: false, pointerId: null as number | null });
@@ -347,6 +354,7 @@ function HomeMain({
       {/* Card container – fills remaining height */}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
         {/* Profile card */}
+
         <div
           onPointerDown={fluid ? onPointerDown : undefined}
           onPointerMove={fluid ? onPointerMove : undefined}
@@ -368,6 +376,17 @@ function HomeMain({
                   : "translate-x-0 rotate-0 opacity-100"
             }`}
         >
+          {roseOpen && (
+            <ComplimentingModal
+              name="Aman"
+              avatarUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop"
+              comments={0}
+              roses={124}
+              balance="₹99,460"
+              onClose={() => setRoseOpen(false)}
+            // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
+            />
+          )}
           {/* Scrollable content – scroll down to view full profile */}
           <div
             ref={cardScrollRef}
@@ -521,7 +540,7 @@ function HomeMain({
 
       {/* ── Action Buttons – over the card area ── */}
       <div
-        className={`absolute left-1/2 -translate-x-1/2 flex items-center z-20 ${fluid ? "bottom-4 gap-3" : "bottom-[3.75rem] gap-3 sm:gap-4"
+        className={`${roseOpen ? "hidden" : ""} absolute left-1/2 -translate-x-1/2 flex items-center z-20 ${fluid ? "bottom-4 gap-3" : "bottom-[3.75rem] gap-3 sm:gap-4"
           }`}
       >
         {/* Nope */}
@@ -540,7 +559,7 @@ function HomeMain({
         {/* Send Rose */}
         <button
           type="button"
-          onClick={() => goNext("up")}
+          onClick={() => setRoseOpen(true)}
           aria-label="Send a rose"
           className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-transparent border border-white/30 backdrop-blur-sm flex items-center justify-center hover:scale-110 hover:border-[#4a9eff]/60 hover:shadow-[0_0_20px_rgba(74,158,255,0.3)] transition-all shadow-lg cursor-pointer"
         >

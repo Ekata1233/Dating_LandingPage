@@ -3,20 +3,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
+import { authHeader, getClientToken } from "@/utils/token";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
 const USERS_URL = `${API_BASE_URL}/api/user/feed`;
-
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
 
-/**
- * TODO: this bearer token is committed to the repo. Move it to a server-only
- * env var and proxy both endpoints through a route handler.
- */
-const AUTH_HEADERS = {
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI0YjcwYmNkYS03MDhjLTQ3MzMtOGM3ZC1jYzQ0NzAxYjE2NTkiLCJzZXNzaW9uSWQiOiI3ODk1YzBlMi0xZGIwLTRkYzAtODIzNC0zNjk4MzRlYmRjYmIiLCJpYXQiOjE3OTAwNTk3MTAsImV4cCI6MTc5MjY1MTcxMH0.IVSnp5erpjEohyX-QPNiblcoVKXVd1zs3xYkL-AjjKs'
-};
 
 /* ------------------------------------------------------------------ */
 /*  Types (derived from the sample API response)                      */
@@ -213,7 +206,6 @@ const UserDetailsContext = createContext<UserDetailsApi>({
 
 export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers] = useState<UserProfile[]>([]);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -228,13 +220,23 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [pendingIds, setPendingIds] = useState<Record<string, true>>({});
     const [failedIds, setFailedIds] = useState<Record<string, true>>({});
     const inflight = useRef<Set<string>>(new Set());
-
+    const isMounted = useRef(false);
     const fetchUsers = useCallback(async () => {
+        /* The provider is mounted in the root layout, so it also runs on the
+           public marketing pages. Without a session there is nothing to ask
+           for, and the request would only come back 401. */
+        if (!getClientToken()) {
+            setUsers([]);
+            setError(null);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
             const response = await axios.get<UsersApiResponse>(USERS_URL, {
-                headers: AUTH_HEADERS
+                headers: authHeader()
             });
             const data = response.data;
 
@@ -253,6 +255,7 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
 
     const loadDetails = useCallback((userId: string, options?: { force?: boolean }) => {
         if (!userId) return;
+        if (!getClientToken()) return;
         if (inflight.current.has(userId)) return;
         if (!options?.force && (detailsById[userId] || failedIds[userId])) return;
 
@@ -263,7 +266,9 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             try {
                 const response = await axios.get<UserDetailsApiResponse>(
                     USER_DETAILS_URL(userId),
-                    { headers: AUTH_HEADERS }
+                    {
+                        headers: authHeader()
+                    }
                 );
                 const payload = response.data;
 
@@ -300,16 +305,24 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     );
 
     useEffect(() => {
-        let alive = true;
+        if (!getClientToken()) {
+            setUsers([]);
+            setError(null);
+            setLoading(false);
+            return;
+        }
+        else {
+            let alive = true;
 
-        (async () => {
-            if (!alive) return;
-            await fetchUsers();
-        })();
+            (async () => {
+                if (!alive) return;
+                await fetchUsers();
+            })();
 
-        return () => {
-            alive = false;
-        };
+            return () => {
+                alive = false;
+            };
+        }
     }, [fetchUsers]);
 
     return (

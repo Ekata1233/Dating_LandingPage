@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../authState";
 import LoginModal from "../auth/LoginModal";
-import { deleteSession, verifySession } from "@/app/lib/sessions";
+import { deleteSession, verifySession } from "@/lib/sessions";
 
 
 interface NavbarProps {
@@ -92,9 +92,7 @@ function Navbar({ logoSrc }: NavbarProps) {
 
   const handleLoginSuccess = () => {
     setLoggedIn(true);
-
     setLoginOpen(false);
-    router.push("/app");
   };
 
   return (

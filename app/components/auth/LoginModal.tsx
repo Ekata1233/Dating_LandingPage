@@ -14,7 +14,8 @@ import {
 } from "./authConfig";
 import LoginPhone from "../endpoints/steps/LoginPhone";
 import LoginOtp from "../endpoints/steps/LoginOtp";
-import { createSession } from "@/app/lib/sessions";
+import { createSession } from "@/lib/sessions";
+import { useRouter } from "next/navigation";
 const COLORS = {
   // Frosted / translucent backgrounds
   bgTranslucent: "rgba(252, 248, 244, 0.72)", // navbar (see-through + blur)
@@ -50,7 +51,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
   // Portal ke liye — SSR-safe
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
+  const router = useRouter()
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -156,7 +157,16 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
       // Backend token top-level me deta hai: { success, message, token }
       const token = data?.data.token;
-      if (token)         await createSession(token);
+      console.log("verify otp data : ",data)
+      if (token)         
+        await createSession(token);
+      
+      if(data.data.is_register){
+        router.push("/onBoarding");
+      }
+      else{
+        router.push("/app");
+      }
       setStatus("idle");
       onSuccess?.();
       onClose();
