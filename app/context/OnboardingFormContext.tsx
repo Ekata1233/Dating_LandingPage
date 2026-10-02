@@ -16,6 +16,7 @@ import {
   toInterestedInRequest,
   toInterestsRequests,
   toLifestyleRequests,
+  toPhotoRequests,
 } from "../onBoarding/stepPayloads";
 import { useOnBoardingData } from "./OnBoardingDataContext";
 import { useProfileData } from "./OnBoardingApiContext";
@@ -29,10 +30,10 @@ import { useProfileData } from "./OnBoardingApiContext";
 /*  slice through `useStepForm`, and never has to lift anything.               */
 /*                                                                            */
 /*  Advancing is gated: `submitCurrent` refuses to move on unless the current  */
-/*  step validates. Two steps have a backend endpoint today — `basics` and      */
-/*  `preference` — and those are saved through `OnBoardingApiContext` before    */
-/*  the flow moves on. Every other step validates and advances on its own, with */
-/*  no request, until its endpoint exists.                                     */
+/*  step validates. The steps with an endpoint — `basics`, `preference`,        */
+/*  `intentions`, `lifestyle`, `career`, `interests`, `photos` — are saved      */
+/*  through `OnBoardingApiContext` before the flow moves on. The rest validate  */
+/*  and advance on their own, with no request, until their endpoint exists.     */
 /* -------------------------------------------------------------------------- */
 
 type StepData = Record<string, unknown>;
@@ -118,6 +119,7 @@ export function OnboardingFormProvider({
     updateLifestyle,
     updateCareer,
     updateInterests,
+    createPhotos,
   } = useProfileData();
 
   // Lifestyle and interests question ids are only known to the API context, so
@@ -259,6 +261,25 @@ export function OnboardingFormProvider({
 
         return { ok: true };
       }
+      if (stepId === "photos") {
+        // One multipart POST per photo; the body shape lives in stepPayloads.
+        const requests = toPhotoRequests(current);
+        const picked = Array.isArray(current.photos) ? current.photos.length : 0;
+
+        if (requests.length === 0 || requests.length !== picked) {
+          return {
+            ok: false,
+            message: "One of those photos couldn't be read. Remove it and add it again.",
+          };
+        }
+
+        for (const body of requests) {
+          const res = await createPhotos(body);
+          if (!res?.success) return { ok: false, message: res?.message };
+        }
+
+        return { ok: true };
+      }
 
       return { ok: true };
     },
@@ -269,6 +290,7 @@ export function OnboardingFormProvider({
       updateLifestyle,
       updateCareer,
       updateInterests,
+      createPhotos,
       lifestyle.questions,
       interests.questions,
     ]

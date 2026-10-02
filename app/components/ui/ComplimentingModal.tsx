@@ -188,13 +188,13 @@ const css = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 11px 8px;
+  gap: 4px;
+  padding: 8px 3px;
   border-radius: 999px;
   border: 2px solid #efe7dd;
   background: #fff;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #1c1a17;
   cursor: pointer;

@@ -10,6 +10,19 @@ import type { LifestyleQuestion } from "../context/OnBoardingDataContext";
 
 type StepData = Record<string, unknown>;
 
+/**
+ * What the photos step keeps in `data.photos`. The `File` is the payload; the
+ * preview URL exists only so the grid can render before the upload happens.
+ */
+export interface PhotoValue {
+  name: string;
+  size: number;
+  type: string;
+  /** Local object URL, for the preview only. Never serialised. */
+  previewUrl: string;
+  file?: File;
+}
+
 function str(value: unknown): string {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.length > 0 ? str(value[0]) : "";
@@ -133,5 +146,31 @@ export function toCareerRequest(data: StepData): CareerRequest {
     salaryRangeId: id(data.salaryRange),
     bigDreams: text(data.bigDreams),
   };
+}
+
+/**
+ * Photos are the one step whose body is not JSON: the endpoint takes one
+ * multipart POST per file, field `image`. `saveStep` sends them in array
+ * order, so the sequence the user arranged in the grid is the sequence the
+ * server receives.
+ *
+ * Entries without a `File` can't go anywhere — the preview URL is client-only
+ * — so they are dropped here and `saveStep` compares the counts rather than
+ * quietly uploading fewer photos than were picked.
+ */
+export function toPhotoRequests(data: StepData): FormData[] {
+  const photos = Array.isArray(data.photos) ? (data.photos as PhotoValue[]) : [];
+  const bodies: FormData[] = [];
+
+  for (const photo of photos) {
+    const file = photo?.file;
+    if (!(file instanceof File)) continue;
+
+    const body = new FormData();
+    body.append("image", file, file.name);
+    bodies.push(body);
+  }
+
+  return bodies;
 }
 

@@ -8,28 +8,21 @@ import { StepFooter } from "../OnboardingFields";
 import { useStepForm } from "../../context/OnboardingFormContext";
 import { StepShell } from "../StepShell";
 import { STEP_SCHEMAS } from "../stepSchemas";
+import type { PhotoValue } from "../stepPayloads";
 
 /* -------------------------------------------------------------------------- */
 /*  Step 7 — Photos.                                                            */
 /*                                                                            */
 /*  This is the one step whose data is not JSON. A photo is a `File`, and a    */
-/*  `File` cannot be put in a request body. Two consequences, both deliberate:  */
+/*  `File` cannot be put in a JSON body. Two consequences, both deliberate:    */
 /*                                                                            */
 /*  1. The `File` objects stay in the step's own data object on the client, and  */
 /*     the object URLs used for the previews are revoked on unmount so a long   */
 /*     session doesn't leak a dozen blobs.                                     */
-/*  2. What gets POSTed is the metadata (name / size / type / order), not the    */
-/*     bytes. Real upload needs a presigned-URL or multipart endpoint; the      */
-/*     placeholder route just records what it was given.                        */
+/*  2. On submit, `toPhotoRequests` in `stepPayloads.ts` turns each entry into   */
+/*     a multipart body (field `image`) and `saveStep` POSTs them one at a      */
+/*     time. This step itself never calls the API.                             */
 /* -------------------------------------------------------------------------- */
-
-interface PhotoValue {
-  name: string;
-  size: number;
-  type: string;
-  /** Local object URL, for the preview only. Never serialised. */
-  previewUrl: string;
-}
 
 const SCHEMA = STEP_SCHEMAS.photos;
 const FIELD = SCHEMA.fields.find((f) => f.name === "photos")!;
@@ -62,6 +55,7 @@ export default function PhotoStep() {
       size: file.size,
       type: file.type,
       previewUrl: URL.createObjectURL(file),
+      file,
     }));
 
     setPhotos([...photos, ...added]);

@@ -13,10 +13,24 @@ const BASIC_INFO_URL = `${API_BASE_URL}/api/user/profile/basic-info`;
 const INTERESTED_IN_URL = `${API_BASE_URL}/api/user/profile/interested-in`;
 const INTENTIONS_URL = `${API_BASE_URL}/api/user/profile/looking-for`;
 const LIFESTYLE_URL = `${API_BASE_URL}/api/user/profile/answer`;
-/* Same endpoint as lifestyle — one PATCH per question, the question's screen
-   decides which bucket the answer lands in. */
 const INTERESTS_URL = `${API_BASE_URL}/api/user/profile/answer`;
 const CAREER_URL = `${API_BASE_URL}/api/user/edit-profile/education-work`;
+const ADD_PHOTOS_URL = `${API_BASE_URL}/api/user/profile/photos`;
+const UPDATE_PHOTO_URL = `${API_BASE_URL}/api/user/profile/photos/:id`;
+const DELETE_PHOTO_URL = `${API_BASE_URL}/api/user/profile/photos/:photoId`;
+const BIO_URL = `${API_BASE_URL}/api/user/profile/bio`;
+
+/**
+ * `authHeader()` pins Content-Type to application/json, and axios reads that
+ * before it sends: with a JSON content type it stringifies a FormData body
+ * instead of posting multipart, so the file never leaves the browser. Uploads
+ * send the bearer token only — the browser supplies the multipart boundary.
+ */
+function uploadAuthHeader(): Record<string, string> {
+    const headers = { ...authHeader() };
+    delete headers["Content-Type"];
+    return headers;
+}
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -63,7 +77,9 @@ export interface CareerRequest {
     salaryRangeId: number | null;
     bigDreams: string | null;
 }
-
+export interface PhotosRequest {
+    image: File;
+}
 export interface ProfileResponse {
     success: boolean;
     message?: string;
@@ -97,12 +113,17 @@ interface ProfileContextData {
         data: InterestsRequest
     ) => Promise<ProfileResponse | null>;
 
+    createPhotos: (
+        data: FormData
+    ) => Promise<ProfileResponse | null>;
+
     basicInfoLoading: boolean;
     interestedInLoading: boolean;
     intentionsLoading: boolean;
     lifestyleLoading: boolean;
     careerLoading: boolean;
     interestsLoading: boolean;
+    photosLoading: boolean;
 
     basicInfoError: string | null;
     interestedInError: string | null;
@@ -110,6 +131,7 @@ interface ProfileContextData {
     lifestyleError: string | null;
     careerError: string | null;
     interestsError: string | null;
+    photosError: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -121,22 +143,24 @@ const ProfileContext = createContext<ProfileContextData>({
     updateInterestedIn: async () => null,
     updateIntentions: async () => null,
     updateLifestyle: async () => null,
-updateCareer: async () => null,
+    updateCareer: async () => null,
     updateInterests: async () => null,
-
+    createPhotos: async () => null,
     basicInfoLoading: false,
     interestedInLoading: false,
-    intentionsLoading:false,
-    lifestyleLoading:false,
-    careerLoading:false,
-    interestsLoading:false,
+    intentionsLoading: false,
+    lifestyleLoading: false,
+    careerLoading: false,
+    interestsLoading: false,
+    photosLoading: false,
 
     basicInfoError: null,
     interestedInError: null,
-    intentionsError:null,
-    lifestyleError:null,
-    careerError:null,
-    interestsError:null,
+    intentionsError: null,
+    lifestyleError: null,
+    careerError: null,
+    interestsError: null,
+    photosError: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -154,6 +178,7 @@ export function ProfileProvider({
     const [lifestyleLoading, setLifestyleLoading] = useState(false);
     const [careerLoading, setCareerLoading] = useState(false);
     const [interestsLoading, setInterestsLoading] = useState(false);
+    const [photosLoading, setPhotosLoading] = useState(false);
 
     const [basicInfoError, setBasicInfoError] = useState<string | null>(null);
     const [interestedInError, setInterestedInError] =
@@ -164,6 +189,7 @@ export function ProfileProvider({
         useState<string | null>(null);
     const [careerError, setCareerError] = useState<string | null>(null);
     const [interestsError, setInterestsError] = useState<string | null>(null);
+    const [photosError, setPhotosError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
     /* UPDATE BASIC INFO                                                */
@@ -394,7 +420,7 @@ export function ProfileProvider({
             const response = await axios.patch(INTERESTS_URL, data, {
                 headers: authHeader(),
             });
-            
+
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
@@ -424,6 +450,49 @@ export function ProfileProvider({
             setInterestsLoading(false);
         }
     };
+    /* ---------------------------------------------------------------- */
+    /* CREATE PHOTOS                                                    */
+    /* ---------------------------------------------------------------- */
+    const createPhotos = async (
+        data: FormData
+    ): Promise<ProfileResponse | null> => {
+        setPhotosLoading(true);
+        setPhotosError(null);
+
+        try {
+            const response = await axios.post(ADD_PHOTOS_URL, data, {
+                headers: uploadAuthHeader(),
+            });
+
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+
+            setPhotosError(
+                response.data?.message ||
+                "Couldn't upload that photo."
+            );
+
+            return null;
+        } catch (err) {
+            console.error("Create Photos Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setPhotosError(
+                    err.response?.data?.message ||
+                    "Something went wrong while uploading that photo."
+                );
+            } else {
+                setPhotosError(
+                    "Something went wrong while uploading that photo."
+                );
+            }
+
+            return null;
+        } finally {
+            setPhotosLoading(false);
+        }
+    };
 
     /* ---------------------------------------------------------------- */
     /* PROVIDER                                                         */
@@ -438,13 +507,14 @@ export function ProfileProvider({
                 updateLifestyle,
                 updateCareer,
                 updateInterests,
-
+                createPhotos,
                 basicInfoLoading,
                 interestedInLoading,
                 intentionsLoading,
                 lifestyleLoading,
                 careerLoading,
                 interestsLoading,
+                photosLoading,
 
                 basicInfoError,
                 interestedInError,
@@ -452,6 +522,7 @@ export function ProfileProvider({
                 lifestyleError,
                 careerError,
                 interestsError,
+                photosError,
             }}
         >
             {children}
