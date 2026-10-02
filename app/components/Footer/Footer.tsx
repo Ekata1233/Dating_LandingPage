@@ -144,6 +144,7 @@ const COLUMNS = [
       { label: "Refund & Cancellation", href: "/legalSafety/refund" },
       { label: "Grievance Redressal", href: "/legalSafety/grievance" },
       { label: "Age Policy", href: "/legalSafety/agePolicy" },
+      { label: "Child Safety Policy", href: "/legalSafety/childSafetyPolicy" },
     ],
   },
 ];
