@@ -453,7 +453,7 @@ const ComplimentingModal: React.FC<ComplimentingModalProps> = ({
             <span className="cpl-action-emoji">🌹</span>
             Rose
           </button>
-          <button
+          {/* <button
             type="button"
             className="cpl-action"
             aria-pressed={giftPickerOpen || !!selectedGift}
@@ -462,10 +462,10 @@ const ComplimentingModal: React.FC<ComplimentingModalProps> = ({
           >
             <span className="cpl-action-emoji">{selectedGift ? selectedGift.emoji : "🎁"}</span>
             {selectedGift ? selectedGift.label : "Select Gift"}
-          </button>
+          </button> */}
         </div>
 
-        {giftPickerOpen && (
+        {/* {giftPickerOpen && (
           <div className="cpl-gift-panel">
             <div className="cpl-gift-grid">
               {gifts.map((g) => (
@@ -483,7 +483,7 @@ const ComplimentingModal: React.FC<ComplimentingModalProps> = ({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         <button
           type="button"

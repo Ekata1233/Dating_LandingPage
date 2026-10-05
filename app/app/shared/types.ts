@@ -81,6 +81,8 @@ export interface Profile {
   loveLanguage?: string;
   /** Sub-line under `lookingFor`, e.g. "Ready to settle down…". */
   lookingForSubtitle?: string;
+  /** Own profile only: who the user is looking to meet (`INTERESTED_IN`). */
+  interestedIn?: string;
   /** Free-text Q&A the profile owner filled in. */
   prompts: ProfileFact[];
   family: ProfileFact[];

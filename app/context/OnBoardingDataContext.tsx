@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
-import { authHeader } from "@/utils/token";
+import { authHeader, getClientToken } from "@/utils/token";
 
 import type { FieldDef, FieldOption } from "../onBoarding/stepSchemas";
 
@@ -22,6 +22,8 @@ const EMPLOYMENT_TYPE_URL = `${API_BASE_URL}/api/onboarding/employment-type/get`
 const SALARY_RANGE_URL = `${API_BASE_URL}/api/onboarding/salary-ranges/get`;
 const AMBITION_URL = `${API_BASE_URL}/api/admin/ambitions/get`;
 const INTERESTS_URL = `${API_BASE_URL}/api/question/fetch?category=DATING&screen=THINGS_U_LOVE`;
+const ONBOARDING_DETAILS_URL = `${API_BASE_URL}/api/user/onboarding-details`;
+const PROMPTS_URL = `${API_BASE_URL}/api/onboarding/prompt/get`;
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -105,6 +107,151 @@ export interface NamedOptionApi {
     createdAt?: string;
     updatedAt?: string;
 }
+/** One prompt row as returned by GET /api/onboarding/prompt/get. */
+export interface PromptApi {
+    id: string;
+    categoryId: string;
+    question: string;
+    active: boolean;
+    priority: number;
+    maxLength: number;
+    visibility: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** One category, with its prompts nested, exactly as the endpoint sends it. */
+export interface PromptCategoryApi {
+    id: string;
+    name: string;
+    description: string | null;
+    priority: number;
+    active: boolean;
+    createdAt: string;
+    updatedAt: string;
+    prompts: PromptApi[];
+}
+
+/**
+ * What the prompts step renders: the question and how much may be typed into it.
+ * The id is what the save endpoint takes back, so it has to survive the mapping.
+ */
+export interface PromptItem {
+    id: string;
+    question: string;
+    maxLength: number;
+}
+
+/** The picker only ever draws these three things off a category. */
+export interface PromptCategory {
+    id: string;
+    name: string;
+    prompts: PromptItem[];
+}
+
+/** Envelope of GET /api/onboarding/prompt/get. */
+export interface PromptCategoriesResponse {
+    success?: boolean;
+    message?: string;
+    data?: PromptCategoryApi[];
+}
+/* ------------------------------------------------------------------ */
+/*  GET /api/user/onboarding-details                                  */
+/* ------------------------------------------------------------------ */
+
+/** One photo already stored on the server. `id` is what the delete endpoint needs. */
+export interface OnboardingPhotoApi {
+    id: string;
+    mediaUrl: string;
+    mediaType: "IMAGE" | "VIDEO";
+    isPrimary: boolean;
+    order: number;
+}
+
+/** One saved answer, either a lifestyle or an interest question. */
+export interface OnboardingAnswerApi {
+    answerId: string;
+    question: {
+        id: string;
+        key: string;
+        title: string;
+        category: string;
+        screen: string;
+        isMulti: boolean;
+    };
+    option: {
+        id: string;
+        value: string;
+        label: string;
+    };
+    description: string | null;
+    createdAt: string;
+}
+
+/**
+ * Everything the profile already holds, grouped by the flow that owns it. The
+ * group keys are the endpoint's, so `flows.PHOTOS` is the list the photos step
+ * renders and `flows.REVIEW_FINISH.onboardingStep` says where the flow resumes.
+ */
+export interface OnboardingDetailsApi {
+    userId: string;
+    flows: {
+        VERIFY_PHONE?: { phoneNumber: string; isPhoneVerified: boolean };
+        BASIC_INFO?: {
+            fullName: string;
+            email: string;
+            dateOfBirth: string;
+            height: number;
+            gender: string;
+            genderOption: string;
+        };
+        INTERESTED_IN?: { interestedIn: string };
+        LOOKING_FOR?: {
+            intention?: {
+                id: string;
+                option: string;
+                intentionId: string;
+            };
+        };
+        LIFESTYLE?: OnboardingAnswerApi[];
+        CAREER_AMBITION?: Record<string, unknown>;
+        INTEREST?: OnboardingAnswerApi[];
+        PHOTOS?: OnboardingPhotoApi[];
+        STORY?: { bio: string };
+        PROMPT?: unknown[];
+        LOCATION?: Record<string, unknown>;
+        REVIEW_FINISH?: {
+            profileCompletion: number;
+            onboardingStep: string;
+            nextStep: string;
+            onboardingCompleted: boolean;
+        };
+    };
+}
+
+export interface OnboardingDetailsResponse {
+    success: boolean;
+    message?: string;
+    data?: OnboardingDetailsApi;
+}
+
+export interface ProfileDetailsSource {
+    /** `null` until the request succeeds, and forever without a token. */
+    details: OnboardingDetailsApi | null;
+    /** Photos in server order, always an array so callers never branch on null. */
+    photos: OnboardingPhotoApi[];
+    loading: boolean;
+    error: string | null;
+    refetch: () => Promise<void>;
+}
+
+export interface PromptCategoriesSource {
+    /** Active categories with their active prompts, in the order the API sends them. */
+    categories: PromptCategory[];
+    loading: boolean;
+    error: string | null;
+    refetch: () => Promise<void>;
+}
 
 export interface OnBoardingDataState {
     intentions: {
@@ -166,6 +313,17 @@ export interface OnBoardingDataState {
         error: string | null;
         refetch: () => Promise<void>;
     };
+    /**
+     * The prompt catalogue, grouped by category. A public endpoint, so unlike
+     * `profileDetails` it is asked for regardless of who is signed in.
+     */
+    prompts: PromptCategoriesSource;
+    /**
+     * The signed-in user's saved profile, refetched after every step save so the
+     * ids the server owns stay in step with what the flow just wrote. Never
+     * requested without a token.
+     */
+    profileDetails: ProfileDetailsSource;
 }
 
 /* ------------------------------------------------------------------ */
@@ -230,6 +388,32 @@ function toProfessionOptions(data: ProfessionApi[]): FieldOption[] {
         .map((profession) => ({
             value: String(profession.id),
             label: unquote(profession.name),
+        }));
+}
+
+/** Used when a prompt comes back without a usable `maxLength`. */
+const PROMPT_FALLBACK_MAX_LENGTH = 200;
+
+/**
+ * The prompt catalogue. Everything the picker draws is here, so inactive
+ * categories and inactive questions are dropped rather than offered and then
+ * rejected by the save endpoint. Order is left as the API sends it, which is
+ * already by `priority`. `maxLength` falls back to 200 — the value the endpoint
+ * uses everywhere — so the counter never shows a blank limit.
+ */
+function toPromptCategories(data: PromptCategoryApi[]): PromptCategory[] {
+    return data
+        .filter((category) => category.active !== false)
+        .map((category) => ({
+            id: category.id,
+            name: category.name,
+            prompts: (category.prompts ?? [])
+                .filter((prompt) => prompt.active !== false)
+                .map((prompt) => ({
+                    id: prompt.id,
+                    question: prompt.question,
+                    maxLength: prompt.maxLength || PROMPT_FALLBACK_MAX_LENGTH,
+                })),
         }));
 }
 
@@ -307,49 +491,62 @@ const OnBoardingDataContext = createContext<OnBoardingDataState>({
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     lifestyle: {
         questions: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     professions: {
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     experiences: {
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     employmentTypes: {
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     salaryRanges: {
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     ambitions: {
         options: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
     },
     interests: {
         questions: [],
         loading: true,
         error: null,
-        refetch: async () => {},
+        refetch: async () => { },
+    },
+    prompts: {
+        categories: [],
+        loading: true,
+        error: null,
+        refetch: async () => { },
+    },
+    profileDetails: {
+        details: null,
+        photos: [],
+        loading: true,
+        error: null,
+        refetch: async () => { },
     },
 });
 
@@ -385,6 +582,14 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
     const [interests, setInterests] = useState<LifestyleQuestion[]>([]);
     const [interestsLoading, setInterestsLoading] = useState(true);
     const [interestsError, setInterestsError] = useState<string | null>(null);
+
+    const [profileDetails, setProfileDetails] = useState<OnboardingDetailsApi | null>(null);
+    const [profileDetailsLoading, setProfileDetailsLoading] = useState(true);
+    const [profileDetailsError, setProfileDetailsError] = useState<string | null>(null);
+
+    const [promptCategories, setPromptCategories] = useState<PromptCategory[]>([]);
+    const [promptsLoading, setPromptsLoading] = useState(true);
+    const [promptsError, setPromptsError] = useState<string | null>(null);
 
     const applyIntentions = useCallback((res: any) => {
         if (res?.success && res.data) {
@@ -482,6 +687,18 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
         setInterestsLoading(false);
     }, []);
 
+    const applyPromptCategories = useCallback((res: PromptCategoriesResponse | null) => {
+        if (res?.success && res.data) {
+            setPromptCategories(toPromptCategories(res.data));
+            setPromptsError(null);
+        } else {
+            setPromptCategories([]);
+            setPromptsError(res?.message || "Couldn't load prompts.");
+        }
+
+        setPromptsLoading(false);
+    }, []);
+
     const refetchIntentions = useCallback(async (): Promise<void> => {
         setIntentionsLoading(true);
         setIntentionsError(null);
@@ -538,12 +755,62 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
         applyInterests(await authGet(INTERESTS_URL));
     }, [applyInterests]);
 
+    const refetchPrompts = useCallback(async (): Promise<void> => {
+        setPromptsLoading(true);
+        setPromptsError(null);
+
+        applyPromptCategories(await authGet(PROMPTS_URL));
+    }, [applyPromptCategories]);
+
+    /* ---------------------------------------------------------------- */
+    /* ONBOARDING DETAILS — the signed-in user's saved profile          */
+    /* ---------------------------------------------------------------- */
+
+    const applyProfileDetails = useCallback((res: OnboardingDetailsResponse | null) => {
+        if (res?.success && res.data?.userId) {
+            setProfileDetails(res.data);
+            setProfileDetailsError(null);
+        } else {
+            setProfileDetails(null);
+            setProfileDetailsError(res?.message || "Couldn't load your details.");
+        }
+
+        setProfileDetailsLoading(false);
+    }, []);
+
+    /**
+     * Called after every step save, so the ids the server owns — a photo's,
+     * above all — never go stale after the flow writes one.
+     */
+    const refetchProfileDetails = useCallback(async (): Promise<void> => {
+        /* Same guard as the users feed: with no token in the cookie there is
+           nothing to ask for, and the request would only come back 401. */
+        if (!getClientToken()) {
+            setProfileDetails(null);
+            setProfileDetailsError(null);
+            setProfileDetailsLoading(false);
+            return;
+        }
+
+        setProfileDetailsLoading(true);
+        setProfileDetailsError(null);
+
+        applyProfileDetails(await authGet(ONBOARDING_DETAILS_URL));
+    }, [applyProfileDetails]);
+
+    /* First load happens in the batched effect below, alongside the option lists. */
+
     // All GET APIs are called once, together.
     useEffect(() => {
         let alive = true;
 
         (async () => {
-            const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
+            /* The onboarding details are the user's own profile, so they need a
+               session: without a token in the cookie there is nothing to ask
+               for and the request would only come back 401. */
+            const token = getClientToken();
+
+            const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10] = await Promise.all([
                 authGet(INTENTION_URL),
                 authGet(LIFESTYLE_URL),
                 authGet(PROFESSION_URL),
@@ -552,6 +819,8 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
                 authGet(SALARY_RANGE_URL),
                 authGet(AMBITION_URL),
                 authGet(INTERESTS_URL),
+                token ? authGet(ONBOARDING_DETAILS_URL) : null,
+                authGet(PROMPTS_URL),
             ]);
 
             if (!alive) return;
@@ -564,6 +833,16 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
             applySalaryRanges(r6);
             applyAmbitions(r7);
             applyInterests(r8);
+            applyPromptCategories(r10);
+
+            if (token) {
+                applyProfileDetails(r9);
+            } else {
+                /* Never asked, so never an error — just nothing to show. */
+                setProfileDetails(null);
+                setProfileDetailsError(null);
+                setProfileDetailsLoading(false);
+            }
         })();
 
         return () => {
@@ -578,6 +857,8 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
         applySalaryRanges,
         applyAmbitions,
         applyInterests,
+        applyPromptCategories,
+        applyProfileDetails,
     ]);
 
     const value = useMemo<OnBoardingDataState>(
@@ -631,6 +912,19 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
                 error: interestsError,
                 refetch: refetchInterests,
             },
+            prompts: {
+                categories: promptCategories,
+                loading: promptsLoading,
+                error: promptsError,
+                refetch: refetchPrompts,
+            },
+            profileDetails: {
+                details: profileDetails,
+                photos: profileDetails?.flows?.PHOTOS ?? [],
+                loading: profileDetailsLoading,
+                error: profileDetailsError,
+                refetch: refetchProfileDetails,
+            },
         }),
         [
             intention,
@@ -665,6 +959,14 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
             interestsLoading,
             interestsError,
             refetchInterests,
+            promptCategories,
+            promptsLoading,
+            promptsError,
+            refetchPrompts,
+            profileDetails,
+            profileDetailsLoading,
+            profileDetailsError,
+            refetchProfileDetails,
         ]
     );
 
@@ -733,4 +1035,16 @@ export function useCareerOptionSources(): Record<CareerFieldName, CareerOptionSo
         }),
         [professions, employmentTypes, experiences, salaryRanges, ambitions]
     );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Prompts                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The prompt catalogue for the prompts step. Kept as its own selector because
+ * the step only ever needs the categories, not the rest of the onboarding data.
+ */
+export function usePromptCategories(): PromptCategoriesSource {
+    return useOnBoardingData().prompts;
 }

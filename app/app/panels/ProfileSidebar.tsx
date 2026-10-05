@@ -3,6 +3,8 @@
 import React, { memo, useCallback, useMemo } from "react";
 import { ActiveSection, useActiveSection } from "@/app/context/ActiveSectionContext";
 
+import { FALLBACK_AVATAR } from "../shared/mockData";
+
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -18,14 +20,16 @@ export interface AccountSupportItem {
 }
 
 export interface ProfileSidebarProps {
-  avatarUrl: string;
-  name: string;
-  age: number;
+  /** Primary photo. Falls back to the neutral avatar while it is unknown. */
+  avatarUrl?: string;
+  name?: string;
+  age?: number;
   verified?: boolean;
-  location: string;
+  location?: string;
   isPlatinumMember?: boolean;
-  trustScore: number;
-  completionPercent: number;
+  /** 0 hides the trust badge — the onboarding payload carries no score yet. */
+  trustScore?: number;
+  completionPercent?: number;
   className?: string;
   accountItems?: AccountSupportItem[];
 
@@ -83,14 +87,14 @@ const DEFAULT_ITEMS: AccountSupportItem[] = [
 /* -------------------------------------------------------------------------- */
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
-  avatarUrl,
+  avatarUrl = FALLBACK_AVATAR,
   name,
   age,
-  verified = true,
+  verified = false,
   location,
-  isPlatinumMember = true,
-  trustScore,
-  completionPercent,
+  isPlatinumMember = false,
+  trustScore = 0,
+  completionPercent = 0,
   className = "",
   accountItems = DEFAULT_ITEMS,
   flow = "fill",
@@ -691,7 +695,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           <img
             className="profile-avatar"
             src={avatarUrl}
-            alt={`${name}'s photo`}
+            alt={name ? `${name}'s photo` : "Profile photo"}
             loading="lazy"
             decoding="async"
           />
@@ -703,13 +707,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         {/* Name */}
         <div className="profile-name-row">
-          <span className="profile-name">
-            {name}
-          </span>
+          {name && <span className="profile-name">{name}</span>}
 
-          <span className="profile-age">
-            {age}
-          </span>
+          {age ? <span className="profile-age">{age}</span> : null}
 
           {verified && (
             <svg
@@ -735,55 +735,61 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         </div>
 
         {/* Location */}
-        <div className="profile-location">
-          <svg
-            className="profile-location-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 21s-7-6.2-7-11.4A7 7 0 0 1 19 9.6C19 14.8 12 21 12 21z"
-              stroke="#7c828a"
-              strokeWidth="1.6"
-            />
+        {location ? (
+          <div className="profile-location">
+            <svg
+              className="profile-location-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 21s-7-6.2-7-11.4A7 7 0 0 1 19 9.6C19 14.8 12 21 12 21z"
+                stroke="#7c828a"
+                strokeWidth="1.6"
+              />
 
-            <circle
-              cx="12"
-              cy="9.5"
-              r="2.2"
-              stroke="#7c828a"
-              strokeWidth="1.6"
-            />
-          </svg>
+              <circle
+                cx="12"
+                cy="9.5"
+                r="2.2"
+                stroke="#7c828a"
+                strokeWidth="1.6"
+              />
+            </svg>
 
-          <span>{location}</span>
-        </div>
+            <span>{location}</span>
+          </div>
+        ) : null}
 
         {/* Badges */}
-        <div className="profile-badges">
-          {isPlatinumMember && (
-            <div className="profile-badge profile-badge-platinum">
-              <svg
-                className="profile-badge-icon"
-                viewBox="0 0 24 24"
-                fill="#fff"
-                aria-hidden="true"
-              >
-                <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2L12 2z" />
-                <path d="M19 13l.9 2.6L22 16l-2.1.4L19 19l-.9-2.6L16 16l2.1-.4L19 13z" />
-              </svg>
+        {(isPlatinumMember || trustScore > 0) && (
+          <div className="profile-badges">
+            {isPlatinumMember && (
+              <div className="profile-badge profile-badge-platinum">
+                <svg
+                  className="profile-badge-icon"
+                  viewBox="0 0 24 24"
+                  fill="#fff"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2L12 2z" />
+                  <path d="M19 13l.9 2.6L22 16l-2.1.4L19 19l-.9-2.6L16 16l2.1-.4L19 13z" />
+                </svg>
 
-              PLATINUM MEMBER
-            </div>
-          )}
+                PLATINUM MEMBER
+              </div>
+            )}
 
-          <div className="profile-badge profile-badge-trust">
-            <span className="profile-trust-dot" />
+            {trustScore > 0 && (
+              <div className="profile-badge profile-badge-trust">
+                <span className="profile-trust-dot" />
 
-            {trustScore}% Trust Score
+                {trustScore}% Trust Score
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* ================================================================ */}
         {/* Profile Completion                                               */}

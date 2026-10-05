@@ -19,6 +19,8 @@ const ADD_PHOTOS_URL = `${API_BASE_URL}/api/user/profile/photos`;
 const UPDATE_PHOTO_URL = `${API_BASE_URL}/api/user/profile/photos/:id`;
 const DELETE_PHOTO_URL = `${API_BASE_URL}/api/user/profile/photos/:photoId`;
 const BIO_URL = `${API_BASE_URL}/api/user/profile/bio`;
+const PROMPTS_URL = `${API_BASE_URL}/api/user/profile/prompts`;
+const LOCATION_URL = `${API_BASE_URL}/api/user/edit-profile/location`;
 
 /**
  * `authHeader()` pins Content-Type to application/json, and axios reads that
@@ -32,6 +34,46 @@ function uploadAuthHeader(): Record<string, string> {
     return headers;
 }
 
+/** The delete URL carries a `:photoId` placeholder; swap it for the real id. */
+function deletePhotoUrl(photoId: string): string {
+    return DELETE_PHOTO_URL.replace(":photoId", encodeURIComponent(photoId));
+}
+
+/**
+ * The POST response isn't pinned to one shape, so accept the id spellings the
+ * backend uses. Without this id the photo can never be deleted, so callers
+ * treat "no id" as "uploaded, but not removable through the app".
+ */
+export function photoIdFrom(res: ProfileResponse | null): string | null {
+    const data = res?.data;
+    if (!data || typeof data !== "object") return null;
+
+    /* One file goes up per request, so a list response carries one entry. */
+    const entries: unknown[] = Array.isArray(data) ? data : [data];
+
+    for (const entry of entries) {
+        if (!entry || typeof entry !== "object") continue;
+
+        const record = entry as Record<string, unknown>;
+        const nested =
+            record.photo && typeof record.photo === "object"
+                ? (record.photo as Record<string, unknown>)
+                : null;
+
+        const found = [
+            record.id,
+            record._id,
+            record.photoId,
+            nested?.id,
+            nested?._id,
+        ].find((c) => typeof c === "string" && c.length > 0);
+
+        if (typeof found === "string") return found;
+    }
+
+    return null;
+}
+
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -43,6 +85,15 @@ export interface BasicInfoRequest {
     height: number;
     gender: string;
     gender_option: string;
+}
+export interface LocationRequest {
+    country: string;
+    state: string;
+    city: string;
+    area: string;
+    longitude: number;
+    latitude: number;
+    max_distance_km: number;
 }
 
 export interface InterestedInRequest {
@@ -80,6 +131,20 @@ export interface CareerRequest {
 export interface PhotosRequest {
     image: File;
 }
+export interface BioRequest {
+    bio: string;
+}
+
+/** One answered question: the prompt's uuid from the prompt GET, plus the text. */
+export interface PromptAnswerRequest {
+    promptId: string;
+    answer: string;
+}
+
+/** The whole set is replaced in one PATCH, so this is always the full list. */
+export interface PromptsRequest {
+    prompts: PromptAnswerRequest[];
+}
 export interface ProfileResponse {
     success: boolean;
     message?: string;
@@ -112,9 +177,22 @@ interface ProfileContextData {
     updateInterests: (
         data: InterestsRequest
     ) => Promise<ProfileResponse | null>;
+    updateLocation: (
+        data: LocationRequest
+    ) => Promise<ProfileResponse | null>;
 
     createPhotos: (
         data: FormData
+    ) => Promise<ProfileResponse | null>;
+
+    /**
+     * Removes one photo from the profile. The photo must already exist on the
+     * server — only its id goes over the wire.
+     */
+    deletePhoto: (photoId: string) => Promise<ProfileResponse | null>;
+    updateBio: (data: BioRequest) => Promise<ProfileResponse | null>;
+    updatePrompts: (
+        data: PromptsRequest
     ) => Promise<ProfileResponse | null>;
 
     basicInfoLoading: boolean;
@@ -124,6 +202,10 @@ interface ProfileContextData {
     careerLoading: boolean;
     interestsLoading: boolean;
     photosLoading: boolean;
+    photoDeleteLoading: boolean;
+    bioLoading: boolean;
+    promptsLoading: boolean;
+    locationLoading: boolean;
 
     basicInfoError: string | null;
     interestedInError: string | null;
@@ -132,6 +214,10 @@ interface ProfileContextData {
     careerError: string | null;
     interestsError: string | null;
     photosError: string | null;
+    photoDeleteError: string | null;
+    bioError: string | null;
+    promptsError: string | null;
+    locationError: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -146,6 +232,10 @@ const ProfileContext = createContext<ProfileContextData>({
     updateCareer: async () => null,
     updateInterests: async () => null,
     createPhotos: async () => null,
+    deletePhoto: async () => null,
+    updateBio: async () => null,
+    updatePrompts: async () => null,
+    updateLocation: async () => null,
     basicInfoLoading: false,
     interestedInLoading: false,
     intentionsLoading: false,
@@ -153,6 +243,10 @@ const ProfileContext = createContext<ProfileContextData>({
     careerLoading: false,
     interestsLoading: false,
     photosLoading: false,
+    photoDeleteLoading: false,
+    bioLoading: false,
+    promptsLoading: false,
+    locationLoading: false,
 
     basicInfoError: null,
     interestedInError: null,
@@ -161,6 +255,10 @@ const ProfileContext = createContext<ProfileContextData>({
     careerError: null,
     interestsError: null,
     photosError: null,
+    photoDeleteError: null,
+    bioError: null,
+    promptsError: null,
+    locationError: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -179,6 +277,10 @@ export function ProfileProvider({
     const [careerLoading, setCareerLoading] = useState(false);
     const [interestsLoading, setInterestsLoading] = useState(false);
     const [photosLoading, setPhotosLoading] = useState(false);
+    const [photoDeleteLoading, setPhotoDeleteLoading] = useState(false);
+    const [bioLoading, setBioLoading] = useState(false);
+    const [promptsLoading, setPromptsLoading] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
 
     const [basicInfoError, setBasicInfoError] = useState<string | null>(null);
     const [interestedInError, setInterestedInError] =
@@ -190,6 +292,10 @@ export function ProfileProvider({
     const [careerError, setCareerError] = useState<string | null>(null);
     const [interestsError, setInterestsError] = useState<string | null>(null);
     const [photosError, setPhotosError] = useState<string | null>(null);
+    const [photoDeleteError, setPhotoDeleteError] = useState<string | null>(null);
+    const [bioError, setBioError] = useState<string | null>(null);
+    const [promptsError, setPromptsError] = useState<string | null>(null);
+    const [locationError, setLocationError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
     /* UPDATE BASIC INFO                                                */
@@ -257,7 +363,6 @@ export function ProfileProvider({
                 response.data?.message ||
                 "Couldn't update interested-in information."
             );
-
             return null;
         } catch (err) {
             console.error("Update Interested In Error:", err);
@@ -371,10 +476,11 @@ export function ProfileProvider({
             setCareerLoading(true);
             setCareerError(null);
 
-
+            console.log("Sending Data", data)
             const response = await axios.patch(CAREER_URL, data, {
                 headers: authHeader(),
             });
+            console.log("Response", response)
 
             if (response.data?.success) {
                 return response.data as ProfileResponse;
@@ -415,8 +521,7 @@ export function ProfileProvider({
         try {
             setInterestsLoading(true);
             setInterestsError(null);
-            // console.log("Sending Data",data )
-            // console.log("Response",response )
+
             const response = await axios.patch(INTERESTS_URL, data, {
                 headers: authHeader(),
             });
@@ -468,32 +573,185 @@ export function ProfileProvider({
                 return response.data as ProfileResponse;
             }
 
-            setPhotosError(
-                response.data?.message ||
-                "Couldn't upload that photo."
-            );
+            const message =
+                response.data?.message || "Couldn't upload that photo.";
+            setPhotosError(message);
 
-            return null;
+            return { success: false, message };
         } catch (err) {
             console.error("Create Photos Error:", err);
 
-            if (axios.isAxiosError(err)) {
-                setPhotosError(
-                    err.response?.data?.message ||
-                    "Something went wrong while uploading that photo."
-                );
-            } else {
-                setPhotosError(
-                    "Something went wrong while uploading that photo."
-                );
-            }
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message ||
+                "Something went wrong while uploading that photo."
+                : "Something went wrong while uploading that photo.";
+            setPhotosError(message);
 
-            return null;
+            return { success: false, message };
         } finally {
             setPhotosLoading(false);
         }
     };
 
+    /* ---------------------------------------------------------------- */
+    /* DELETE PHOTO                                                      */
+    /* ---------------------------------------------------------------- */
+    const deletePhoto = async (
+        photoId: string
+    ): Promise<ProfileResponse | null> => {
+        setPhotoDeleteLoading(true);
+        setPhotoDeleteError(null);
+
+        try {
+            const response = await axios.delete(deletePhotoUrl(photoId), {
+                headers: authHeader(),
+            });
+
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+
+            const message =
+                response.data?.message || "Couldn't delete that photo.";
+            setPhotoDeleteError(message);
+
+            return { success: false, message };
+        } catch (err) {
+            console.error("Delete Photo Error:", err);
+
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message ||
+                "Something went wrong while deleting that photo."
+                : "Something went wrong while deleting that photo.";
+            setPhotoDeleteError(message);
+
+            return { success: false, message };
+        } finally {
+            setPhotoDeleteLoading(false);
+        }
+    };
+    const updateBio = async (
+        data: BioRequest
+    ): Promise<ProfileResponse | null> => {
+        try {
+            setBioLoading(true);
+            setBioError(null);
+            const response = await axios.patch(BIO_URL, data, {
+                headers: authHeader(),
+            });
+
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+
+            setBioError(
+                response.data?.message ||
+                "Couldn't update bio."
+            );
+
+            return null;
+        } catch (err) {
+            console.error("Update Bio Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setBioError(
+                    err.response?.data?.message ||
+                    "Something went wrong while updating bio."
+                );
+            } else {
+                setBioError(
+                    "Something went wrong while updating bio."
+                );
+            }
+
+            return null;
+        } finally {
+            setBioLoading(false);
+        }
+    };
+
+    /* ---------------------------------------------------------------- */
+    /* UPDATE PROMPTS                                                   */
+    /* ---------------------------------------------------------------- */
+    const updatePrompts = async (
+        data: PromptsRequest
+    ): Promise<ProfileResponse | null> => {
+        try {
+            setPromptsLoading(true);
+            setPromptsError(null);
+
+            const response = await axios.patch(PROMPTS_URL, data, {
+                headers: authHeader(),
+            });
+
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+
+            setPromptsError(
+                response.data?.message ||
+                "Couldn't save your prompt answers."
+            );
+
+            return null;
+        } catch (err) {
+            console.error("Update Prompts Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setPromptsError(
+                    err.response?.data?.message ||
+                    "Something went wrong while saving your prompt answers."
+                );
+            } else {
+                setPromptsError(
+                    "Something went wrong while saving your prompt answers."
+                );
+            }
+
+            return null;
+        } finally {
+            setPromptsLoading(false);
+        }
+    };
+    const updateLocation = async (
+        data: LocationRequest
+    ): Promise<ProfileResponse | null> => {
+        try {
+            setLocationLoading(true);
+            setLocationError(null);
+            const response = await axios.patch(LOCATION_URL, data, {
+                headers: authHeader(),
+            });
+
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+
+            setLocationError(
+                response.data?.message ||
+                "Couldn't update location information."
+            );
+
+            return null;
+        } catch (err) {
+            console.error("Update Location Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setLocationError(
+                    err.response?.data?.message ||
+                    "Something went wrong while updating location information."
+                );
+            } else {
+                setLocationError(
+                    "Something went wrong while updating location information."
+                );
+            }
+
+            return null;
+        } finally {
+            setLocationLoading(false);
+        }
+    };
     /* ---------------------------------------------------------------- */
     /* PROVIDER                                                         */
     /* ---------------------------------------------------------------- */
@@ -508,6 +766,10 @@ export function ProfileProvider({
                 updateCareer,
                 updateInterests,
                 createPhotos,
+                deletePhoto,
+                updateBio,
+                updatePrompts,
+                updateLocation,
                 basicInfoLoading,
                 interestedInLoading,
                 intentionsLoading,
@@ -515,6 +777,10 @@ export function ProfileProvider({
                 careerLoading,
                 interestsLoading,
                 photosLoading,
+                photoDeleteLoading,
+                bioLoading,
+                promptsLoading,
+                locationLoading,
 
                 basicInfoError,
                 interestedInError,
@@ -523,6 +789,10 @@ export function ProfileProvider({
                 careerError,
                 interestsError,
                 photosError,
+                photoDeleteError,
+                bioError,
+                promptsError,
+                locationError,
             }}
         >
             {children}

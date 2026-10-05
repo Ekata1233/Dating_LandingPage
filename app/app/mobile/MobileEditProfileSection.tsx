@@ -59,7 +59,7 @@ const ProfilePreview: React.FC<{
   if (!profile) {
     return (
       <Notice
-        title="Nothing to preview yet"
+        title="No profile found"
         detail="Save a few details on the Edit tab and they'll show up here."
       />
     );
@@ -93,7 +93,7 @@ const MobileEditProfileSection: React.FC<MobileEditProfileSectionProps> = ({
   const profile = profileProp !== undefined ? profileProp : live.profile;
   const loading = loadingProp ?? live.loading;
   const error = errorProp ?? live.error;
-  const retry = onRetry ?? live.retry;
+  const retry = onRetry ?? live.refetch;
 
   const select = useCallback(
     (next: EditProfileTab) => {

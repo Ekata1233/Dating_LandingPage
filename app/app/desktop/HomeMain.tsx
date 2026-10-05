@@ -7,6 +7,7 @@ import type { Profile, SwipeHandlers } from "../shared/types";
 import { useUserDetails, useUsersData } from "@/app/context/UsersContext";
 import ProfileDetailSections, { Section } from "./ProfileDetailSections";
 import {
+  Astroid,
   Briefcase,
   Calendar,
   Church,
@@ -70,9 +71,6 @@ function HomeMain({
   const cardScrollRef = useRef<HTMLDivElement>(null);
   const swipeTimer = useRef<number | null>(null);
   function sendCompliment(text: string, gift: GiftOption) {
-
-  }
-  function handleRoseOpen() {
 
   }
   /* Pointer bookkeeping. `engaged` only flips once the gesture is clearly
@@ -462,14 +460,14 @@ function HomeMain({
             <div className="flex flex-col gap-2 bg-white px-5 pb-36 pt-4">
               {enriched.about && (
                 <div>
-                  <h3 className="text-[11px] font-bold tracking-[0.15em] text-amber-950">ABOUT</h3>
+                  <h3 className="text-[11px] flex gap-1 items-center font-bold tracking-[0.15em] text-amber-950"><Astroid size={12} fill="currentColor" /><span>ABOUT</span></h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-[#5F5A55]">{enriched.about}</p>
                 </div>
               )}
 
               {/* BASICS */}
               {facts.length > 0 && (
-                <Section title="BASICS">
+                <Section title="BASICS" color="#4169E1">
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {facts.map((fact) => {
                       const Icon = fact.icon;
@@ -479,8 +477,8 @@ function HomeMain({
                           key={fact.label}
                           className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
                         >
-                          <span className="bg-green-100 rounded-full p-1 text-green-800 shrink-0">
-                            <Icon className="w-4 h-4 text-green-800" />
+                          <span className="bg-blue-100 rounded-full p-1 text-blue-800 shrink-0">
+                            <Icon className="w-4 h-4 text-blue-800" />
                           </span>
 
                           <span className="min-w-0">
@@ -540,7 +538,7 @@ function HomeMain({
 
       {/* ── Action Buttons – over the card area ── */}
       <div
-        className={`${roseOpen ? "hidden" : ""} absolute left-1/2 -translate-x-1/2 flex items-center z-20 ${fluid ? "bottom-4 gap-3" : "bottom-[3.75rem] gap-3 sm:gap-4"
+        className={`${roseOpen ? "hidden" : ""} absolute left-1/2 -translate-x-1/2 flex items-center justify-between w-[200px] z-20 ${fluid ? "bottom-4 gap-3" : "bottom-[3.75rem] gap-3 sm:gap-4"
           }`}
       >
         {/* Nope */}
@@ -585,7 +583,7 @@ function HomeMain({
         <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-gray-700 text-white/50">→</kbd> Like</span>
         <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-gray-700 text-white/50">↑</kbd> Open Profile</span>
         <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-gray-700 text-white/50">↓</kbd> Close Profile</span>
-        <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-gray-700 text-white/50">Space</kbd> Send Rose</span>
+        {/* <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-gray-700 text-white/50">Space</kbd> Send Rose</span> */}
       </div>
     </main>
   );

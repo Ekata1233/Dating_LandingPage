@@ -16,10 +16,11 @@ import { StepShell } from "../StepShell";
 /*  turned into a field keyed by the question's own `key`, so this step does    */
 /*  not read the static schema.                                                 */
 /*                                                                            */
-/*  Continue is the "I answered all of it" path and stays closed until every    */
-/*  question has an answer. Leaving early is what Skip is for, and Skip posts    */
-/*  nothing. A failed fetch is surfaced rather than papered over with a stale    */
-/*  local list.                                                                 */
+/*  Continue is never blocked: a half-answered lifestyle is a perfectly good    */
+/*  profile, and the step saves whatever has been answered (one request per      */
+/*  answered question). The only thing it waits for is the question list itself, */
+/*  because a save made against a half-loaded list would post half the step.    */
+/*  Skip stays available and, as always, posts nothing.                         */
 /* -------------------------------------------------------------------------- */
 
 export default function LifestyleStep() {
@@ -27,13 +28,12 @@ export default function LifestyleStep() {
   const { lifestyle } = useOnBoardingData();
 
   const fields = lifestyle.questions.map(toLifestyleField);
-  const answered = fields.filter((f) => form.get(f.name)).length;
+  const answered = fields.filter((f) => !isBlank(form.get(f.name))).length;
 
   /* The questions come from the API, so `form.isComplete` (which counts schema
      fields) has nothing to count here — completeness is measured against the
      questions actually rendered. */
-  const allAnswered =
-    fields.length > 0 && fields.every((field) => !isBlank(form.get(field.name)));
+  const ready = !lifestyle.loading && fields.length > 0;
 
   return (
     <StepShell
@@ -41,15 +41,15 @@ export default function LifestyleStep() {
       title="How do you live?"
       subtitle={
         answered > 0
-          ? `${answered} of ${fields.length} answered — Continue unlocks when they're all done.`
-          : "Answer every question to continue, or skip the lot and come back later."
+          ? `${answered} of ${fields.length} answered — Continue saves them, and you can leave the rest for later.`
+          : "Answer what you like, then Continue. Nothing here is compulsory."
       }
       footer={
         <StepFooter
           onSubmit={() => form.submit()}
           submitting={form.submitState === "submitting"}
           submitError={form.submitError}
-          isValid={allAnswered}
+          isValid={ready}
           skippable
           onSkip={() => form.skip()}
         />

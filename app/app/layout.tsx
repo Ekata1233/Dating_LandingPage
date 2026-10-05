@@ -6,11 +6,12 @@ import { useActiveSection } from "@/app/context/ActiveSectionContext";
 
 import { NAV_ITEMS, SECTION_META, navSlotFor } from "./config/sections";
 import { useSectionBack } from "./config/useSectionBack";
-import { PROFILE_IMAGE } from "./shared/mockData";
 import AppRail from "./shell/AppRail";
 import MobileTopBar from "./shell/MobileTopBar";
 import SidebarHeaderStrip from "./shell/SidebarHeaderStrip";
 import WalletSheet from "./shell/WalletSheet";
+import { FALLBACK_AVATAR } from "./shared/mockData";
+import { useMyProfile } from "./shared/useMyProfile";
 
 /* -------------------------------------------------------------------------- */
 /*  The /app shell.                                                            */
@@ -36,6 +37,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { activeSection, setActiveSection } = useActiveSection();
   const onBack = useSectionBack();
   const [walletOpen, setWalletOpen] = useState(false);
+  /* Same source as the profile card and the account rail, so the nav avatar can
+     never be a different person. Neutral avatar until the payload lands. */
+  const { profile } = useMyProfile();
+  const profileAvatar = profile?.image || FALLBACK_AVATAR;
 
   const meta = SECTION_META[activeSection];
   const closeWallet = useCallback(() => setWalletOpen(false), []);
@@ -64,7 +69,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             items={NAV_ITEMS}
             activeNav={navSlotFor(activeSection)}
             onSelect={selectSection}
-            profileAvatar={PROFILE_IMAGE}
+            profileAvatar={profileAvatar}
           />
 
           <AppRail section={activeSection} />
@@ -80,7 +85,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         items={NAV_ITEMS}
         activeNav={navSlotFor(activeSection)}
         onSelect={selectSection}
-        profileAvatar={PROFILE_IMAGE}
+        profileAvatar={profileAvatar}
       />
 
       <WalletSheet className="md:hidden" open={walletOpen} onClose={closeWallet} />

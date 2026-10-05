@@ -3,6 +3,7 @@ import React from "react";
 
 import { FactIcon } from "../shared/factIcons";
 import type { Profile, ProfileFact } from "../shared/types";
+import { Astroid } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
 /*  Deep-profile sections.                                                     */
@@ -22,13 +23,20 @@ export interface ProfileDetailSectionsProps {
 export function Section({
   title,
   children,
+  color,
 }: {
   title: string;
   children: React.ReactNode;
+  color?: string;
 }) {
   return (
     <div className="mt-5">
-      <h3 className="text-[11px] font-bold tracking-[0.15em] text-[#9C948C]">{title}</h3>
+
+      <h3 className={`text-[11px] flex gap-1 items-center font-bold tracking-[0.15em]`}
+        style={{ color: color || "#9C948C" }}>
+        <Astroid size={12} fill="currentColor" />
+        <span>{title}</span>
+      </h3>
       {children}
     </div>
   );
@@ -104,7 +112,7 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
     <>
       {/* ------------------------------- TRAITS ------------------------------ */}
       {traits.length > 0 && (
-        <Section title="">
+        <Section title="Connection Preferences">
           <div className="mt-2 flex flex-wrap gap-1.5">
             {traits.map((trait) => (
               <span
@@ -150,113 +158,130 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
 
       {/* -------------------------------- CAREER ----------------------------- */}
       {hasCareer && (
-        <Section title="CAREER">
-          <div className="mt-2 grid gap-2">
-            {profile.career.map((fact, index) => (
-              <span
-                key={`${fact.label}-${index}`}
-                className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
-              >
-                <span className="bg-amber-100 rounded-full px-1 py-1 text-amber-800 shrink-0">
-                  <FactIcon name={fact.icon} className="text-amber-800" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-black">{fact.label}</span>
-                  <span className="block text-[10px]">{fact.value}</span>
-                </span>
-              </span>
+        <Section title="CAREER" color="#8D6944">
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {profile.career.filter((fact) => fact.label !== "Big dreams").map((fact, index) => (
+                <span
+                  key={`${fact.label}-${index}`}
+                  className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
+                >
+                  <span className="bg-[#F7F2EE] rounded-full px-1 py-1 text-[#8D6944] shrink-0">
+                    <FactIcon name={fact.icon} className="text-[#8D6944]" />
+                  </span>
+
+                  <span className="min-w-0">
+                    <h1 className="block text-black" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.label}</h1>
+                    <h1 className="block text-[10px]" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.value}</h1>
+                  </span>
+                </span> 
+
             ))}
+
           </div>
-        </Section>
+          <div className="w-full h-[1px] mt-5 flex justify-evenly items-center">
+            <div className="w-[7rem] bg-[#8D6944] h-full"></div>
+            <Astroid  size={10} color="#8D6944" fill="#8D6944"/>
+            <div className="w-[7rem] bg-[#8D6944] h-full"></div>
+          </div>
+          {profile.career.filter((fact) => fact.label === "Big dreams").map((fact, index) => (<span key={index} className="w-full flex flex-col justify-center pt-3 text-[12px] items-center text-black"><span>BIG DREAM</span><span className="text-[#5F5A55]">{fact.value}</span></span>))}
+        </Section >
       )}
 
       {/* ------------------------------- LIFESTYLE --------------------------- */}
-      {hasLifestyle && (
-        <Section title="LIFESTYLE">
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {profile.lifestyle.map((fact, index) => (
-              <span
-                key={`${fact.label}-${index}`}
-                className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
-              >
-                <span className="bg-green-100 rounded-full px-1 py-1 text-green-800 shrink-0">
-                  <FactIcon name={fact.icon} className="text-green-800" />
+      {
+        hasLifestyle && (
+          <Section title="LIFESTYLE" color="#276749">
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {profile.lifestyle.map((fact, index) => (
+                <span
+                  key={`${fact.label}-${index}`}
+                  className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
+                >
+                  <span className="bg-green-100 rounded-full px-1 py-1 text-green-800 shrink-0">
+                    <FactIcon name={fact.icon} className="text-green-800" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-black truncate">{fact.label}</span>
+                    <span className="block text-[10px] truncate">{fact.value}</span>
+                    {fact.description && (
+                      <span className="block text-[10px] text-[#9C948C] truncate">
+                        {fact.description}
+                      </span>
+                    )}
+                  </span>
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-black truncate">{fact.label}</span>
-                  <span className="block text-[10px] truncate">{fact.value}</span>
-                  {fact.description && (
-                    <span className="block text-[10px] text-[#9C948C] truncate">
-                      {fact.description}
-                    </span>
-                  )}
-                </span>
-              </span>
-            ))}
-          </div>
-        </Section>
-      )}
+              ))}
+            </div>
+          </Section>
+        )
+      }
 
       {/* ------------------------------ INTERESTS ---------------------------- */}
-      {hasInterests && (
-        <Section title="INTERESTS">
-          <div className="mt-2 flex flex-wrap gap-2">
-            {profile.interests.map((fact, index) => (
-              <span
-                key={`${fact.label}-${index}`}
-                title={fact.value}
-                className="px-3 py-1 rounded-full border border-gray-300 text-[12px] text-[#5F5A55]"
-              >
-                {fact.value}
-              </span>
-            ))}
-          </div>
-        </Section>
-      )}
+      {
+        hasInterests && (
+          <Section title="INTERESTS" color="#56438E">
+            <div className="mt-2 flex flex-wrap gap-2">
+              {profile.interests.map((fact, index) => (
+                <span
+                  key={`${fact.label}-${index}`}
+                  title={fact.value}
+                  className="px-3 py-1 rounded-full border border-gray-300 text-[12px] text-purple-800 bg-purple-100"
+                >
+                  {fact.value}
+                </span>
+              ))}
+            </div>
+          </Section>
+        )
+      }
 
       {/* -------------------------------- FAMILY ----------------------------- */}
-      {hasFamily && (
-        <Section title="FAMILY">
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {profile.family.map((fact, index) => (
-              <span
-                key={`${fact.label}-${index}`}
-                className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
-              >
-                <span className="bg-sky-100 rounded-full px-1 py-1 text-sky-800 shrink-0">
-                  <FactIcon name={fact.icon} className="text-sky-800" />
+      {
+        hasFamily && (
+          <Section title="FAMILY" color="#0369a1">
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {profile.family.map((fact, index) => (
+                <span
+                  key={`${fact.label}-${index}`}
+                  className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
+                >
+                  <span className="bg-sky-100 rounded-full px-1 py-1 text-sky-800 shrink-0">
+                    <FactIcon name={fact.icon} className="text-sky-800" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-black truncate">{fact.label}</span>
+                    <span className="block text-[10px] truncate">{fact.value}</span>
+                  </span>
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-black truncate">{fact.label}</span>
-                  <span className="block text-[10px] truncate">{fact.value}</span>
-                </span>
-              </span>
-            ))}
-          </div>
-        </Section>
-      )}
+              ))}
+            </div>
+          </Section>
+        )
+      }
 
       {/* ------------------------------ NETWORKING --------------------------- */}
-      {hasNetworking && (
-        <Section title="NETWORKING">
-          <div className="mt-2 grid gap-2">
-            {profile.networking.map((fact, index) => (
-              <span
-                key={`${fact.label}-${index}`}
-                className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
-              >
-                <span className="bg-violet-100 rounded-full px-1 py-1 text-violet-800 shrink-0">
-                  <FactIcon name={fact.icon} className="text-violet-800" />
+      {
+        hasNetworking && (
+          <Section title="NETWORKING">
+            <div className="mt-2 grid gap-2">
+              {profile.networking.map((fact, index) => (
+                <span
+                  key={`${fact.label}-${index}`}
+                  className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
+                >
+                  <span className="bg-violet-100 rounded-full px-1 py-1 text-violet-800 shrink-0">
+                    <FactIcon name={fact.icon} className="text-violet-800" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-black">{fact.label}</span>
+                    <span className="block text-[10px]">{fact.value}</span>
+                  </span>
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-black">{fact.label}</span>
-                  <span className="block text-[10px]">{fact.value}</span>
-                </span>
-              </span>
-            ))}
-          </div>
-        </Section>
-      )}
+              ))}
+            </div>
+          </Section>
+        )
+      }
     </>
   );
 };

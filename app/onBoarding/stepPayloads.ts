@@ -1,18 +1,31 @@
 import type {
   BasicInfoRequest,
+  BioRequest,
   CareerRequest,
   InterestedInRequest,
   IntentionsRequest,
   InterestsRequest,
   LifestyleRequest,
+  PromptsRequest,
+  LocationRequest,
 } from "../context/OnBoardingApiContext";
-import type { LifestyleQuestion } from "../context/OnBoardingDataContext";
+import type {
+  LifestyleQuestion,
+  OnboardingAnswerApi,
+  OnboardingDetailsApi,
+} from "../context/OnBoardingDataContext";
+import { isBlank } from "./stepSchemas";
 
 type StepData = Record<string, unknown>;
 
 /**
  * What the photos step keeps in `data.photos`. The `File` is the payload; the
  * preview URL exists only so the grid can render before the upload happens.
+ *
+ * A photo is posted the moment it is picked, so the entry carries the id the
+ * server handed back (`serverId`) — that is what the delete endpoint needs —
+ * and `uploading` while the POST is still in flight, which is what keeps the
+ * step's controls locked and Continue honest.
  */
 export interface PhotoValue {
   name: string;
@@ -21,6 +34,10 @@ export interface PhotoValue {
   /** Local object URL, for the preview only. Never serialised. */
   previewUrl: string;
   file?: File;
+  /** Id from the POST response. Absent until the upload settles. */
+  serverId?: string;
+  /** True from the moment the file is queued until the POST settles. */
+  uploading?: boolean;
 }
 
 function str(value: unknown): string {
@@ -65,6 +82,23 @@ export function toBasicInfoRequest(data: StepData): BasicInfoRequest {
     height: num(data.height),
     gender: str(data.gender).trim(),
     gender_option: str(data.sexualOrientation).trim(),
+  };
+}
+export function toLocationRequest(data: StepData): LocationRequest {
+  const parsedData = {
+    country: str(data.country).trim(),
+    state: str(data.state).trim(),
+    city: str(data.city).trim(),
+    area: str(data.area),
+    longitude: num(data.longitude),
+    latitude: num(data.latitude),
+    max_distance_km: num(100),
+  }
+  return parsedData;
+}
+export function toBioRequest(data: StepData): BioRequest {
+  return {
+    bio: str(data.bio).trim(),
   };
 }
 
@@ -137,7 +171,7 @@ export function toCareerRequest(data: StepData): CareerRequest {
     highestEdu: text(data.highestEducation),
     degree: text(data.degree),
     collegeName: text(data.collegeName),
-    graduationYear: year(data.graduationYear),
+    graduationYear: Number(data.graduationYear),
     professionId: id(data.profession),
     companyName: text(data.companyName),
     employmentTypeId: id(data.employmentType),
@@ -149,28 +183,215 @@ export function toCareerRequest(data: StepData): CareerRequest {
 }
 
 /**
- * Photos are the one step whose body is not JSON: the endpoint takes one
- * multipart POST per file, field `image`. `saveStep` sends them in array
- * order, so the sequence the user arranged in the grid is the sequence the
- * server receives.
- *
- * Entries without a `File` can't go anywhere — the preview URL is client-only
- * — so they are dropped here and `saveStep` compares the counts rather than
- * quietly uploading fewer photos than were picked.
+ * Prompts. The step keeps the whole answer entry per question — id, question
+ * text and answer — but the endpoint only wants the id and the answer, so the
+ * question wording is dropped here. The whole list goes in one PATCH, which is
+ * why this is one request rather than one per answer.
  */
-export function toPhotoRequests(data: StepData): FormData[] {
-  const photos = Array.isArray(data.photos) ? (data.photos as PhotoValue[]) : [];
-  const bodies: FormData[] = [];
+export function toPromptsRequest(data: StepData): PromptsRequest {
+  const entries = Array.isArray(data.answers)
+    ? (data.answers as Array<Record<string, unknown>>)
+    : [];
 
-  for (const photo of photos) {
-    const file = photo?.file;
-    if (!(file instanceof File)) continue;
+  return {
+    prompts: entries
+      .map((entry) => ({
+        promptId: str(entry?.promptId).trim(),
+        answer: str(entry?.answer).trim(),
+      }))
+      .filter((prompt) => prompt.promptId !== "" && prompt.answer !== ""),
+  };
+}
 
-    const body = new FormData();
-    body.append("image", file, file.name);
-    bodies.push(body);
+/**
+ * Photos are the one step whose body is not JSON: the endpoint takes one
+ * multipart POST per file, field `image`. The upload happens as soon as the
+ * file is picked — `uploadPhoto` in `OnboardingFormContext` builds the body
+ * through this and posts it, so by the time Continue is pressed every entry
+ * is already on the server.
+ *
+ * A `File` can't be read back out of a `PhotoValue` that lost it, so the
+ * caller checks the file is present rather than silently posting nothing.
+ */
+export function toPhotoBody(file: File): FormData {
+  const body = new FormData();
+  body.append("images", file, file.name);
+  return body;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  The other direction: GET /api/user/onboarding-details → step data.          */
+/*                                                                              */
+/*  Same job as the mappers above, read backwards. The flow starts with every    */
+/*  step empty even when the profile is not, so a returning user has to answer   */
+/*  questions they already answered. This turns the saved profile back into the    */
+/*  form data objects, in the form field names the schemas declare — including    */
+/*  the ids the save endpoints want, which is what makes a hydrated select show   */
+/*  its label instead of a blank.                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Lifestyle and interests are answered question-by-question, and the form keys
+ * each answer by the question's own `key`. One key can come back several times
+ * when the question is multi, so picks are collected rather than overwritten.
+ */
+function answersToStepData(
+  answers: readonly OnboardingAnswerApi[] | undefined
+): Record<string, string | string[]> {
+  const out: Record<string, string | string[]> = {};
+
+  for (const answer of answers ?? []) {
+    const key = answer?.question?.key;
+    const optionId = answer?.option?.id;
+    if (!key || !optionId) continue;
+
+    const existing = out[key];
+
+    if (existing === undefined) {
+      out[key] = answer.question.isMulti ? [optionId] : optionId;
+    } else if (Array.isArray(existing)) {
+      existing.push(optionId);
+    }
   }
 
-  return bodies;
+  return out;
+}
+
+/** `"2008-09-08T00:00:00.000Z"` → `"2008-09-08"`, the shape the date input holds. */
+function isoDate(value: unknown): string {
+  const text = str(value).trim();
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(text);
+
+  return match ? match[1]! : "";
+}
+
+/** Career ids arrive as numbers and the selects store strings. */
+function optionId(value: unknown): string {
+  if (value && typeof value === "object" && "id" in value) {
+    return str((value as { id: unknown }).id);
+  }
+
+  return str(value);
+}
+
+/** Year `0` means "not answered", so it is left out rather than shown as 0. */
+function graduationYear(value: unknown): string {
+  const parsed = Number.parseInt(str(value), 10);
+
+  return parsed > 0 ? String(parsed) : "";
+}
+
+/**
+ * The saved profile as step data, keyed by step id. Only fields the profile
+ * actually holds are present — nothing is written as an empty string, so
+ * `hydrateStepData` can tell "the server has no answer" from "the answer is
+ * blank".
+ */
+export function stepDataFromDetails(
+  details: OnboardingDetailsApi
+): Record<string, Record<string, unknown>> {
+  const flows = details.flows ?? {};
+  const basic = flows.BASIC_INFO;
+  const career = flows.CAREER_AMBITION;
+  const location = flows.LOCATION;
+
+  const seed: Record<string, Record<string, unknown>> = {};
+
+  if (basic) {
+    seed.basics = {
+      fullName: basic.fullName,
+      email: basic.email,
+      dateOfBirth: isoDate(basic.dateOfBirth),
+      height: str(basic.height),
+      gender: basic.gender,
+      sexualOrientation: basic.genderOption,
+    };
+  }
+
+  const interestedIn = flows.INTERESTED_IN?.interestedIn;
+  if (interestedIn) {
+    seed.preference = {
+      genders: [interestedIn],
+      sexualOrientation: basic?.genderOption,
+    };
+  }
+
+  /* The option's own uuid, which is exactly what the intentions list hands the
+     radio group and what the save endpoint wants back. */
+  const intentionId = flows.LOOKING_FOR?.intention?.id;
+  if (typeof intentionId === "string") {
+    seed.intentions = { intention: intentionId };
+  }
+
+  const lifestyle = answersToStepData(flows.LIFESTYLE);
+  if (Object.keys(lifestyle).length > 0) {
+    seed.lifestyle = lifestyle;
+  }
+
+  const interests = answersToStepData(flows.INTEREST);
+  if (Object.keys(interests).length > 0) {
+    seed.interests = interests;
+  }
+
+  if (career) {
+    seed.career = {
+      highestEducation: str(career.highestEducation),
+      degree: str(career.degree),
+      collegeName: str(career.collegeName),
+      graduationYear: graduationYear(career.graduationYear),
+      profession: optionId(career.profession),
+      companyName: str(career.companyName),
+      employmentType: optionId(career.employmentType),
+      experience: optionId(career.experience),
+      salaryRange: optionId(career.salaryRange),
+      ambition: optionId(career.ambition),
+      bigDreams: str(career.bigDreams),
+    };
+  }
+
+  if (flows.STORY?.bio) {
+    seed.bio = { bio: flows.STORY.bio };
+  }
+
+  if (location?.city) {
+    seed.location = { city: location.city };
+  }
+
+  return seed;
+}
+
+/**
+ * Drops the saved profile into the step objects, filling only what the user has
+ * not touched — a blank field is the empty string or an empty array, and a
+ * non-blank one is something they (or the flow) have already chosen. Anything
+ * the profile doesn't hold is left as it was, so the returned object is the same
+ * reference when there is nothing to hydrate.
+ */
+export function hydrateStepData<T extends Record<string, Record<string, unknown>>>(
+  data: T,
+  details: OnboardingDetailsApi
+): T {
+  let changed = false;
+  const next: Record<string, Record<string, unknown>> = { ...data };
+
+  for (const [stepId, fields] of Object.entries(stepDataFromDetails(details))) {
+    const step = data[stepId] ?? {};
+    const merged: Record<string, unknown> = { ...step };
+    let stepChanged = false;
+
+    for (const [name, value] of Object.entries(fields)) {
+      if (isBlank(step[name]) && !isBlank(value)) {
+        merged[name] = value;
+        stepChanged = true;
+      }
+    }
+
+    if (stepChanged) {
+      next[stepId] = merged;
+      changed = true;
+    }
+  }
+
+  return changed ? (next as T) : data;
 }
 

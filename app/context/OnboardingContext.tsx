@@ -1,6 +1,7 @@
 //Only for Ui
 "use client";
 import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 import { STEPS, TOTAL_STEPS, percentFor, progressFor } from "../onBoarding/onboardingConfig";
 
@@ -17,6 +18,9 @@ import { STEPS, TOTAL_STEPS, percentFor, progressFor } from "../onBoarding/onboa
 /* -------------------------------------------------------------------------- */
 
 const STORAGE_KEY = "welvors_onboarding_step";
+
+/** Must match `ONBOARDING_DONE_PATH` in `proxy.ts`. */
+const ONBOARDING_DONE_PATH = "/app/profile";
 
 function clampIndex(index: number): number {
   return Math.min(Math.max(index, 0), TOTAL_STEPS - 1);
@@ -64,9 +68,9 @@ interface OnboardingState {
   back: () => void;
   goTo: (index: number) => void;
   /**
-   * Called by the last step's "Finish" button. Currently just clears the saved
-   * position, so a reload starts the flow over - this is the seam where a real
-   * submit would go.
+   * Called by the last step's "Finish" button, after the review save has
+   * succeeded. Clears the saved position and leaves the route, because
+   * `proxy.ts` treats a completed profile as ineligible for `/onBoarding`.
    */
   finish: () => void;
 }
@@ -74,6 +78,7 @@ interface OnboardingState {
 const OnboardingContext = createContext<OnboardingState | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const savedIndex = useSyncExternalStore(emptySubscribe, readStoredStep, getServerStep);
 
   /* The live position. `savedIndex` is only read on mount (that's the point of
@@ -111,7 +116,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     /* Drop the in-memory position too. Clearing storage alone would leave the
        override in place, so a refresh would land back on Review. */
     setOverride(0);
-  }, []);
+
+    /* Leave the route. `proxy.ts` redirects /onBoarding to /app/profile once the
+       backend reports `onboardingCompleted`, so staying here would leave the flow
+       open and re-editable after the profile exists — and a refresh would land
+       back on step 1 looking like nothing happened. */
+    router.push(ONBOARDING_DONE_PATH);
+  }, [router]);
 
   const value = useMemo<OnboardingState>(() => {
     const step = stepIndex + 1;

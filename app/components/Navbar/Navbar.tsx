@@ -43,10 +43,23 @@ const blur = {
 };
 
 function Navbar({ logoSrc }: NavbarProps) {
+  /* The proxy bounces unauthenticated /app visits to `/?login=1&next=<path>`.
+     Read that before the first paint so the modal is already open and there is
+     no flash of the page without it. */
   const [open, setOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("login") === "1"
+  );
   const [mounted, setMounted] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  /** Where to land after logging in, when a proxy redirect sent us here. */
+  const [redirectTo, setRedirectTo] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("next")
+  );
 
   const router = useRouter();
   const pathname = usePathname();
@@ -63,6 +76,21 @@ function Navbar({ logoSrc }: NavbarProps) {
       setLoggedIn(result.result);
     }
     checkAuth();
+  }, []);
+
+  /* Drop `login`/`next` from the URL once the modal has been opened from them,
+     so a refresh or a back navigation does not re-open it. */
+  useEffect(() => {
+    const clean = new URL(window.location.href);
+    if (!clean.searchParams.has("login")) return;
+
+    clean.searchParams.delete("login");
+    clean.searchParams.delete("next");
+    window.history.replaceState(
+      null,
+      "",
+      `${clean.pathname}${clean.search}${clean.hash}`
+    );
   }, []);
 
   const handleLogout = async () => {
@@ -93,6 +121,7 @@ function Navbar({ logoSrc }: NavbarProps) {
   const handleLoginSuccess = () => {
     setLoggedIn(true);
     setLoginOpen(false);
+    setRedirectTo(null);
   };
 
   return (
@@ -340,6 +369,7 @@ function Navbar({ logoSrc }: NavbarProps) {
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
         onSuccess={handleLoginSuccess}
+        redirectTo={redirectTo}
       />
     </header>
   );

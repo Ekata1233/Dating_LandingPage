@@ -1,80 +1,140 @@
 /* -------------------------------------------------------------------------- */
 /*  The signed-in user's own profile.                                          */
 /*                                                                            */
-/*  `useUsersData()` returns the discover feed and the codebase already treats  */
-/*  its first entry as the logged-in user (see `MOCK_MY_PROFILE`, which is     */
-/*  documented as "the logged-in user, doubled as the first card"). This hook   */
-/*  turns that into a single `Profile` the profile surfaces can render, with   */
-/*  the deep-profile request folded in, and reports the three states the UI    */
-/*  needs to tell apart: in flight, failed, and ready.                         */
+/*  Source: `GET /api/user/onboarding-details` — the same endpoint             */
+/*  `OnBoardingDataContext` already calls for the onboarding flow, exposed here */
+/*  as its own hook so the /app shell does not have to mount that provider (and */
+/*  drag its eight option-list requests along with it).                        */
 /*                                                                            */
-/*  NOTE: a dedicated `/api/user/profile` endpoint would be the correct source */
-/*  here. Until that exists, feed[0] stands in for "me", so a user who is not  */
-/*  the first card in their own feed sees someone else's profile. Swap the     */
-/*  `users[0]` line below when that endpoint lands.                            */
+/*  `ProfileMain`, `ProfileSidebar`, `AppRail` and the mobile sections all read */
+/*  from this, so the card and the rail can never show two different people.    */
+/*  No mock fallback: the hook reports in-flight / failed / ready separately, so */
+/*  a slow request is never mistaken for a real profile.                        */
 /* -------------------------------------------------------------------------- */
 
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useUserDetails, useUsersData } from "@/app/context/UsersContext";
-import { mapUserToProfile, mergeUserDetails } from "./mapUser";
-import type { Profile } from "./types";
+import type {
+  OnboardingDetailsApi,
+  OnboardingDetailsResponse,
+} from "@/app/context/OnBoardingDataContext";
+import { API_BASE_URL } from "@/utils/api";
+import { authHeader, getClientToken } from "@/utils/token";
+
+import { mapMyProfile, mapMyProfileSummary } from "./mapMyProfile";
+import type { MyProfile, Profile } from "./types";
+
+const ONBOARDING_DETAILS_URL = `${API_BASE_URL}/api/user/onboarding-details`;
+
+type MyProfileState =
+  | { status: "loading"; details: null; error: null }
+  | { status: "ready"; details: OnboardingDetailsApi; error: null }
+  | { status: "empty"; details: null; error: null }
+  | { status: "error"; details: null; error: string };
 
 export interface MyProfileResult {
-  /** Null until the feed resolves and carries at least one user. */
+  /** Null until the request resolves, and forever without a token. */
   profile: Profile | null;
-  /** True while the feed request is in flight. */
+  /** The same profile reduced to the fields `ProfileSidebar` draws. */
+  summary: MyProfile | null;
+  /** True while the request is in flight. */
   loading: boolean;
-  /** Set when the feed request failed. */
+  /** Set when the request failed. */
   error: string | null;
-  /** The request succeeded but there is nobody to show. */
+  /** The request succeeded but there is nothing saved to show. */
   isEmpty: boolean;
-  /** True while the rich profile is still being fetched behind the feed. */
-  detailsPending: boolean;
-  /** Re-requests the feed. */
-  retry: () => void;
+  /** Re-requests the profile. */
+  refetch: () => void;
+}
+
+/**
+ * One request, no state touched. `null` means "nothing to show" — either there is
+ * no session (so the request is skipped entirely and never 401s) or the payload
+ * carries no user yet. Throws only on a real transport/contract failure.
+ */
+async function fetchOnboardingDetails(): Promise<OnboardingDetailsApi | null> {
+  /* No session means nothing to ask for. */
+  if (!getClientToken()) return null;
+
+  const response = await axios.get<OnboardingDetailsResponse>(ONBOARDING_DETAILS_URL, {
+    headers: authHeader(),
+  });
+
+  const payload = response.data;
+
+  if (!payload?.success) throw new Error(payload?.message || "Couldn't load your profile.");
+  if (!payload.data?.userId) return null;
+
+  return payload.data;
 }
 
 export function useMyProfile(): MyProfileResult {
-  const { users, loading, error, refetch } = useUsersData();
+  const [state, setState] = useState<MyProfileState>({
+    status: "loading",
+    details: null,
+    error: null,
+  });
 
-  const base = useMemo<Profile | null>(
-    () => (users[0] ? mapUserToProfile(users[0]) : null),
-    [users]
-  );
+  /**
+   * Runs the request and writes the outcome. Kept separate from the effect so the
+   * effect never calls `setState` synchronously, and `isCancelled` lets an
+   * unmounted card drop its response instead of updating a dead tree.
+   */
+  const resolve = useCallback((isCancelled: () => boolean) => {
+    void fetchOnboardingDetails()
+      .then((details) => {
+        if (isCancelled()) return;
 
-  const {
-    details,
-    state: detailsState,
-    ensure: ensureDetails,
-    refresh: refreshDetails,
-  } = useUserDetails(base?.id);
+        setState(
+          details
+            ? { status: "ready", details, error: null }
+            : { status: "empty", details: null, error: null }
+        );
+      })
+      .catch((err) => {
+        if (isCancelled()) return;
 
-  /* The feed has already told us who this is, so the extra request is worth
-     firing straight away — unlike a feed card, which waits for intent. */
+        console.error("useMyProfile fetch error:", err);
+        setState({ status: "error", details: null, error: "Couldn't load your profile." });
+      });
+  }, []);
+
   useEffect(() => {
-    ensureDetails();
-  }, [ensureDetails]);
+    let cancelled = false;
+
+    resolve(() => cancelled);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolve]);
+
+  /** Manual retry from an error notice. Runs on an event, so the reset is free. */
+  const refetch = useCallback(() => {
+    setState({ status: "loading", details: null, error: null });
+    resolve(() => false);
+  }, [resolve]);
 
   const profile = useMemo(
-    () => (base && details ? mergeUserDetails(base, details) : base),
-    [base, details]
+    () => (state.details ? mapMyProfile(state.details) : null),
+    [state.details]
   );
 
-  const retry = useCallback(() => {
-    refetch();
-    refreshDetails();
-  }, [refetch, refreshDetails]);
+  const summary = useMemo(
+    () => (state.details && profile ? mapMyProfileSummary(state.details, profile) : null),
+    [state.details, profile]
+  );
 
   return {
     profile,
-    loading,
-    error,
-    isEmpty: !loading && !error && !base,
-    detailsPending: Boolean(base) && detailsState !== "ready",
-    retry,
+    summary,
+    loading: state.status === "loading",
+    error: state.error,
+    isEmpty: state.status === "empty",
+    refetch,
   };
 }
 

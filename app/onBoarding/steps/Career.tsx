@@ -44,9 +44,9 @@ export default function CareerStep() {
      Continue until every list has settled. Skip stays available regardless. */
   const listsLoading = Object.values(sources).some((source) => source.loading);
 
-  /* Continue means "I answered all of it", so it stays closed until every field
-     holds something. Leaving the step early is Skip's job, and Skip posts
-     nothing. */
+  /* Continue is never blocked on how much of the step is filled — a blank
+     career is a valid answer, and the save posts it as such (null per field).
+     All it waits for is the option lists themselves. */
   const { done, total } = form.filled;
 
   const renderField = (field: FieldDef) => {
@@ -145,14 +145,14 @@ export default function CareerStep() {
       subtitle={
         done === total
           ? "All set. Continue saves this, or skip it and fill it in later."
-          : `${done} of ${total} filled — Continue unlocks when they're all done.`
+          : `${done} of ${total} filled — Continue saves it either way, and you can fill in the rest later.`
       }
       footer={
         <StepFooter
           onSubmit={() => form.submit()}
           submitting={form.submitState === "submitting"}
           submitError={form.submitError}
-          isValid={form.isComplete && !listsLoading}
+          isValid={!listsLoading}
           skippable
           onSkip={() => form.skip()}
         />

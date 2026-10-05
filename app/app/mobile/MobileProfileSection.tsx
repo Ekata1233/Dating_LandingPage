@@ -54,7 +54,7 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
   const profile = profileProp !== undefined ? profileProp : live.profile;
   const loading = loadingProp ?? live.loading;
   const error = errorProp ?? live.error;
-  const retry = onRetry ?? live.retry;
+  const retry = onRetry ?? live.refetch;
 
   if (loading) {
     return <Loader label="Loading your profile…" hint="Just a moment." />;
@@ -74,7 +74,7 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
   if (!profile) {
     return (
       <Notice
-        title="No profile to show yet"
+        title="No profile found"
         detail="Finish setting up your account and it'll appear here."
       />
     );
@@ -84,14 +84,14 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
     <div className="h-full w-full overflow-y-auto overscroll-contain">
       <ProfileSidebar
         flow="auto"
-        avatarUrl={profile.image}
+        avatarUrl={live.summary?.avatarUrl ?? profile.image}
         name={profile.name}
         age={profile.age}
-        verified
+        verified={live.summary?.verified ?? false}
         location={profile.location}
-        isPlatinumMember
-        trustScore={profile.trust ?? 0}
-        completionPercent={profile.detailsLoaded ? 100 : 70}
+        isPlatinumMember={live.summary?.isPlatinumMember ?? false}
+        trustScore={live.summary?.trustScore ?? 0}
+        completionPercent={live.summary?.completionPercent ?? 0}
         onEditProfile={onEditProfile}
       />
 

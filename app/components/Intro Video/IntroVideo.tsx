@@ -1,37 +1,68 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 
 interface IntroVideoProps {
   children: React.ReactNode;
 }
 
+const INTRO_SESSION_KEY = 'welvors_intro_played';
+
+const subscribeNever = () => () => {};
+const getServerSnapshot = () => false;
+const getHydratedSnapshot = () => true;
+
+function getIntroPlayedSnapshot() {
+  try {
+    return sessionStorage.getItem(INTRO_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function IntroVideo({ children }: IntroVideoProps) {
   const pathname = usePathname();
   const isHome = pathname === '/';
 
-  const [showIntro, setShowIntro] = useState(true);
+  const [introFinished, setIntroFinished] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'entering' | 'playing' | 'exiting'>('entering');
   const [loadStartTime] = useState(Date.now());
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // `hydrated` stays false through SSR and the hydration render, so the intro
+  // is never server-rendered. `playedThisSession` reads a sessionStorage flag
+  // so the intro plays at most once per browser session (survives reloads).
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    getHydratedSnapshot,
+    getServerSnapshot
+  );
+  const playedThisSession = useSyncExternalStore(
+    subscribeNever,
+    getIntroPlayedSnapshot,
+    getServerSnapshot
+  );
+  const showIntro = isHome && hydrated && !playedThisSession && !introFinished;
+
   useEffect(() => {
+    if (!showIntro) return;
+
     // Prevent body scroll while intro is showing
     document.body.style.overflow = 'hidden';
-    
+
     // Start loading video immediately
     const video = videoRef.current;
     if (video) {
       video.load();
     }
-    
+
     return () => {
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [showIntro]);
 
   // Restore scroll when navigating away from home
   useEffect(() => {
@@ -73,7 +104,12 @@ export default function IntroVideo({ children }: IntroVideoProps) {
     if (phase === 'exiting') return;
     setPhase('exiting');
     setTimeout(() => {
-      setShowIntro(false);
+      try {
+        sessionStorage.setItem(INTRO_SESSION_KEY, '1');
+      } catch {
+        // Ignore storage failures (private mode, storage disabled)
+      }
+      setIntroFinished(true);
       document.body.style.overflow = '';
     }, 1200);
   }, [phase]);
@@ -85,7 +121,7 @@ export default function IntroVideo({ children }: IntroVideoProps) {
     setVideoReady(true);
   }, [loadStartTime]);
 
-  if (!isHome || !showIntro) {
+  if (!showIntro) {
     return <>{children}</>;
   }
 

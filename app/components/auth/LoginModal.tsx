@@ -35,9 +35,15 @@ interface LoginModalProps {
   onClose: () => void;
   /** verify hone ke baad — e.g. redirect to /launch */
   onSuccess?: () => void;
+  /**
+   * Path the proxy wanted the visitor to reach (e.g. `/app/home`). Used instead
+   * of the default `/app` after a normal login; new registrations still go to
+   * onboarding first.
+   */
+  redirectTo?: string | null;
 }
 
-export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+export default function LoginModal({ open, onClose, onSuccess, redirectTo }: LoginModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
@@ -163,6 +169,10 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
       
       if(data.data.is_register){
         router.push("/onBoarding");
+      }
+      else if (redirectTo && redirectTo.startsWith("/app")){
+        /* Came from a protected route — land back where they were headed. */
+        router.push(redirectTo);
       }
       else{
         router.push("/app");

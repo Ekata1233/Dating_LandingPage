@@ -68,16 +68,16 @@ export const GENDERS: readonly FieldOption[] = [
 ];
 
 export const ORIENTATIONS: readonly FieldOption[] = [
-  { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say",description:"You can add this later" },
-  { value: "STRAIGHT", label: "Straight","description": "Attracted to people of the opposite gender" },
-  { value: "GAY", label: "Gay","description": "Attracted to people of the same gender"},
-  { value: "LESBIAN", label: "Lesbian","description": "A woman attracted to other women" },
-  { value: "BISEXUAL", label: "Bisexual","description": "Attracted to more than one gender" },
-  { value: "PANSEXUAL", label: "Pansexual","description": "Attracted to people regardless of gender" },
-  { value: "ASEXUAL", label: "Asexual","description": "Little or no sexual attraction — may still feel romantic attraction" },
-  { value: "AROMATIC", label: "Aromatic","description": "Little or no romantic attraction — may still feel other connections" },
-  { value: "QUEER", label: "Queer",description:"A broad, self-defined orientation" },
-  { value: "QUESTIONING", label: "Questioning","description": "Still exploring what feels right" },
+  { value: "PREFER_NOT_TO_SAY", label: "Prefer not to say", description: "You can add this later" },
+  { value: "STRAIGHT", label: "Straight", "description": "Attracted to people of the opposite gender" },
+  { value: "GAY", label: "Gay", "description": "Attracted to people of the same gender" },
+  { value: "LESBIAN", label: "Lesbian", "description": "A woman attracted to other women" },
+  { value: "BISEXUAL", label: "Bisexual", "description": "Attracted to more than one gender" },
+  { value: "PANSEXUAL", label: "Pansexual", "description": "Attracted to people regardless of gender" },
+  { value: "ASEXUAL", label: "Asexual", "description": "Little or no sexual attraction — may still feel romantic attraction" },
+  { value: "AROMATIC", label: "Aromatic", "description": "Little or no romantic attraction — may still feel other connections" },
+  { value: "QUEER", label: "Queer", description: "A broad, self-defined orientation" },
+  { value: "QUESTIONING", label: "Questioning", "description": "Still exploring what feels right" },
 ];
 
 export const HEIGHTS: readonly FieldOption[] = Array.from({ length: 151 }, (_, i) => {
@@ -154,7 +154,7 @@ export const STEP_SCHEMAS: Record<string, StepSchema> = {
       {
         name: "genders",
         label: "Who are you interested in seeing?",
-        kind: "multi",
+        kind: "radio",
         min: 1,
         options: [
           { value: "WOMEN", label: "Women", description: "Show me women" },
@@ -454,25 +454,61 @@ export const STEP_SCHEMAS: Record<string, StepSchema> = {
     id: "location",
     fields: [
       {
+        name: "country",
+        label: "Country",
+        kind: "text",
+        minLength: 2,
+        maxLength: 80,
+        message: "Please allow location access to detect your country.",
+      },
+      {
+        name: "state",
+        label: "State",
+        kind: "text",
+        // Some places have no state in OpenStreetMap (e.g. city-states),
+        // and the component falls back to "" in that case.
+        required: false,
+        maxLength: 80,
+      },
+      {
         name: "city",
         label: "Location",
         kind: "text",
-        placeholder: "Search for your city",
         minLength: 2,
         maxLength: 80,
-        message: "Please enter a location.",
+        message: "Please allow location access to detect your city.",
       },
       {
-        name: "useCurrentLocation",
-        label: "Use my current location",
-        kind: "radio",
-        required: false,
-        skippable: true,
-
-        options: [
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ],
+        name: "area",
+        label: "Area",
+        kind: "text",
+        minLength: 2,
+        maxLength: 80,
+        message: "Please allow location access to detect your area.",
+      },
+      {
+        name: "latitude",
+        label: "Latitude",
+        kind: "text",
+        min: -90,
+        max: 90,
+        message: "Please allow location access to continue.",
+      },
+      {
+        name: "longitude",
+        label: "Longitude",
+        kind: "text",
+        min: -180,
+        max: 180,
+        message: "Please allow location access to continue.",
+      },
+      {
+        name: "max_distance_km",
+        label: "Maximum distance (km)",
+        kind: "text",
+        min: 1,
+        max: 500,
+        message: "Please choose a distance.",
       },
     ],
   },

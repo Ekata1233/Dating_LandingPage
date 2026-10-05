@@ -16,12 +16,17 @@ import type { PhotoValue } from "../stepPayloads";
 /*  This is the one step whose data is not JSON. A photo is a `File`, and a    */
 /*  `File` cannot be put in a JSON body. Two consequences, both deliberate:    */
 /*                                                                            */
-/*  1. The `File` objects stay in the step's own data object on the client, and  */
-/*     the object URLs used for the previews are revoked on unmount so a long   */
-/*     session doesn't leak a dozen blobs.                                     */
-/*  2. On submit, `toPhotoRequests` in `stepPayloads.ts` turns each entry into   */
-/*     a multipart body (field `image`) and `saveStep` POSTs them one at a      */
-/*     time. This step itself never calls the API.                             */
+/*  1. Each file is posted the moment it is picked, through `form.uploadPhoto`, */
+/*     so the server already owns it before Continue is pressed. While that    */
+/*     POST is in flight `busy` is held: no second pick, no removal, no        */
+/*     reordering — one network call at a time, and no way to lose track of    */
+/*     which tile belongs to which request.                                    */
+/*  2. The X does the same in reverse: `form.removePhotoAt` deletes it on the  */
+/*     server first and only then drops the tile, so a failed delete leaves      */
+/*     the photo where the user can try again.                                 */
+/*                                                                            */
+/*  The object URLs used for the previews are handed back when a tile leaves   */
+/*  the list, so a long session doesn't leak a dozen blobs.                     */
 /* -------------------------------------------------------------------------- */
 
 const SCHEMA = STEP_SCHEMAS.photos;
@@ -31,44 +36,49 @@ const MIN_PHOTOS = FIELD.min ?? 2;
 
 export default function PhotoStep() {
   const form = useStepForm("photos");
-  const photos = (form.get<PhotoValue[]>("photos") ?? []).filter(Boolean);
+  /* The form context's merged list: the photos the server already holds (with
+     the ids `deletePhoto` needs) plus any file still uploading. */
+  const photos = form.photos.filter(Boolean);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  /* Held for the whole of one request — an upload or a delete. This is the
+     lock the requirement asks for: nothing else can be added while a photo is
+     being posted. */
   const [busy, setBusy] = React.useState(false);
-
-  /* Object URLs outlive React unless we hand them back. */
-  React.useEffect(() => {
-    return () => {
-      for (const p of photos) URL.revokeObjectURL(p.previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const setPhotos = (next: PhotoValue[]) => form.set("photos", next);
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    setBusy(true);
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || busy) return;
 
     const incoming = Array.from(files).slice(0, SLOT_COUNT - photos.length);
-    const added: PhotoValue[] = incoming.map((file) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      previewUrl: URL.createObjectURL(file),
-      file,
-    }));
+    if (incoming.length === 0) return;
 
-    setPhotos([...photos, ...added]);
-    setBusy(false);
+    setBusy(true);
+    try {
+      /* One POST per file, in the order chosen. The tile lands as soon as it
+         is queued, so the grid fills up while the uploads run. */
+      for (const file of incoming) {
+        const result = await form.uploadPhoto(file);
+        if (!result.ok) break;
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const removeAt = (index: number) => {
-    const target = photos[index];
-    if (target) URL.revokeObjectURL(target.previewUrl);
-    setPhotos(photos.filter((_, i) => i !== index));
+  const removeAt = async (index: number) => {
+    if (busy) return;
+
+    setBusy(true);
+    try {
+      await form.removePhotoAt(index);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const move = (from: number, to: number) => {
+    if (busy) return;
     if (to < 0 || to >= photos.length) return;
     const next = photos.slice();
     const [item] = next.splice(from, 1);
@@ -87,7 +97,7 @@ export default function PhotoStep() {
       footer={
         <StepFooter
           onSubmit={() => form.submit()}
-          submitting={form.submitState === "submitting"}
+          submitting={busy || form.submitState === "submitting"}
           submitError={form.submitError}
           isValid={form.isValid}
         />
@@ -108,11 +118,23 @@ export default function PhotoStep() {
             <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
               {i === 0 ? "MAIN" : i + 1}
             </span>
+
+            {photo.uploading && (
+              <div className="absolute inset-0 grid place-items-center bg-black/45">
+                <Loader2
+                  className="size-5 animate-spin text-white"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Uploading {photo.name}</span>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={() => removeAt(i)}
+              disabled={busy}
               aria-label={`Remove ${photo.name}`}
-              className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white"
+              className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white disabled:opacity-40"
             >
               <X className="size-3.5" aria-hidden="true" />
             </button>
@@ -120,7 +142,7 @@ export default function PhotoStep() {
               <button
                 type="button"
                 onClick={() => move(i, i - 1)}
-                disabled={i === 0}
+                disabled={busy || i === 0}
                 aria-label="Move earlier"
                 className="grid size-6 place-items-center rounded-full bg-black/60 text-xs text-white disabled:opacity-30"
               >
@@ -129,7 +151,7 @@ export default function PhotoStep() {
               <button
                 type="button"
                 onClick={() => move(i, i + 1)}
-                disabled={i === photos.length - 1}
+                disabled={busy || i === photos.length - 1}
                 aria-label="Move later"
                 className="grid size-6 place-items-center rounded-full bg-black/60 text-xs text-white disabled:opacity-30"
               >
