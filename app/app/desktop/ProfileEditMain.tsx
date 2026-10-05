@@ -28,8 +28,14 @@
 /*  Location is detected from the device on an explicit click (never on mount)  */
 /*  and written through `setField`, like every other field.                     */
 /*                                                                            */
-/*  There is no save endpoint yet: Save flips the card into its "saved" message  */
-/*  and offers an Edit button to go back. No request is made.                    */
+/*  Save fans the changed sections out over the *same* per-step PATCH endpoints  */
+/*  onboarding already uses, through the same mappers in `stepPayloads.ts`.      */
+/*  There is deliberately no "save the whole profile" call: each section goes   */
+/*  to the endpoint that owns it, and only sections the user actually touched    */
+/*  are sent, so saving one field never rewrites the other nine. The mappers are */
+/*  shared rather than reimplemented, which is why the field names here are the */
+/*  onboarding field names — that identity is what makes the mapping work with  */
+/*  no translation layer in between.                                             */
 /* -------------------------------------------------------------------------- */
 
 import { cn } from "cn";
@@ -39,7 +45,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  ImagePlus,
   Images,
+  Loader2,
   MapPin,
   MessageCircle,
   Pencil,
@@ -60,6 +68,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import { photoIdFrom, useProfileData } from "@/app/context/OnBoardingApiContext";
 import {
   INTERESTS_MAX,
   INTERESTS_MIN,
@@ -80,8 +89,26 @@ import {
   TextareaField,
   TextField,
 } from "@/app/onBoarding/OnboardingFields";
-import { stepDataFromDetails } from "@/app/onBoarding/stepPayloads";
-import { STEP_SCHEMAS, type FieldDef } from "@/app/onBoarding/stepSchemas";
+import {
+  stepDataFromDetails,
+  toBasicInfoRequest,
+  toBioRequest,
+  toCareerRequest,
+  toIntentionsRequest,
+  toInterestedInRequest,
+  toInterestsRequests,
+  toLifestyleRequests,
+  toLocationRequest,
+  toPhotoBody,
+  toPromptsRequest,
+  type PhotoValue,
+} from "@/app/onBoarding/stepPayloads";
+import {
+  STEP_SCHEMAS,
+  validateStepData,
+  type FieldDef,
+  type FieldErrors,
+} from "@/app/onBoarding/stepSchemas";
 
 import { Loader, Notice } from "../shared/Loader";
 import { useRouter } from "next/navigation";
@@ -108,34 +135,84 @@ export interface ProfileEditPayload {
   prompts: PromptAnswer[];
 }
 
-/** A photo tile. The details payload carries no photos, so the caller supplies them. */
+/**
+ * Thrown inside the save fan-out when a section's PATCH comes back unsuccessful,
+ * so the loop unwinds to the one handler instead of checking `success` after every
+ * call. `section` is the label of the section that failed, which is the bit the
+ * user actually needs — "Couldn't save" on a form this long tells them nothing.
+ */
+class SaveFailed extends Error {
+  constructor(message: string | undefined, readonly section: string) {
+    super(message ?? "Couldn't save that section.");
+    this.name = "SaveFailed";
+  }
+}
+
+/**
+ * A caller-supplied photo. Only needed to render a *preview* grid — omitted, the
+ * section reads the real list off `flows.PHOTOS` and posts through the endpoints.
+ */
 export interface ProfilePhoto {
   id: string;
   url: string;
   isMain?: boolean;
 }
 
+/**
+ * One tile in the grid, whether the photo is already on the server or is a file
+ * this session is still posting. `serverId` is what the delete endpoint accepts,
+ * so it is only set once the upload settles.
+ */
+interface PhotoTile {
+  /** Stable React key: the server id, or the local object URL while in flight. */
+  key: string;
+  url: string;
+  name: string;
+  isMain: boolean;
+  uploading: boolean;
+  serverId: string;
+}
+
+/** Slot count and minimum, taken from the photos schema rather than restated. */
+const PHOTO_SLOTS = STEP_SCHEMAS.photos.fields[0].max ?? 6;
+const PHOTO_MIN = STEP_SCHEMAS.photos.fields[0].min ?? 2;
+
 export interface ProfileEditMainProps {
   /**
-   * Fires on Save. There is no endpoint yet, so this is purely the seam a caller
-   * can hook; the UI shows its saved state either way.
+   * Fires on Save, alongside the per-section PATCH fan-out. Purely an extra
+   * seam for a caller that wants to observe the payload; the save itself does
+   * not depend on it being passed.
    */
   onSave?: (data: ProfileEditPayload) => void | Promise<unknown>;
   /** Fill the parent edge to edge instead of rendering the 300px desktop frame. */
   fluid?: boolean;
-  /** Caller-owned busy state, for when a save is wired up later. */
+  /** Caller-owned busy state, for when a caller wants to show its own spinner. */
   saving?: boolean;
   /**
    * Values applied underneath the API payload. Useful for a preview or a draft,
    * never used to stand in for a missing payload.
    */
   initialData?: Record<string, unknown>;
-  /** Renders the Photos grid when given. Omit and the section is not shown. */
+  /**
+   * Overrides the Photos grid. Omit it and the section reads the server's own
+   * list and posts through the photo endpoints; pass it only to render a preview
+   * list that isn't the user's real one.
+   */
   photos?: ProfilePhoto[];
-  onEditPhoto?: (photo: ProfilePhoto) => void;
+  /** Replaces the built-in remove, which deletes on the server then drops the tile. */
   onRemovePhoto?: (photo: ProfilePhoto) => void;
   /** Renders the live-video card when given. Omit and the section is not shown. */
   onRecordVideo?: () => void;
+  /**
+   * Runs once the whole fan-out has succeeded, after the overrides are dropped.
+   *
+   * Omitted, the form navigates to `/app/profile` — the edit page has served its
+   * purpose at that point and staying on it would only invite a second save over
+   * the top of one just written. The mobile Edit/Preview tabs pass this instead,
+   * to swap to the Preview tab and refetch, because there the preview *is* the
+   * screen the user wants to land on.
+   */
+  onSaved?: () => void;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -595,6 +672,44 @@ const MAX_PROMPTS = STEP_SCHEMAS.prompts.fields[0].max ?? 3;
 const BIO_FALLBACK_MAX_LENGTH = 300;
 
 /* -------------------------------------------------------------------------- */
+/*  Section -> endpoint                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Which form fields belong to which save endpoint.
+ *
+ * The form is one flat object of *onboarding* field names, and these are the
+ * names each per-step PATCH owns. `sexualOrientation` is deliberately listed
+ * twice: it appears in both `basics` (as `gender_option`) and `preference` (as
+ * `sexual_orientation`), so a change to it has to reach both endpoints or the
+ * two would drift apart.
+ *
+ * Derived from the schemas rather than hand-written, so a field added to a step
+ * is covered by the next edit here rather than silently dropped from the save.
+ */
+const BASIC_FIELDS = new Set(STEP_SCHEMAS.basics.fields.map((f) => f.name));
+const PREFERENCE_FIELDS = new Set(STEP_SCHEMAS.preference.fields.map((f) => f.name));
+const CAREER_FIELDS = new Set(STEP_SCHEMAS.career.fields.map((f) => f.name));
+const LOCATION_FIELDS = new Set([
+  ...STEP_SCHEMAS.location.fields.map((f) => f.name),
+  "max_distance_km",
+]);
+const BIO_FIELDS = new Set(STEP_SCHEMAS.bio.fields.map((f) => f.name));
+
+/**
+ * The schema that owns a given field name, or `undefined` for the sections with
+ * none (lifestyle, interests, prompts — their names come from the API, and the
+ * intentions field is validated against its option list rather than a schema).
+ */
+function schemaForField(name: string) {
+  if (BASIC_FIELDS.has(name)) return STEP_SCHEMAS.basics;
+  if (PREFERENCE_FIELDS.has(name)) return STEP_SCHEMAS.preference;
+  if (CAREER_FIELDS.has(name)) return STEP_SCHEMAS.career;
+  if (BIO_FIELDS.has(name)) return STEP_SCHEMAS.bio;
+  return undefined;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -603,10 +718,10 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   fluid = false,
   saving = false,
   initialData,
-  photos,
-  onEditPhoto,
+  photos: photosProp,
   onRemovePhoto,
   onRecordVideo,
+  onSaved,
 }) => {
   const { intentions, lifestyle, interests, profileDetails } = useOnBoardingData();
   const careerSources = useCareerOptionSources();
@@ -617,6 +732,20 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   const { details, loading, error, refetch } = profileDetails;
 
+  const {
+    updateBasicInfo,
+    updateInterestedIn,
+    updateIntentions,
+    updateLifestyle,
+    updateCareer,
+    updateInterests,
+    updateBio,
+    updatePrompts,
+    updateLocation,
+    createPhotos,
+    deletePhoto,
+  } = useProfileData();
+
   /* Only what the user has actually touched lives in state. Everything else is
      derived from the payload, so there is no hydration effect and a refetch
      cannot overwrite an edit in progress. */
@@ -625,6 +754,187 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   const [busy, setBusy] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
+  /** Server-side message from the fan-out, shown under the Save button. */
+  const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [saveSummary, setSaveSummary] = React.useState<string[]>([]);
+  /** Field-level validation, same shape the onboarding footer consumes. */
+  const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({});
+
+  /* ------------------------------ photos ------------------------------ */
+
+  /* The server's own list, which carries the ids `deletePhoto` needs. Read from
+     the same payload as everything else rather than mirrored into state. */
+  const serverPhotos = profileDetails.photos;
+
+  /* Files this session has queued and not yet seen echoed back by the server.
+     Mirrors the onboarding photos step: a `File` cannot go in a JSON body, so it
+     is POSTed the moment it is picked and the tile only exists locally until the
+     POST settles. */
+  const [photoQueue, setPhotoQueue] = React.useState<PhotoValue[]>([]);
+  /** One network call at a time across the whole grid — see the note in `uploadPhotos`. */
+  const [photoBusy, setPhotoBusy] = React.useState(false);
+  const [photoError, setPhotoError] = React.useState<string | null>(null);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
+
+  /**
+   * The grid: the server's photos in server order, plus anything still in flight.
+   *
+   * A queued entry survives until the server actually lists it, so the tile never
+   * flickers out and back between the upload resolving and the refetch landing.
+   */
+  const photoTiles = React.useMemo<PhotoTile[]>(() => {
+    if (photosProp) {
+      return photosProp.map((photo, index) => ({
+        key: photo.id,
+        url: photo.url,
+        name: `Photo ${index + 1}`,
+        isMain: photo.isMain ?? index === 0,
+        uploading: false,
+        serverId: photo.id,
+      }));
+    }
+
+    const known = new Set(serverPhotos.map((photo) => photo.id));
+    const inFlight = photoQueue.filter(
+      (photo) => photo.uploading || !photo.serverId || !known.has(photo.serverId)
+    );
+    const inFlightIds = new Set(
+      inFlight.map((photo) => photo.serverId).filter((id): id is string => Boolean(id))
+    );
+
+    return [
+      ...serverPhotos
+        .filter((photo) => !inFlightIds.has(photo.id))
+        .map((photo) => ({
+          key: photo.id,
+          url: photo.mediaUrl,
+          name: `Photo ${photo.order}`,
+          isMain: photo.isPrimary,
+          uploading: false,
+          serverId: photo.id,
+        })),
+      ...inFlight.map((photo) => ({
+        key: photo.previewUrl,
+        url: photo.previewUrl,
+        name: photo.name,
+        isMain: false,
+        uploading: Boolean(photo.uploading),
+        serverId: photo.serverId ?? "",
+      })),
+    ];
+  }, [photosProp, serverPhotos, photoQueue]);
+
+  const patchPhotoQueue = React.useCallback(
+    (update: (queued: PhotoValue[]) => PhotoValue[]) => {
+      setPhotoQueue((prev) => update(prev));
+    },
+    []
+  );
+
+  /**
+   * Posts each picked file on its own, in the order chosen, and drops the tile if
+   * its upload fails — a tile that lingers for a photo the server never took would
+   * let the user save a profile with an undeletable tile in it.
+   *
+   * `photoBusy` is held for the whole batch rather than per file, so a second pick
+   * cannot interleave with the one in flight.
+   */
+  const uploadPhotos = async (files: FileList | null) => {
+    if (!files || photoBusy || photosProp) return;
+
+    const incoming = Array.from(files).slice(0, PHOTO_SLOTS - photoTiles.length);
+    if (incoming.length === 0) return;
+
+    setPhotoBusy(true);
+    setPhotoError(null);
+
+    try {
+      for (const file of incoming) {
+        /* The tile lands as soon as the file is queued, so the grid fills while
+           the uploads run. The object URL is the local preview only. */
+        const previewUrl = URL.createObjectURL(file);
+        patchPhotoQueue((queued) => [
+          ...queued,
+          { name: file.name, size: file.size, type: file.type, previewUrl, file, uploading: true },
+        ]);
+
+        const res = await createPhotos(toPhotoBody(file));
+
+        if (!res?.success) {
+          URL.revokeObjectURL(previewUrl);
+          patchPhotoQueue((queued) => queued.filter((p) => p.previewUrl !== previewUrl));
+          setPhotoError(res?.message ?? "Couldn't upload that photo.");
+          break;
+        }
+
+        patchPhotoQueue((queued) =>
+          queued.map((photo) =>
+            photo.previewUrl === previewUrl
+              ? { ...photo, uploading: false, serverId: photoIdFrom(res) ?? undefined }
+              : photo
+          )
+        );
+
+        /* Pull the server's own list in the background — that is where the ids and
+           the primary/order it reports come from. */
+        void refetch();
+      }
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  /**
+   * Deletes on the server first and only then drops the tile, so a failed delete
+   * leaves the photo exactly where the user can try again.
+   */
+  const removePhotoTile = async (tile: PhotoTile) => {
+    if (photoBusy) return;
+
+    /* A caller-supplied list is a preview, not the user's real photos — nothing
+       here should DELETE anything on their behalf. */
+    if (photosProp) {
+      onRemovePhoto?.({ id: tile.serverId, url: tile.url, isMain: tile.isMain });
+      return;
+    }
+
+    /* Still uploading: it has no server id yet, so there is nothing to delete.
+       Revoke the preview so the blob doesn't outlive the tile. */
+    if (!tile.serverId) {
+      URL.revokeObjectURL(tile.url);
+      patchPhotoQueue((queued) => queued.filter((photo) => photo.previewUrl !== tile.url));
+      return;
+    }
+
+    setPhotoBusy(true);
+    setPhotoError(null);
+
+    try {
+      const res = await deletePhoto(tile.serverId);
+
+      if (!res?.success) {
+        setPhotoError(res?.message ?? "Couldn't delete that photo.");
+        return;
+      }
+
+      patchPhotoQueue((queued) => queued.filter((photo) => photo.serverId !== tile.serverId));
+      void refetch();
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  /* Object URLs are the caller's to release, but a tile that leaves the list while
+     this component is mounted would leak its blob, so the queued ones are freed
+     on unmount. Server photos are remote URLs and are left alone. */
+  React.useEffect(
+    () => () => {
+      for (const photo of photoQueue) {
+        if (!photo.serverId) URL.revokeObjectURL(photo.previewUrl);
+      }
+    },
+    [photoQueue]
+  );
 
   /* Which summary row is expanded into its editor. One at a time keeps the page short. */
   const [openRow, setOpenRow] = React.useState<string | null>(null);
@@ -647,10 +957,35 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   const dirty = Object.keys(fieldOverrides).length > 0 || promptOverrides !== null;
 
-  const setField = React.useCallback((name: string, value: unknown) => {
-    setFieldOverrides((prev) => ({ ...prev, [name]: value }));
-    setSaved(false);
-  }, []);
+  const setField = React.useCallback(
+    (name: string, value: unknown) => {
+      setFieldOverrides((prev) => ({ ...prev, [name]: value }));
+      setSaved(false);
+      setSaveError(null);
+
+      /* Same rule as the onboarding form: a message disappears as soon as the
+         field becomes valid, rather than only on the next submit. Validated
+         against the value being written plus everything already on the form, so
+         a field that is only one character short keeps its message. */
+      setFieldErrors((prev) => {
+        if (!prev[name]) return prev;
+
+        const schema = schemaForField(name);
+        if (schema) {
+          const still = validateStepData(schema, { ...fields, [name]: value });
+          if (still[name]) return prev;
+        }
+
+        const rest = { ...prev };
+        delete rest[name];
+        return rest;
+      });
+    },
+    [fields]
+  );
+
+  /** True when the user has touched a field this section owns. */
+  const touches = (owned: ReadonlySet<string>) => Object.keys(fieldOverrides).some((n) => owned.has(n));
 
   const readString = (name: string) => asString(fields[name]);
   const readList = (name: string) => asList(fields[name]);
@@ -767,6 +1102,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   const writePrompts = (next: PromptAnswer[]) => {
     setPromptOverrides(next);
     setSaved(false);
+    setSaveError(null);
   };
 
   const addPrompt = () => {
@@ -794,14 +1130,153 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   /* ------------------------------- save ------------------------------- */
 
+  /**
+   * Validates every section the user touched, keyed by field name.
+   *
+   * Only the touched sections are validated: an untouched section is not being
+   * written, so its shape is not this save's problem. Lifestyle and interests are
+   * skipped entirely — their field names come from the API, so the static schema
+   * would validate keys this form never writes and fail on a section that is
+   * perfectly fine.
+   */
+  const validateTouched = () => {
+    const data = fields as Record<string, unknown>;
+    const errors: FieldErrors = {};
+
+    if (touches(BASIC_FIELDS)) Object.assign(errors, validateStepData(STEP_SCHEMAS.basics, data));
+    if (touches(PREFERENCE_FIELDS)) {
+      Object.assign(errors, validateStepData(STEP_SCHEMAS.preference, data));
+    }
+    if (touches(CAREER_FIELDS)) Object.assign(errors, validateStepData(STEP_SCHEMAS.career, data));
+    if (touches(BIO_FIELDS)) Object.assign(errors, validateStepData(STEP_SCHEMAS.bio, data));
+
+    /* Location has no editable fields here — the whole section is one geolocation
+       detect — so it is only valid once that produced a city and coordinates. */
+    if (touches(LOCATION_FIELDS) && !hasLocation) {
+      errors.city = "Allow location access to detect your city.";
+    }
+
+    return errors;
+  };
+
+  /**
+   * Fans the changed sections out over the per-step PATCH endpoints, in the same
+   * order and with the same bodies the onboarding flow sends.
+   *
+   * Deliberately one request per section rather than one request for the page:
+   * the backend has no whole-profile endpoint, and posting `basics` on every save
+   * would overwrite fields the user never opened. Sections are independent, so a
+   * failure stops the fan-out and reports which section it was — the ones already
+   * saved stay saved, and the rest are still marked dirty, so pressing Save again
+   * retries from the failure rather than from the top.
+   */
   const handleSave = async () => {
     if (busy || saving || !dirty) return;
 
+    const found = validateTouched();
+    if (Object.keys(found).length > 0) {
+      setFieldErrors(found);
+      setSaveError("Fix the highlighted fields before saving.");
+      return;
+    }
+
     setBusy(true);
+    setSaveError(null);
+    setFieldErrors({});
+
+    const savedSections: string[] = [];
+
     try {
       await onSave?.({ fields, prompts });
-      /* No endpoint yet — this is a UI state, not a persisted change. */
+
+      if (touches(BASIC_FIELDS)) {
+        const res = await updateBasicInfo(toBasicInfoRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "basic details");
+        savedSections.push("Basic details");
+      }
+
+      if (touches(PREFERENCE_FIELDS)) {
+        const res = await updateInterestedIn(toInterestedInRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "who you're seeing");
+        savedSections.push("Who you're seeing");
+      }
+
+      if (touches(new Set(["intention"]))) {
+        const res = await updateIntentions(toIntentionsRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "your intentions");
+        savedSections.push("Your intentions");
+      }
+
+      if (touches(BIO_FIELDS)) {
+        const res = await updateBio(toBioRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "about you");
+        savedSections.push("About you");
+      }
+
+      if (touches(CAREER_FIELDS)) {
+        const res = await updateCareer(toCareerRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "career");
+        savedSections.push("Career & ambition");
+      }
+
+      /* One request per answered question, same as onboarding. Blank questions
+         produce no request at all — the endpoint cannot express "cleared". */
+      if (touches(new Set(lifestyle.questions.map((q) => q.key)))) {
+        for (const request of toLifestyleRequests(fields, lifestyle.questions)) {
+          const res = await updateLifestyle(request);
+          if (!res?.success) throw new SaveFailed(res?.message, "lifestyle");
+        }
+        savedSections.push("Lifestyle");
+      }
+
+      if (touches(new Set(interests.questions.map((q) => q.key)))) {
+        for (const request of toInterestsRequests(fields, interests.questions)) {
+          const res = await updateInterests(request);
+          if (!res?.success) throw new SaveFailed(res?.message, "interests");
+        }
+        savedSections.push("Interests");
+      }
+
+      if (touches(LOCATION_FIELDS)) {
+        const res = await updateLocation(toLocationRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "location");
+        savedSections.push("Location");
+      }
+
+      /* The prompt endpoint replaces the whole set, so this is the one PATCH that
+         always carries removals too. Only sent when prompts were actually edited —
+         an untouched list would otherwise be re-sent from a payload that may not
+         carry the answer text. */
+      if (promptOverrides !== null) {
+        const res = await updatePrompts(toPromptsRequest({ answers: prompts }));
+        if (!res?.success) throw new SaveFailed(res?.message, "profile prompts");
+        savedSections.push("Profile prompts");
+      }
+
+      /* The saved sections are now the server's copy, so drop this session's
+         overrides and let the payload drive the form again. Without the refetch
+         the values would visibly snap back to the pre-save read. */
+      setFieldOverrides({});
+      setPromptOverrides(null);
+      setSaveSummary(savedSections);
       setSaved(true);
+
+      void refetch();
+
+      /* `onSaved` runs last, after this render's state has settled, so the caller's
+         refetch reads the profile the save just wrote. Left out, the edit page has
+         done its job and the profile itself is where the user belongs. */
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.push("/app/profile");
+      }
+    } catch (err) {
+      if (err instanceof SaveFailed) {
+        setSaveError(`${err.message ?? "Couldn't save that section."} (${err.section})`);
+      } else {
+        setSaveError("Couldn't save your changes. Please try again.");
+      }
     } finally {
       setBusy(false);
     }
@@ -809,6 +1284,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   const startEditing = () => {
     setSaved(false);
+    setSaveError(null);
     setPickerOpen(true);
   };
 
@@ -823,7 +1299,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
    * This is the editor a summary row opens — unchanged from before the restyle.
    */
   const renderField = (field: FieldDef) => {
-    const error = undefined;
+    const error = fieldErrors[field.name];
 
     if (isCareerField(field.name)) {
       const source = careerSources[field.name];
@@ -918,6 +1394,11 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
           value={readString(field.name)}
           error={error}
           yearOnly={field.yearOnly}
+          /* Same gate onboarding's `Basics` step applies: the picker refuses
+             anything that leaves the user under 18. Keyed by name rather than
+             blanket-applied, because the editor also renders `graduationYear` as
+             a date — a year that has nothing to do with age. */
+          adultOnly={field.name === "dateOfBirth"}
           onChange={(v) => setField(field.name, v)}
         />
       );
@@ -946,7 +1427,6 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
     if (field.kind === "date") {
       if (field.yearOnly) return { display: raw };
-
       const age = ageFrom(raw);
 
       return {
@@ -1045,11 +1525,16 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     </main>
   );
 
-  if (loading) {
+  /* Only the *first* load blanks the form. A refetch after a save also flips
+     `loading`, and tearing the page down to a spinner there would throw away the
+     "Changes saved" state the user is looking at — so the form stays mounted and
+     simply re-derives from the fresh payload. Same for the error frame: it is a
+     dead end only when there is nothing to show in the first place. */
+  if (loading && !details) {
     return shell(<Loader label="Loading your details…" hint="Fetching what you've already saved." />);
   }
 
-  if (error) {
+  if (error && !details) {
     return shell(
       <Notice
         title="Couldn't load your details"
@@ -1074,44 +1559,84 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       )}
 
       {/* ------------------------------ photos ------------------------------ */}
-      {photos && (
-        <section className="pec-section">
-          <SectionHeading icon={Images} title="Photos" />
+      <section className="pec-section">
+        <SectionHeading
+          icon={Images}
+          title="Photos"
+          hint={`Up to ${PHOTO_SLOTS}. Your first photo is the one people see first.`}
+        />
 
-          <div className="pec-photo-grid">
-            {photos.map((photo, index) => (
-              <div key={photo.id} className="pec-photo">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo.url} alt={`Profile photo ${index + 1}`} />
+        <div className="pec-photo-grid">
+          {photoTiles.map((tile) => (
+            <div key={tile.key} className="pec-photo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={tile.url} alt={tile.name} />
 
-                {photo.isMain && <span className="pec-photo-main">Main</span>}
+              {tile.isMain && <span className="pec-photo-main">Main</span>}
 
-                {onRemovePhoto && (
-                  <button
-                    type="button"
-                    className="pec-photo-remove"
-                    aria-label={`Remove photo ${index + 1}`}
-                    onClick={() => onRemovePhoto(photo)}
-                  >
-                    <X aria-hidden="true" />
-                  </button>
-                )}
+              {tile.uploading && (
+                <div className="pec-photo-busy">
+                  <Loader2 className="pec-photo-spinner" aria-hidden="true" />
+                  <span className="sr-only">Uploading {tile.name}</span>
+                </div>
+              )}
 
-                {onEditPhoto && (
-                  <button
-                    type="button"
-                    className="pec-photo-edit"
-                    aria-label={`Edit photo ${index + 1}`}
-                    onClick={() => onEditPhoto(photo)}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <button
+                type="button"
+                className="pec-photo-remove"
+                disabled={photoBusy}
+                aria-label={`Remove ${tile.name}`}
+                onClick={() => void removePhotoTile(tile)}
+              >
+                <X aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+
+          {/* The add tile is part of the grid rather than a sibling, so it occupies
+              the same 3:4 box and the layout doesn't jump when the last slot fills. */}
+          {!photosProp && photoTiles.length < PHOTO_SLOTS && (
+            <button
+              type="button"
+              className="pec-photo-add"
+              disabled={photoBusy}
+              onClick={() => photoInputRef.current?.click()}
+            >
+              {photoBusy ? (
+                <Loader2 className="pec-photo-add-icon pec-photo-spinner" aria-hidden="true" />
+              ) : (
+                <ImagePlus className="pec-photo-add-icon" aria-hidden="true" />
+              )}
+              <span className="pec-photo-add-label">Add</span>
+            </button>
+          )}
+        </div>
+
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            void uploadPhotos(e.target.files);
+            /* Reset so picking the same file twice in a row still fires a change. */
+            e.target.value = "";
+          }}
+        />
+
+        {photoError && (
+          <p role="alert" className="pec-photo-error">
+            {photoError}
+          </p>
+        )}
+
+        <p className="pec-photo-count">
+          {photoTiles.length} of {PHOTO_SLOTS} added
+          {photoTiles.length < PHOTO_MIN &&
+            ` · ${PHOTO_MIN - photoTiles.length} more to show up in matches`}
+        </p>
+      </section>
 
       {/* ------------------------------ video ------------------------------- */}
       {onRecordVideo && (
@@ -1149,10 +1674,17 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
                 value={value}
                 rows={3}
                 maxLength={max}
+                aria-invalid={Boolean(fieldErrors[field.name])}
                 placeholder="A few honest lines is plenty."
                 className="pec-bio-input"
                 onChange={(e) => setField(field.name, e.target.value.slice(0, max))}
               />
+
+              {fieldErrors[field.name] && (
+                <span role="alert" className="pec-bio-error">
+                  {fieldErrors[field.name]}
+                </span>
+              )}
 
               <span className="pec-bio-count">
                 {value.length}/{max}
@@ -1358,9 +1890,23 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
               placeholder="Allow location access to detect your city"
               className="h-11 cursor-default bg-muted/40"
             />
-            {!hasLocation && !locateError && (
+            {!hasLocation && locateError && (
+              <p role="alert" className="text-[11px] font-medium text-destructive">
+                {locateError}
+              </p>
+            )}
+
+            {!hasLocation && !locateError && !fieldErrors.city && (
               <p className="text-[11px] font-medium text-muted-foreground">
                 No location saved yet.
+              </p>
+            )}
+
+            {/* A save attempt with no fix yet: the row has to show why it is
+                refusing, since the section itself has nothing to display. */}
+            {fieldErrors.city && (
+              <p role="alert" className="text-[11px] font-medium text-destructive">
+                {fieldErrors.city}
               </p>
             )}
           </div>
@@ -1613,7 +2159,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       </section>
 
       <p className="pec-tail-note">
-        <span aria-hidden="true">🔒</span> Only you can see this until you publish it.
+        {/* <span aria-hidden="true">🔒</span> Only you can see this until you publish it. */}
       </p>
     </div>
   );
@@ -1653,8 +2199,9 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
               <div className="min-w-0">
                 <p className="pec-saved-title">Changes saved</p>
                 <p className="pec-saved-detail">
-                  Saving isn&rsquo;t connected to the server yet, so these answers are only
-                  held on this device.
+                  {saveSummary.length > 0
+                    ? `Updated ${saveSummary.join(", ").toLowerCase()}.`
+                    : "Your profile is up to date."}
                 </p>
               </div>
             </div>
@@ -1680,9 +2227,14 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
               {busy || saving ? "Saving…" : dirty ? "Save changes" : "No changes yet"}
             </Button>
 
-            <p className="pec-foot-note">
-              The save endpoint isn&rsquo;t live yet — this only previews the flow.
-            </p>
+            {saveError ? (
+              <p role="alert" className="pec-foot-note pec-foot-note--error">
+                {saveError}
+              </p>
+            ) : (
+              <p className="pec-foot-note">
+              </p>
+            )}
           </>
         )}
       </footer>
@@ -1948,12 +2500,21 @@ const CSS = `
     color: var(--pec-ink);
   }
   .pec-bio-input.pec-bio-input:focus-visible { outline: none; box-shadow: none; }
+  .pec-bio-input[aria-invalid="true"] { color: #c0362c; }
   .pec-bio-count {
     display: block;
     text-align: right;
     font-size: calc(var(--pec-u) * 16);
     font-variant-numeric: tabular-nums;
     color: #b9b2a8;
+  }
+  .pec-bio-error {
+    display: block;
+    margin-top: calc(var(--pec-u) * 5);
+    font-size: calc(var(--pec-u) * 16);
+    line-height: 1.4;
+    font-weight: 600;
+    color: #c0362c;
   }
 
   /* ---------- photos & video ---------- */
@@ -1988,34 +2549,80 @@ const CSS = `
     font-weight: 600;
     color: #fff;
   }
-  .pec-photo-remove,
-  .pec-photo-edit {
+  .pec-photo-remove {
     position: absolute;
+    top: calc(var(--pec-u) * 10);
+    right: calc(var(--pec-u) * 10);
     display: flex;
     align-items: center;
     justify-content: center;
     border: 0;
     border-radius: 999px;
     cursor: pointer;
-  }
-  .pec-photo-remove {
-    top: calc(var(--pec-u) * 10);
-    right: calc(var(--pec-u) * 10);
     width: calc(var(--pec-u) * 36);
     height: calc(var(--pec-u) * 36);
     background: rgba(28, 26, 23, 0.62);
     color: #fff;
   }
-  .pec-photo-edit {
-    right: calc(var(--pec-u) * 10);
-    bottom: calc(var(--pec-u) * 10);
-    width: calc(var(--pec-u) * 48);
-    height: calc(var(--pec-u) * 48);
-    background: rgba(255, 255, 255, 0.94);
-    color: var(--pec-pink);
-  }
+  .pec-photo-remove:disabled { cursor: default; opacity: 0.4; }
   .pec-photo-remove svg { width: 55%; height: 55%; }
-  .pec-photo-edit svg { width: 46%; height: 46%; }
+
+  /* The scrim over a tile whose POST is still in flight. */
+  .pec-photo-busy {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(28, 26, 23, 0.45);
+    color: #fff;
+  }
+  .pec-photo-spinner { animation: pec-spin 0.9s linear infinite; }
+  @keyframes pec-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .pec-photo-spinner { animation: none; }
+  }
+
+  /* The add slot, inside the grid so it holds the same 3:4 box as a tile. */
+  .pec-photo-add {
+    display: flex;
+    aspect-ratio: 3 / 4;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--pec-u) * 6);
+    border: 2px dashed var(--pec-line);
+    border-radius: calc(var(--pec-u) * 26);
+    background: var(--pec-card);
+    font: inherit;
+    color: var(--pec-pink);
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .pec-photo-add:hover:not(:disabled) { border-color: var(--pec-pink); }
+  .pec-photo-add:disabled { cursor: default; opacity: 0.6; }
+  .pec-photo-add-icon {
+    width: calc(var(--pec-u) * 34);
+    height: calc(var(--pec-u) * 34);
+    stroke-width: 2;
+  }
+  .pec-photo-add-label {
+    font-size: calc(var(--pec-u) * 16);
+    font-weight: 600;
+  }
+  .pec-photo-error {
+    margin: calc(var(--pec-u) * 12) 0 0;
+    font-size: calc(var(--pec-u) * 16);
+    font-weight: 600;
+    line-height: 1.4;
+    color: #c0362c;
+  }
+  .pec-photo-count {
+    margin: calc(var(--pec-u) * 9) 0 0;
+    font-size: calc(var(--pec-u) * 16);
+    line-height: 1.4;
+    color: var(--pec-muted);
+  }
 
   .pec-video-card {
     display: flex;
@@ -2073,6 +2680,10 @@ const CSS = `
     font-size: calc(var(--pec-u) * 15);
     line-height: 1.4;
     color: var(--pec-muted);
+  }
+  .pec-foot-note--error {
+    color: #c0362c;
+    font-weight: 600;
   }
 
   .pec-saved-message {
@@ -2202,12 +2813,19 @@ const CSS = `
     width: clamp(20px, calc(var(--pec-u) * 34), 26px);
     height: clamp(20px, calc(var(--pec-u) * 34), 26px);
   }
-  .pec-photo-edit {
-    right: 6px;
-    bottom: 6px;
-    width: clamp(26px, calc(var(--pec-u) * 46), 34px);
-    height: clamp(26px, calc(var(--pec-u) * 46), 34px);
+  .pec-photo-add {
+    gap: 4px;
+    border-radius: clamp(12px, calc(var(--pec-u) * 22), 16px);
   }
+  .pec-photo-add-icon {
+    width: clamp(16px, calc(var(--pec-u) * 30), 22px);
+    height: clamp(16px, calc(var(--pec-u) * 30), 22px);
+  }
+  .pec-photo-add-label,
+  .pec-photo-error,
+  .pec-photo-count { font-size: var(--pec-fs-small); }
+  .pec-photo-error,
+  .pec-photo-count { margin-top: 6px; }
   .pec-video-card {
     margin-top: var(--pec-gap);
     border-radius: var(--pec-radius);

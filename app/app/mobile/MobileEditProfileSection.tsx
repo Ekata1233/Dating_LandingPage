@@ -21,6 +21,16 @@ import { useMyProfile } from "../shared/useMyProfile";
 /*                                                                            */
 /*  Both panels are the desktop components in `fluid` mode, so the mobile and  */
 /*  desktop renderers cannot drift apart.                                      */
+/*                                                                            */
+/*  Two behaviours here are about freshness, not layout:                         */
+/*                                                                            */
+/*    · Preview refetches on entry. The Edit tab writes through PATCHes the     */
+/*      Preview card has no way to observe, so without a re-pull the tab would  */
+/*      show the profile as it was when this screen mounted — including before  */
+/*      a save that has just landed.                                            */
+/*    · A successful save switches to Preview instead of leaving the screen.   */
+/*      Desktop navigates to /app/profile instead: there is no preview tab to   */
+/*      land on, and the edit page has nothing left to do once it has written.  */
 /* -------------------------------------------------------------------------- */
 
 export type EditProfileTab = "edit" | "preview";
@@ -94,13 +104,28 @@ const MobileEditProfileSection: React.FC<MobileEditProfileSectionProps> = ({
   const loading = loadingProp ?? live.loading;
   const error = errorProp ?? live.error;
   const retry = onRetry ?? live.refetch;
+  /* Destructured rather than reaching through `live`, so `select` stays stable:
+     `live` is a fresh object every render, and this callback is a dependency of
+     the card below. */
+  const { refetch: refetchLiveProfile } = live;
 
   const select = useCallback(
     (next: EditProfileTab) => {
       setTab(next);
       onTabChange?.(next);
+
+      /* The preview is the one tab that renders the saved profile, and the edits
+         behind it land through PATCHes this tab has no way to see. Re-pulling on
+         the way in is what makes "Preview" mean *your* profile as it is now,
+         rather than as it was when this screen mounted.
+
+         Skipped when the caller supplied a profile: that list is the caller's to
+         own, and re-pulling would not change it anyway. */
+      if (next === "preview" && profileProp === undefined) {
+        refetchLiveProfile();
+      }
     },
-    [onTabChange]
+    [onTabChange, refetchLiveProfile, profileProp]
   );
 
   return (
@@ -145,7 +170,10 @@ const MobileEditProfileSection: React.FC<MobileEditProfileSectionProps> = ({
         className="min-h-0 flex-1 overflow-hidden"
       >
         {tab === "edit" ? (
-          <ProfileEditCard fluid />
+          /* Saving swaps to the Preview tab rather than leaving the page, so the
+             user lands on the card they just edited. `select` pulls a fresh
+             profile on the way in, which is what carries the new changes through. */
+          <ProfileEditCard fluid onSaved={() => select("preview")} />
         ) : (
           <ProfilePreview profile={profile} loading={loading} error={error} onRetry={retry} />
         )}

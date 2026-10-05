@@ -24,6 +24,8 @@ export type ActiveSection =
   | "edit-profile"
   | "refer-earn"
   | "help"
+  | "pause-account"
+  | "delete-account"
   | "logout";
 
 /** The section /app itself redirects to. */
@@ -39,7 +41,9 @@ export const SECTION_PATH: Record<ActiveSection, string> = {
   profile: "/app/profile",
   "edit-profile": "/app/profile/edit",
   "refer-earn": "/app/profile/refer-earn",
-  help: "/app/profile/help",
+  "help": "/app/profile/help",
+  "pause-account": "/app/profile/refer-earn",
+  "delete-account": "/app/profile/refer-earn",
   logout: "/app/profile/logout",
 };
 
@@ -119,7 +123,9 @@ export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
   profile: "you",
   "edit-profile": "you",
   "refer-earn": "you",
-  help: "you",
+  "help": "you",
+  "pause-account": "you",
+  "delete-account": "you",
   logout: "you",
 };
 
@@ -147,5 +153,7 @@ export const SECTION_META: Record<ActiveSection, SectionMeta> = {
   "edit-profile": { title: "Edit Profile", backTo: "profile" },
   "refer-earn": { title: "Refer & Earn", backTo: "profile" },
   help: { title: "Help & Support", backTo: "profile" },
+  "pause-account": { title: "Pause Account", backTo: "profile" },
+  "delete-account": { title: "Delete Account", backTo: "profile" },
   logout: { title: "Log out", backTo: "profile" },
 };

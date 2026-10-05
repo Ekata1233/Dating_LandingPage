@@ -4,6 +4,7 @@ import React, { memo, useCallback, useMemo } from "react";
 import { ActiveSection, useActiveSection } from "@/app/context/ActiveSectionContext";
 
 import { FALLBACK_AVATAR } from "../shared/mockData";
+import { Delete, Gift, HelpCircle, LogOut, LucideIcon, PauseCircle, Trash2 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
@@ -11,7 +12,7 @@ import { FALLBACK_AVATAR } from "../shared/mockData";
 
 export interface AccountSupportItem {
   id: string;
-  icon: React.ReactNode;
+  icon: LucideIcon | string;
   iconBg: string;
   title: string;
   titleColor?: string;
@@ -52,35 +53,72 @@ export interface ProfileSidebarProps {
 /* Default Account Items                                                      */
 /* -------------------------------------------------------------------------- */
 
+export interface AccountSupportItem {
+  id: string;
+  icon: LucideIcon | string;
+  /** Icon tile background */
+  iconBg: string;
+  /** Icon stroke color, for <Icon color={item.color} /> */
+  color: string;
+  title: string;
+  titleColor?: string;
+  subtitle: string;
+  section: ActiveSection;
+}
+
 const DEFAULT_ITEMS: AccountSupportItem[] = [
   {
     id: "refer",
-    icon: "🎁",
-    iconBg: "#dcf3e3",
+    icon: Gift,
+    iconBg: "#DCFCE7", // green-100
+    color: "#16A34A", // green-600
     title: "Refer & Earn",
-    titleColor: "#e14b3f",
-    subtitle: "Get ₹100 + ₹500 per friend",
+    titleColor: "#16A34A",
+    subtitle: "Earn ₹100 + ₹500 for every friend",
     section: "refer-earn",
   },
   {
     id: "help",
-    icon: "❓",
-    iconBg: "#fbdde1",
+    icon: HelpCircle,
+    iconBg: "#DBEAFE", // blue-100
+    color: "#2563EB", // blue-600
     title: "Help & Support",
-    titleColor: "#e14b3f",
-    subtitle: "FAQ, Chat with Support",
+    titleColor: "#2563EB",
+    subtitle: "Get answers or chat with our support team",
     section: "help",
   },
   {
+    id: "pause-account",
+    icon: PauseCircle,
+    iconBg: "#FEF3C7", // amber-100
+    color: "#D97706", // amber-600
+    title: "Pause Account",
+    titleColor: "#D97706",
+    subtitle: "Temporarily pause your account",
+    section: "pause-account",
+  },
+  {
+    id: "delete-account",
+    icon: Trash2,
+    iconBg: "#FEE2E2", // red-100
+    color: "#DC2626", // red-600
+    title: "Delete Account",
+    titleColor: "#DC2626",
+    subtitle: "Permanently delete your account",
+    section: "delete-account",
+  },
+  {
     id: "logout",
-    icon: "🚪",
-    iconBg: "#fdecc8",
+    icon: LogOut,
+    iconBg: "#F3F4F6", // gray-100
+    color: "#4B5563", // gray-600
     title: "Logout",
-    titleColor: "#e14b3f",
+    titleColor: "#4B5563",
     subtitle: "Sign out of your account",
     section: "logout",
   },
 ];
+
 
 /* -------------------------------------------------------------------------- */
 /* Component                                                                  */
@@ -863,7 +901,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     backgroundColor: item.iconBg,
                   }}
                 >
-                  {item.icon}
+                  <item.icon size={20} color={item.color} />
                 </div>
 
                 <div className="account-text">
