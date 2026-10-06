@@ -104,6 +104,7 @@ import {
   type PhotoValue,
 } from "@/app/onBoarding/stepPayloads";
 import {
+  FieldOption,
   STEP_SCHEMAS,
   validateStepData,
   type FieldDef,
@@ -123,7 +124,37 @@ export interface PromptAnswer {
   question: string;
   answer: string;
 }
+export const ZODIAC: readonly FieldOption[] = [
+  { value: "ARIES", label: "Aries" },
+  { value: "TAURUS", label: "Taurus" },
+  { value: "GEMINI", label: "Gemini" },
+  { value: "CANCER", label: "Cancer" },
+  { value: "LEO", label: "Leo" },
+  { value: "VIRGO", label: "Virgo" },
+  { value: "LIBRA", label: "Libra" },
+  { value: "SCORPIO", label: "Scorpio" },
+  { value: "SAGITTARIUS", label: "Sagittarius" },
+  { value: "CAPRICORN", label: "Capricorn" },
+  { value: "AQUARIUS", label: "Aquarius" },
+  { value: "PISCES", label: "Pisces" },
+];
 
+export const LOVELANGUAGE: readonly FieldOption[] = [
+  { value: "WORDS_OF_AFFIRMATION", label: "Words of Affirmation" },
+  { value: "QUALITY_TIME", label: "Quality Time" },
+  { value: "ACTS_OF_SERVICE", label: "Acts of Service" },
+  { value: "PHYSICAL_TOUCH", label: "Physical Touch" },
+  { value: "RECEIVING_GIFTS", label: "Receiving Gifts" },
+];
+
+export const COMMUNICATIONSTYLE: readonly FieldOption[] = [
+  { value: "PHONE_CALLS_OVER_TEXTS", label: "Phone Calls over Texts" },
+  { value: "TEXTS_OVER_CALLS", label: "Texts over Calls" },
+  { value: "VIDEO_CALLS", label: "Video Calls" },
+  { value: "VOICE_NOTES", label: "Voice Notes" },
+  { value: "IN_PERSON_ALWAYS", label: "In Person Always" },
+  { value: "A_BIT_OF_EVERYTHING", label: "A Bit of Everything" },
+];
 /**
  * What the form would post. Grouped rather than flat so a future save can fan
  * the fields out over the per-step endpoints onboarding already has, instead of
@@ -221,7 +252,20 @@ export interface ProfileEditMainProps {
 
 const DEFAULT_MAX_DISTANCE_KM = 25;
 
-type NominatimAddress = Record<string, string | undefined>;
+type NominatimAddress = {
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  county?: string;
+  state_district?: string;
+  suburb?: string;
+  neighbourhood?: string;
+  city_district?: string;
+  quarter?: string;
+  state?: string;
+  country?: string;
+};
 
 /** The shape the save endpoint expects. */
 type ResolvedLocation = {
@@ -235,169 +279,82 @@ type ResolvedLocation = {
 
 type PlaceParts = Pick<ResolvedLocation, "country" | "state" | "city" | "area">;
 
-/** Broadest -> narrowest. The first usable match wins. */
-const AREA_KEYS = [
-  "city_district",
-  "suburb",
-  "quarter",
-  "neighbourhood",
-  "residential",
-] as const;
-
-/** Skip administrative labels like "Hadapsar Ward Office". */
-const ADMIN_NAME =
-  /\b(ward|municipal|corporation|taluka|tehsil|district|division)\b/i;
-
-function pickArea(address: NominatimAddress): string {
-  for (const key of AREA_KEYS) {
-    const value = address[key];
-    if (value && !ADMIN_NAME.test(value)) return value;
-  }
-  return "";
-}
-
-/** BigDataCloud client-side API: free, no key, non-OSM data. */
-async function fromBigDataCloud(
-  latitude: number,
-  longitude: number,
-  signal?: AbortSignal
-): Promise<PlaceParts> {
-  const params = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    localityLanguage: "en",
-  });
-
-  const res = await fetch(
-    `https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`,
-    { signal, headers: { Accept: "application/json" } }
-  );
-  if (!res.ok) throw new Error(`BigDataCloud failed: ${res.status}`);
-
-  const d = await res.json();
-  return {
-    country: d.countryName ?? "",
-    state: d.principalSubdivision ?? "",
-    city: d.city ?? "",
-    area: d.locality ?? "",
-  };
-}
-
-/** OpenStreetMap Nominatim: free, no key, light use only. */
-async function fromNominatim(
-  latitude: number,
-  longitude: number,
-  signal?: AbortSignal
-): Promise<PlaceParts> {
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    lat: String(latitude),
-    lon: String(longitude),
-    zoom: "16",
-    addressdetails: "1",
-    "accept-language": "en",
-  });
-
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?${params}`,
-    { signal, headers: { Accept: "application/json" } }
-  );
-  if (!res.ok) throw new Error(`Nominatim failed: ${res.status}`);
-
-  const data = await res.json();
-  const a: NominatimAddress = data.address ?? {};
-  return {
-    country: a.country ?? "",
-    state: a.state ?? "",
-    city: a.city ?? a.town ?? a.municipality ?? a.village ?? "",
-    area: pickArea(a),
-  };
-}
-
 /**
- * Reverse-geocodes coordinates using two free, key-less services in parallel
- * and merges them. If one fails, the other is used. For production traffic,
- * proxy this through your own API route and cache by rounded coordinates.
+ * Reverse-geocodes coordinates via OpenStreetMap Nominatim (free, no key,
+ * light use only). For production traffic, proxy this through your own API
+ * route with Google / Mapbox / LocationIQ.
  */
 async function reverseGeocode(
   latitude: number,
   longitude: number,
   signal?: AbortSignal
 ): Promise<ResolvedLocation> {
-  const [bdc, osm] = await Promise.allSettled([
-    fromBigDataCloud(latitude, longitude, signal),
-    fromNominatim(latitude, longitude, signal),
-  ]);
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    lat: String(latitude),
+    lon: String(longitude),
+    zoom: "14",
+    addressdetails: "1",
+    "accept-language": "en",
+  });
 
-  const b = bdc.status === "fulfilled" ? bdc.value : null;
-  const o = osm.status === "fulfilled" ? osm.value : null;
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?${params}`,
+    {
+      signal,
+      headers: {
+        Accept: "application/json",
+      },
+    }
+  );
 
-  console.log("Reverse geocode — BigDataCloud:", b, "Nominatim:", o);
-
-  if (!b && !o) {
-    throw new Error("Reverse geocoding failed");
+  if (!response.ok) {
+    throw new Error(`Reverse geocoding failed: ${response.status}`);
   }
 
-  const city = b?.city || o?.city || "";
+  const data = await response.json();
+  const address: NominatimAddress = data.address ?? {};
+  const country = address.country ?? "";
+  const state = address.state ?? "";
+  const city =
+    address.city ??
+    address.town ??
+    address.municipality ??
+    address.village ??
+    "";
+
+  // Prefer broader locality/suburb over small neighbourhoods.
+  // This is more likely to return "Hadapsar" instead of "Fatima Nagar".
+  const area =
+    address.suburb ??
+    address.city_district ??
+    address.neighbourhood ??
+    address.quarter ??
+    "";
 
   return {
-    country: b?.country || o?.country || "",
-    state: b?.state || o?.state || "",
+    country,
+    state,
     city,
-    // If one source names your area better, swap the order of b?.area / o?.area.
-    // Falls back to the city so `area` is never empty.
-    area: b?.area || o?.area || city,
+    // Some places have no sub-locality in OSM; fall back to the city so the
+    // required `area` field is never empty.
+    area: area || city,
     latitude: Number(latitude.toFixed(4)),
     longitude: Number(longitude.toFixed(4)),
   };
 }
 
-/**
- * Watches for a GPS fix and resolves as soon as accuracy is good enough,
- * or with the best fix seen when the time limit is reached.
- */
-function getPosition(
-  targetAccuracyM = 100,
-  maxWaitMs = 10_000
-): Promise<GeolocationPosition> {
+function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
-    let best: GeolocationPosition | null = null;
-    let done = false;
-    let watchId = -1;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const finish = (fn: () => void) => {
-      if (done) return;
-      done = true;
-      if (watchId !== -1) navigator.geolocation.clearWatch(watchId);
-      if (timer) clearTimeout(timer);
-      fn();
-    };
-
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (!best || pos.coords.accuracy < best.coords.accuracy) best = pos;
-        if (pos.coords.accuracy <= targetAccuracyM) {
-          finish(() => resolve(pos));
-        }
-      },
-      (err) => finish(() => (best ? resolve(best) : reject(err))),
-      { enableHighAccuracy: true, timeout: maxWaitMs, maximumAge: 0 }
-    );
-
-    timer = setTimeout(
-      () =>
-        finish(() =>
-          best
-            ? resolve(best)
-            : reject({ code: 3 } as Partial<GeolocationPositionError>)
-        ),
-      maxWaitMs
-    );
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10_000,
+      maximumAge: 5 * 60 * 1000,
+    });
   });
 }
 
-/** "Hadapsar, Pune, Maharashtra, India" (drops empty/duplicate parts). */
+/** "Kothrud, Pune, Maharashtra, India" (drops empty/duplicate parts). */
 function formatLocation(l: PlaceParts) {
   return [l.area, l.city, l.state, l.country]
     .filter((part, i, arr) => Boolean(part) && arr.indexOf(part) === i)
@@ -687,7 +644,43 @@ const BIO_FALLBACK_MAX_LENGTH = 300;
  * Derived from the schemas rather than hand-written, so a field added to a step
  * is covered by the next edit here rather than silently dropped from the save.
  */
-const BASIC_FIELDS = new Set(STEP_SCHEMAS.basics.fields.map((f) => f.name));
+const additionalFields = [
+        {
+        name: "zodiac",
+        label: "Zodiac sign",
+        kind: "select",
+        options: ZODIAC,
+        placeholder: "Zodiac sign",
+        message: "Please enter your zodiac sign.",
+      },
+        {
+        name: "communicationStyle",
+        label: "Communication style",
+        kind: "select",
+        options: COMMUNICATIONSTYLE,
+        placeholder: "Communication style",
+        message: "Please enter your communication style.",
+      },
+      //   {
+      //   name: "religion",
+      //   label: "Religion",
+      //   kind: "select",
+      //   placeholder: "Religion",
+      //   options:[],
+      //   minLength: 2,
+      //   maxLength: 80,
+      //   message: "Please enter your religion.",
+      // },
+        {
+        name: "loveLanguage",
+        label: "Love language",
+        kind: "select",
+        options: LOVELANGUAGE,
+        placeholder: "Love language",
+        message: "Please enter your love language.",
+      },
+];
+const BASIC_FIELDS = new Set(...STEP_SCHEMAS.basics.fields.map((f) => f.name),...additionalFields,);
 const PREFERENCE_FIELDS = new Set(STEP_SCHEMAS.preference.fields.map((f) => f.name));
 const CAREER_FIELDS = new Set(STEP_SCHEMAS.career.fields.map((f) => f.name));
 const LOCATION_FIELDS = new Set([
@@ -1041,17 +1034,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
     try {
       const { coords } = await getPosition();
-      console.log("Geolocation result", {
-        lat: coords.latitude,
-        lon: coords.longitude,
-        accuracyM: coords.accuracy,
-      });
-
-      const loc = await reverseGeocode(
-        coords.latitude,
-        coords.longitude,
-        controller.signal
-      );
+      const loc = await reverseGeocode(coords.latitude, coords.longitude, controller.signal);
       if (controller.signal.aborted) return;
 
       setField("country", loc.country);
@@ -1060,11 +1043,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       setField("area", loc.area);
       setField("latitude", loc.latitude);
       setField("longitude", loc.longitude);
-
-      /* Keep a distance the user already has; only seed the default when unset. */
-      if (!readString("max_distance_km")) {
-        setField("max_distance_km", DEFAULT_MAX_DISTANCE_KM);
-      }
+      setField("max_distance_km", DEFAULT_MAX_DISTANCE_KM);
     } catch (err) {
       if (controller.signal.aborted) return;
 
@@ -1078,9 +1057,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       } else if (code === 2) {
         setLocateError("Your location isn't available right now. Please try again.");
       } else {
-        setLocateError(
-          "We got your position but couldn't work out your city. Please try again."
-        );
+        setLocateError("We got your position but couldn't work out your city. Please try again.");
       }
     } finally {
       if (!controller.signal.aborted) setLocating(false);

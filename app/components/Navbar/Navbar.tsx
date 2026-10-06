@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../authState";
 import LoginModal from "../auth/LoginModal";
 import { deleteSession, verifySession } from "@/lib/sessions";
+import { toast } from "sonner";
 
 
 interface NavbarProps {

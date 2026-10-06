@@ -441,8 +441,7 @@ export function toLifestyleField(question: LifestyleQuestion): FieldDef {
         name: question.key,
         label: question.title,
         kind: question.isMulti ? "multi" : "radio",
-        required: false,
-        skippable: true,
+        required: true,
         options: question.options,
     };
 }

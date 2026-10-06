@@ -2,11 +2,10 @@
 
 import type { ReactNode } from "react";
 
-import { OnBoardingDataProvider } from "../context/OnBoardingDataContext";
+import { OnBoardingDataProvider, useOnBoardingData } from "../context/OnBoardingDataContext";
 import { ProfileProvider } from "../context/OnBoardingApiContext";
 import { OnboardingFormProvider, useOnboardingForm } from "../context/OnboardingFormContext";
 import { OnboardingProvider, useOnboarding } from "../context/OnboardingContext";
-
 /* -------------------------------------------------------------------------- */
 /*  /onBoarding - shared card + header chrome for every onboarding step.      */
 /* -------------------------------------------------------------------------- */
@@ -464,7 +463,7 @@ function OnBoardingFlow({
   return (
     <ProfileProvider>
       <OnBoardingDataProvider>
-        <OnboardingFormProvider onAdvance={isLast ? () => {} : next}>
+        <OnboardingFormProvider onAdvance={isLast ? () => { } : next}>
           <OnBoardingShell>{children}</OnBoardingShell>
         </OnboardingFormProvider>
       </OnBoardingDataProvider>
@@ -481,11 +480,12 @@ export default function OnBoardingLayout({
 }: {
   children: ReactNode;
 }) {
-  return (
-    <OnboardingProvider>
-      <OnBoardingFlow>
-        {children}
-      </OnBoardingFlow>
-    </OnboardingProvider>
-  );
+  const { profileDetails } = useOnBoardingData();
+    return (
+      <OnboardingProvider>
+        <OnBoardingFlow>
+          {children}
+        </OnBoardingFlow>
+      </OnboardingProvider>
+    );
 }

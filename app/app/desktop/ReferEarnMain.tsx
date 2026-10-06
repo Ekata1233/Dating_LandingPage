@@ -1,5 +1,7 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
-import React, { useCallback } from "react";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import Link from "next/link";
+import React, { useCallback, useEffect } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  ReferAndEarn                                                              */
@@ -49,8 +51,6 @@ export interface ReferAndEarnProps {
     bannerTitle?: string;
     steps?: HowItWorksStep[];
 
-    inviteCode?: string;
-    totalEarned?: number;
     currencySymbol?: string;
     withdrawNote?: string;
 
@@ -264,8 +264,6 @@ export default function ReferAndEarn({
     showHeader = true,
     bannerTitle = "Refer & Earn",
     steps = DEFAULT_STEPS,
-    inviteCode = "LY7A3Q6M",
-    totalEarned = 0,
     currencySymbol = "₹",
     withdrawNote = "Withdraw to UPI anytime",
     referrals = {},
@@ -282,8 +280,11 @@ export default function ReferAndEarn({
     const [tab, setTab] = React.useState<ReferralTab>("joined");
     const [friendCode, setFriendCode] = React.useState("");
     const [copied, setCopied] = React.useState(false);
+    const [valid, setValid] = React.useState(false);
     const { setActiveSection } = useActiveSection();
-
+    const { referralDashboard, referralHistory,applyReferral,validateReferral,validateReferralError } = useUserProfileData()
+    const inviteCode = referralDashboard?.referralCode ?? "";
+    const totalEarned = referralDashboard?.stats.totalEarned ?? 0;
     const handleCLick = useCallback(
         () => () => setActiveSection("profile"),
         [setActiveSection]
@@ -302,9 +303,19 @@ export default function ReferAndEarn({
         window.setTimeout(() => setCopied(false), 1600);
     };
 
-    const handleApply = () => {
+    const handleValidate = async () => {
+        // onApplyCode?.(friendCode.trim());
+        // const response = await validateReferral({referralCode : referralDashboard?.referralCode || ""});
+        // setFriendCode("");
+    };
+    // useEffect(() => {
+    //     handleValidate()
+    // }, [])
+    const handleApply = async () => {
         if (!canApply) return;
-        onApplyCode?.(friendCode.trim());
+        // onApplyCode?.(friendCode.trim());
+        const response = await applyReferral({referralCode : friendCode.trim()});
+        console.log("response", response);
         setFriendCode("");
     };
 
@@ -625,31 +636,33 @@ export default function ReferAndEarn({
                             </section>
 
                             {/* invite button */}
-                            <button
-                                type="button"
-                                className="wre-btn"
-                                onClick={() => onInvite?.(inviteCode)}
-                                style={{
-                                    marginTop: U(6.2),
-                                    width: "100%",
-                                    height: U(13.9),
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: U(2.8),
-                                    borderRadius: U(4.6),
-                                    background: "linear-gradient(90deg, #e63a6b, #e03a68)",
-                                    color: C.white,
-                                    fontSize: U(4),
-                                    fontWeight: 500,
-                                    boxShadow: `0 ${U(1.2)} ${U(3.4)} rgba(226,58,106,.35)`,
-                                }}
-                            >
-                                <span style={{ fontSize: U(4.2), display: "flex" }}>
-                                    <ShareIcon />
-                                </span>
-                                Invite friends &amp; earn
-                            </button>
+                            <Link href={referralDashboard?.shareLink ?? "#"} target="_blank" rel="noopener noreferrer" style={{ width: "100%" }}>
+                                <button
+                                    type="button"
+                                    className="wre-btn"
+                                    // onClick={() => onInvite?.(inviteCode)}
+                                    style={{
+                                        marginTop: U(6.2),
+                                        width: "100%",
+                                        height: U(13.9),
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: U(2.8),
+                                        borderRadius: U(4.6),
+                                        background: "linear-gradient(90deg, #e63a6b, #e03a68)",
+                                        color: C.white,
+                                        fontSize: U(4),
+                                        fontWeight: 500,
+                                        boxShadow: `0 ${U(1.2)} ${U(3.4)} rgba(226,58,106,.35)`,
+                                    }}
+                                >
+                                    <span style={{ fontSize: U(4.2), display: "flex" }}>
+                                        <ShareIcon />
+                                    </span>
+                                    Invite friends &amp; earn
+                                </button>
+                            </Link>
 
                             {/* friend's code header */}
                             <div style={{ display: "flex", alignItems: "center", gap: U(3.4), marginTop: U(8) }}>

@@ -1,24 +1,18 @@
 "use client";
 
 import React, { memo, useCallback, useMemo } from "react";
-import { ActiveSection, useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useActiveSection } from "@/app/context/ActiveSectionContext";
 
 import { FALLBACK_AVATAR } from "../shared/mockData";
-import { Delete, Gift, HelpCircle, LogOut, LucideIcon, PauseCircle, Trash2 } from "lucide-react";
+import AccountSupportSection, {
+  type AccountSupportItem,
+} from "./AccountSupportSection";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export interface AccountSupportItem {
-  id: string;
-  icon: LucideIcon | string;
-  iconBg: string;
-  title: string;
-  titleColor?: string;
-  subtitle: string;
-  section: ActiveSection;
-}
+export type { AccountSupportItem };
 
 export interface ProfileSidebarProps {
   /** Primary photo. Falls back to the neutral avatar while it is unknown. */
@@ -33,6 +27,13 @@ export interface ProfileSidebarProps {
   completionPercent?: number;
   className?: string;
   accountItems?: AccountSupportItem[];
+
+  /**
+   * Renders AccountSupportSection as this card's last block. The desktop rail
+   * wants it in here; the mobile stack turns it off and mounts its own copy
+   * below HomeSidebar instead (see MobileProfileSection).
+   */
+  showAccountSection?: boolean;
 
   /**
    * "fill" (default) makes the sidebar own the full height of its slot and
@@ -50,77 +51,6 @@ export interface ProfileSidebarProps {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Default Account Items                                                      */
-/* -------------------------------------------------------------------------- */
-
-export interface AccountSupportItem {
-  id: string;
-  icon: LucideIcon | string;
-  /** Icon tile background */
-  iconBg: string;
-  /** Icon stroke color, for <Icon color={item.color} /> */
-  color: string;
-  title: string;
-  titleColor?: string;
-  subtitle: string;
-  section: ActiveSection;
-}
-
-const DEFAULT_ITEMS: AccountSupportItem[] = [
-  {
-    id: "refer",
-    icon: Gift,
-    iconBg: "#DCFCE7", // green-100
-    color: "#16A34A", // green-600
-    title: "Refer & Earn",
-    titleColor: "#16A34A",
-    subtitle: "Earn ₹100 + ₹500 for every friend",
-    section: "refer-earn",
-  },
-  {
-    id: "help",
-    icon: HelpCircle,
-    iconBg: "#DBEAFE", // blue-100
-    color: "#2563EB", // blue-600
-    title: "Help & Support",
-    titleColor: "#2563EB",
-    subtitle: "Get answers or chat with our support team",
-    section: "help",
-  },
-  {
-    id: "pause-account",
-    icon: PauseCircle,
-    iconBg: "#FEF3C7", // amber-100
-    color: "#D97706", // amber-600
-    title: "Pause Account",
-    titleColor: "#D97706",
-    subtitle: "Temporarily pause your account",
-    section: "pause-account",
-  },
-  {
-    id: "delete-account",
-    icon: Trash2,
-    iconBg: "#FEE2E2", // red-100
-    color: "#DC2626", // red-600
-    title: "Delete Account",
-    titleColor: "#DC2626",
-    subtitle: "Permanently delete your account",
-    section: "delete-account",
-  },
-  {
-    id: "logout",
-    icon: LogOut,
-    iconBg: "#F3F4F6", // gray-100
-    color: "#4B5563", // gray-600
-    title: "Logout",
-    titleColor: "#4B5563",
-    subtitle: "Sign out of your account",
-    section: "logout",
-  },
-];
-
-
-/* -------------------------------------------------------------------------- */
 /* Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -134,11 +64,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   trustScore = 0,
   completionPercent = 0,
   className = "",
-  accountItems = DEFAULT_ITEMS,
+  accountItems,
+  showAccountSection = true,
   flow = "fill",
   onEditProfile,
 }) => {
-  const {activeSection, setActiveSection } = useActiveSection();
+  const { setActiveSection } = useActiveSection();
 
   /* Clamp progress so invalid API values cannot break the UI */
   const safeCompletion = useMemo(
@@ -155,13 +86,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   /* ---------------------------------------------------------------------- */
   /* Navigation                                                             */
   /* ---------------------------------------------------------------------- */
-
-  const handleSectionChange = useCallback(
-    (section: ActiveSection) => {
-      setActiveSection(section);
-    },
-    [setActiveSection]
-  );
 
   const handleEditProfile = useCallback(() => {
     /* Prefer the host's handler: on mobile the sidebar lives inside a bottom
@@ -561,137 +485,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           min-width: 12px;
           min-height: 12px;
         }
-
-        /* ---------------------------------------------------------------- */
-        /* Account & Support                                                 */
-        /* ---------------------------------------------------------------- */
-
-        .account-section {
-          width: 100%;
-
-          display: flex;
-          flex-direction: column;
-
-          gap: 2.4cqw;
-        }
-
-        .account-section-label {
-          font-size: 3.4cqw;
-          font-weight: 700;
-
-          letter-spacing: 0.12em;
-
-          color: #8a8f98;
-
-          padding: 0 1cqw;
-        }
-
-        .account-list {
-          width: 100%;
-          box-sizing: border-box;
-
-          background: #fff;
-
-          border-radius: 6cqw;
-
-          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-
-          overflow: hidden;
-        }
-
-        .account-row {
-          width: 100%;
-
-          display: flex;
-          align-items: center;
-
-          gap: 4cqw;
-
-          padding: 4.4cqw 4.5cqw;
-
-          background: none;
-          border: none;
-          border-bottom: 1px solid var(--border);
-
-          text-align: left;
-
-          cursor: pointer;
-
-          font: inherit;
-
-          transition: background 150ms ease;
-        }
-
-        .account-row:last-child {
-          border-bottom: none;
-        }
-
-        .account-row:hover {
-          background: #fafafa;
-        }
-
-        .account-row:active {
-          background: #f5f5f5;
-        }
-
-        .account-icon {
-          width: 13cqw;
-          height: 13cqw;
-
-          min-width: 34px;
-          min-height: 34px;
-
-          flex-shrink: 0;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          border-radius: 50%;
-
-          font-size: 6cqw;
-          line-height: 1;
-        }
-
-        .account-text {
-          flex: 1 1 auto;
-          min-width: 0;
-        }
-
-        .account-title {
-          font-size: 4.6cqw;
-          font-weight: 700;
-
-          color: var(--text);
-
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .account-subtitle {
-          margin-top: 0.8cqw;
-
-          font-size: 3.4cqw;
-
-          color: var(--light-muted);
-
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .account-chevron {
-          width: 3.6cqw;
-          height: 3.6cqw;
-
-          min-width: 12px;
-          min-height: 12px;
-
-          flex-shrink: 0;
-
-          color: #b7bbc2;
-        }
       `}</style>
 
       <div className="profile-sidebar-inner">
@@ -877,69 +670,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         </div>
 
         {/* ================================================================ */}
-        {/* Account & Support                                                */}
+        {/* Account & Support — its own component, so a page can also place  */}
+        {/* it outside this card (the mobile stack puts it below HomeSidebar). */}
         {/* ================================================================ */}
 
-        <section className="account-section">
-          <div className="account-section-label">
-            ACCOUNT & SUPPORT
-          </div>
-
-          <div className="account-list">
-            {accountItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="account-row"
-                onClick={() =>
-                  handleSectionChange(item.section)
-                }
-              >
-                <div
-                  className="account-icon"
-                  style={{
-                    backgroundColor: item.iconBg,
-                  }}
-                >
-                  <item.icon size={20} color={item.color} />
-                </div>
-
-                <div className="account-text">
-                  <div
-                    className="account-title"
-                    style={
-
-                      activeSection==item.section && item.titleColor
-                        ? { color: item.titleColor }
-                        : { color: "black" }
-                    }
-                  >
-                    {item.title}
-                  </div>
-
-                  <div className="account-subtitle">
-                    {item.subtitle}
-                  </div>
-                </div>
-
-                <svg
-                  className="account-chevron"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M9 6l6 6-6 6"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            ))}
-          </div>
-        </section>
+        {showAccountSection && (
+          <AccountSupportSection variant="inset" items={accountItems} />
+        )}
       </div>
     </aside>
   );

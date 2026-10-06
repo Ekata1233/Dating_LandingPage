@@ -18,6 +18,9 @@ import ConditionalNavbar from "@/app/components/ui/ConditionalNavbar";
 import ConditionalFooter from "./components/ui/ConditionalFooter";
 import { ActiveSectionProvider } from "./context/ActiveSectionContext";
 import { UsersProvider } from "./context/UsersContext";
+import { AccountSettingsProvider } from "./context/AccountSettingsContext";
+import { Toaster } from "sonner";
+import { UserProfileDataProvider } from "./context/UserProfileDataContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -121,7 +124,12 @@ export default function RootLayout({
               <LegalProvider>
                 <EventProvider>
                   <ActiveSectionProvider>
+                    <AccountSettingsProvider >
+                      <UserProfileDataProvider >
                     {children}
+                    <Toaster position="bottom-right" richColors />
+                    </UserProfileDataProvider>
+                    </AccountSettingsProvider>
                   </ActiveSectionProvider>
                 </EventProvider>
               </LegalProvider>

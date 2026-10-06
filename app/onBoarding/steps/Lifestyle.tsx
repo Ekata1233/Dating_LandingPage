@@ -16,11 +16,12 @@ import { StepShell } from "../StepShell";
 /*  turned into a field keyed by the question's own `key`, so this step does    */
 /*  not read the static schema.                                                 */
 /*                                                                            */
-/*  Continue is never blocked: a half-answered lifestyle is a perfectly good    */
-/*  profile, and the step saves whatever has been answered (one request per      */
-/*  answered question). The only thing it waits for is the question list itself, */
-/*  because a save made against a half-loaded list would post half the step.    */
-/*  Skip stays available and, as always, posts nothing.                         */
+/*  Every question is compulsory: Continue stays closed until each rendered      */
+/*  field holds a value, and the step then saves them (one request per           */
+/*  answered question). The gate lives here rather than in STEP_SCHEMAS because  */
+/*  the field names are the API's own keys — a static schema entry would         */
+/*  validate a key the step never writes and block the button with no visible    */
+/*  error. There is no Skip on this step, so Continue is the only way past.      */
 /* -------------------------------------------------------------------------- */
 
 export default function LifestyleStep() {
@@ -32,25 +33,27 @@ export default function LifestyleStep() {
 
   /* The questions come from the API, so `form.isComplete` (which counts schema
      fields) has nothing to count here — completeness is measured against the
-     questions actually rendered. */
+     questions actually rendered, and every one of them must be answered. */
   const ready = !lifestyle.loading && fields.length > 0;
+  const complete = ready && answered === fields.length;
 
   return (
     <StepShell
       eyebrow="Lifestyle"
       title="How do you live?"
       subtitle={
-        answered > 0
-          ? `${answered} of ${fields.length} answered — Continue saves them, and you can leave the rest for later.`
-          : "Answer what you like, then Continue. Nothing here is compulsory."
+        !ready
+          ? "Every question here is required — answer them all to continue."
+          : complete
+            ? `All ${fields.length} answered — Continue saves them.`
+            : `${answered} of ${fields.length} answered — answer every question to continue.`
       }
       footer={
         <StepFooter
           onSubmit={() => form.submit()}
           submitting={form.submitState === "submitting"}
           submitError={form.submitError}
-          isValid={ready}
-          skippable
+          isValid={complete}
           onSkip={() => form.skip()}
         />
       }

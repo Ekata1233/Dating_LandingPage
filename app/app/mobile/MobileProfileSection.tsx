@@ -4,6 +4,7 @@ import React from "react";
 
 import HomeSidebar from "../panels/HomeSidebar";
 import ProfileSidebar from "../panels/ProfileSidebar";
+import AccountSupportSection from "../panels/AccountSupportSection";
 import { Loader, Notice } from "../shared/Loader";
 import {
   MOCK_BALANCES,
@@ -18,14 +19,19 @@ import { useMyProfile } from "../shared/useMyProfile";
 /*  My profile (mobile).                                                        */
 /*                                                                            */
 /*  The desktop split puts the account rail beside the card; a phone has no    */
-/*  rail, so both sidebar panels are stacked into one scrolling page:          */
+/*  rail, so the pieces are stacked into one scrolling page:                    */
 /*                                                                            */
-/*    ┌ ProfileSidebar    avatar, completion ring, Edit Profile, account rows  */
+/*    ┌ ProfileSidebar    avatar, completion ring, Edit Profile                */
 /*    ├ HomeSidebar       wallet balances / plan cards (Wallet · Plans tabs)   */
-/*    └ (page scrolls as one)                                                  */
+/*    └ AccountSupport    account & support rows, in their own section         */
 /*                                                                            */
-/*  Both are handed `flow`/`layout` variants that let them grow to their own   */
-/*  height instead of scrolling inside a fixed frame.                           */
+/*  AccountSupportSection lives outside ProfileSidebar, so it is turned off    */
+/*  there (`showAccountSection={false}`) and mounted here as its own block —   */
+/*  below the wallet panel, in `standalone` mode, since there is no profile    */
+/*  sidebar around it to borrow a container from.                              */
+/*                                                                            */
+/*  Both sidebars are handed `flow`/`layout` variants that let them grow to    */
+/*  their own height instead of scrolling inside a fixed frame.                */
 /*                                                                            */
 /*  There is no mock profile fallback here: the section renders a loader while */
 /*  the request is in flight and a notice when it fails or comes back empty, */
@@ -84,6 +90,7 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
     <div className="h-full w-full overflow-y-auto overscroll-contain">
       <ProfileSidebar
         flow="auto"
+        showAccountSection={false}
         avatarUrl={live.summary?.avatarUrl ?? profile.image}
         name={profile.name}
         age={profile.age}
@@ -95,7 +102,7 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
         onEditProfile={onEditProfile}
       />
 
-      {/* Separator so the two panels do not read as one card. */}
+      {/* Separator so the panels do not read as one card. */}
       <div style={{ height: 1, background: BRAND.border }} />
 
       {/*
@@ -112,6 +119,16 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
           plans={MOCK_PLANS}
         />
       </div>
+
+      {/* Separator so the panels do not read as one card. */}
+      <div style={{ height: 1, background: BRAND.border }} />
+
+      {/*
+        Account & Support, below the wallet panel. `standalone` gives it the
+        container its `cqw` sizing needs — the profile sidebar it used to live
+        in is no longer an ancestor here.
+      */}
+      <AccountSupportSection variant="standalone" />
     </div>
   );
 };

@@ -117,7 +117,6 @@ export default function ReviewStep({ onFinish }: { onFinish?: () => void }) {
   const form = useOnboardingForm();
   const { intentions, lifestyle, interests,profileDetails } = useOnBoardingData();
   const careerSources = useCareerOptionSources();
-
   /* API-driven steps keep their questions and options out of the schema, so the
    * summary has to ask the context for them. */
   const fieldsForStep = (stepId: string): readonly FieldDef[] => {
@@ -176,11 +175,15 @@ export default function ReviewStep({ onFinish }: { onFinish?: () => void }) {
   ];
 
   const photos = profileDetails.photos ?? [];
+  const location = profileDetails.details?.flows.LOCATION?.city ?? "";
 
   const rows: SummaryRow[] = shown.flatMap((stepId) => {
     if (stepId === "photos") {
       if (photos.length === 0) return [];
       return [{ label: "Photos", value: `${photos.length} added`, stepId: "photos" }];
+    }
+    if (stepId === "location") {
+      return [{ label: "Location", value: `${location}`, stepId: "location" }];
     }
 
     const schema = STEP_SCHEMAS[stepId];

@@ -193,53 +193,15 @@ export const STEP_SCHEMAS: Record<string, StepSchema> = {
 
   lifestyle: {
     id: "lifestyle",
-    // Questions and options are API-driven — see OnBoardingDataProvider in
-    // context/OnBoardingDataContext. These entries only supply a sensible label
-    // and fallback order; the step renders whatever the endpoint returns.
-    fields: [
-      {
-        name: "nightlife",
-        label: "Going out",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-      {
-        name: "alcohol",
-        label: "Drinking",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-      {
-        name: "smoking",
-        label: "Smoking",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-      {
-        name: "diet",
-        label: "Food",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-      {
-        name: "fitness",
-        label: "Fitness",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-      {
-        name: "sleep",
-        label: "Sleep",
-        kind: "radio",
-        required: false,
-        skippable: true,
-      },
-    ],
+    /* The questions, their keys and their options all come from the API — see
+       OnBoardingDataProvider. Every rendered question is compulsory, but the
+       gate is the step's own Continue check (Lifestyle.tsx), measured against
+       the questions actually on screen. Declaring the keys here instead would
+       mean validating names this file cannot know: a required entry the API
+       never sends would block Continue forever, with no field to show the
+       error on. The old static list (nightlife, alcohol, smoking, …) is gone
+       for the same reason `interests` has none. */
+    fields: [],
   },
 
   career: {

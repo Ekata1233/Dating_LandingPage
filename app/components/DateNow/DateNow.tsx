@@ -2,6 +2,7 @@
 
 import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+import { useRouter } from "next/navigation";
 
 const C = {
   bg: "#FBF7F3",
@@ -124,11 +125,12 @@ const WALLET_FEATURES = [
 
 function DateNow() {
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
-
+  const router = useRouter();
   const handleDiscover = () => {
-    if (typeof document === "undefined") return;
-    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    loginBtn?.click();
+    // if (typeof document === "undefined") return;
+    // const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
+    // loginBtn?.click();
+    router.push("/app");
   };
 
 

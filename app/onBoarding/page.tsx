@@ -16,14 +16,8 @@ import { STEPS } from "./onboardingConfig";
  */
 function OnBoardingPage() {
   const { stepIndex, isLast, finish } = useOnboarding();
-
   const current = STEPS[stepIndex];
   if (!current) return null;
-
-  /* `key` is the step id, so switching steps remounts the outgoing component.
-     That is what stops one step's transient UI state (a half-typed prompt
-     answer, an in-flight geolocation request) surviving into the next one. The
-     data itself is unaffected — it lives in the provider, above this. */
   return <current.Component key={current.id} {...(isLast ? { onFinish: finish } : {})} />;
 }
 

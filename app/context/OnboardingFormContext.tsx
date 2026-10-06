@@ -382,11 +382,10 @@ export function OnboardingFormProvider({
       }
 
       if (stepId === "lifestyle") {
-        /* Continue on this step is always open, so it may arrive with nothing
-           answered. One request per answered question: a question with no picks
-           has nothing to post (the endpoint has no way to express "explicitly
-           cleared"), so an untouched question is left exactly as it is rather
-           than blanked. The flow advances either way. */
+        /* Continue only opens once every rendered question holds a value (see
+           Lifestyle.tsx), so this normally arrives complete. One request per
+           answered question: a question with no picks has nothing to post (the
+           endpoint has no way to express "explicitly cleared"). */
         for (const request of toLifestyleRequests(current, lifestyle.questions)) {
           const res = await updateLifestyle(request);
           if (!res?.success) return { ok: false, message: res?.message };

@@ -16,6 +16,7 @@ import LoginPhone from "../endpoints/steps/LoginPhone";
 import LoginOtp from "../endpoints/steps/LoginOtp";
 import { createSession } from "@/lib/sessions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 const COLORS = {
   // Frosted / translucent backgrounds
   bgTranslucent: "rgba(252, 248, 244, 0.72)", // navbar (see-through + blur)
@@ -158,23 +159,26 @@ export default function LoginModal({ open, onClose, onSuccess, redirectTo }: Log
 
       const data = await res.json().catch(() => ({} as any));
 
-      if (!res.ok)
+      if (!res.ok) {
+        toast.error(data?.error || data?.message || "That code didn't match. Please try again.");
         return fail(data?.error || data?.message || "That code didn't match. Please try again.");
+      }
+      toast.success( data?.message || "Logged in successfully!");
 
       // Backend token top-level me deta hai: { success, message, token }
       const token = data?.data.token;
-      console.log("verify otp data : ",data)
-      if (token)         
+      console.log("verify otp data : ", data)
+      if (token)
         await createSession(token);
-      
-      if(data.data.is_register){
+
+      if (data.data.is_register) {
         router.push("/onBoarding");
       }
-      else if (redirectTo && redirectTo.startsWith("/app")){
+      else if (redirectTo && redirectTo.startsWith("/app")) {
         /* Came from a protected route — land back where they were headed. */
         router.push(redirectTo);
       }
-      else{
+      else {
         router.push("/app");
       }
       setStatus("idle");
@@ -239,15 +243,15 @@ export default function LoginModal({ open, onClose, onSuccess, redirectTo }: Log
             </span>
           </div>
           <div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center cursor-pointer justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
-            style={{ borderColor: C.border, color: C.headingDark }}
-          >
-            <Icon.Close />
-          </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center cursor-pointer justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
+              style={{ borderColor: C.border, color: C.headingDark }}
+            >
+              <Icon.Close />
+            </button>
           </div>
 
           {MOCK_MODE && (
