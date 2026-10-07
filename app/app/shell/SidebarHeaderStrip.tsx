@@ -78,7 +78,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
           </button>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-0.5">
           {iconItems.map((item) => {
             if (item.kind !== "icon") return null;
 

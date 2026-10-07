@@ -6,6 +6,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../authState";
 import LoginModal from "../auth/LoginModal";
 import { deleteSession, verifySession } from "@/lib/sessions";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
+import { FALLBACK_AVATAR } from "@/app/app/shared/mockData";
 import { toast } from "sonner";
 
 
@@ -66,6 +68,11 @@ function Navbar({ logoSrc }: NavbarProps) {
   const pathname = usePathname();
   const isLaunch = pathname === "/lauch";
 
+  /* Signed-in user's photo for the navbar profile button. Skips the request
+     entirely when there is no session token (see `useMyProfile`). */
+  const { profile } = useMyProfile();
+  const profileAvatar = profile?.image || FALLBACK_AVATAR;
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(t);
@@ -123,6 +130,10 @@ function Navbar({ logoSrc }: NavbarProps) {
     setLoggedIn(true);
     setLoginOpen(false);
     setRedirectTo(null);
+  };
+  const handleClickProfile = () => {
+    setOpen(false);
+    router.push("/app");
   };
 
   return (
@@ -205,23 +216,50 @@ function Navbar({ logoSrc }: NavbarProps) {
 
           <div className="flex items-center gap-3">
             {loggedIn ? (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="group relative overflow-hidden rounded-full border px-5 py-2 text-[14px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] hover:scale-105 active:scale-95"
-                style={{
-                  borderColor: COLORS.loginBorder,
-                  color: COLORS.brandDark,
-                  backgroundColor: "white",
-                }}
-              >
-                <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
-                <span
-                  className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
-                  style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
-                />
-              </button>
+              <>
+                {/* Logged in → profile button → /app */}
+                <button
+                  type="button"
+                  onClick={handleClickProfile}
+                  aria-label="Open your profile"
+                  className="flex items-center gap-2 rounded-full border px-2 py-1.5 cursor-pointer transition-all duration-300 hover:bg-white hover:scale-105 active:scale-95"
+                  style={{
+                    borderColor: COLORS.loginBorder,
+                    backgroundColor: "white",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={profileAvatar}
+                    alt="Your profile"
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <span
+                    className="text-[13px] font-semibold"
+                    style={{ color: COLORS.brandDark }}
+                  >
+                    You
+                  </span>
+                </button>
+                {/* <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="group relative overflow-hidden rounded-full border px-5 py-2 text-[14px] font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_4px_16px_rgba(194,21,89,0.15)] hover:scale-105 active:scale-95"
+                  style={{
+                    borderColor: COLORS.loginBorder,
+                    color: COLORS.brandDark,
+                    backgroundColor: "white",
+                  }}
+                >
+                  <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
+                  <span
+                    className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
+                    style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
+                  />
+                </button> */}
+              </>
             ) : (
+              /* Not logged in → Log in (opens LoginModal) */
               <button
                 type="button"
                 data-login-trigger
@@ -327,23 +365,51 @@ function Navbar({ logoSrc }: NavbarProps) {
           </ul>
           <div className="flex flex-col gap-3 px-4 pb-5 sm:px-6">
             {loggedIn ? (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="group relative overflow-hidden rounded-full border px-5 py-2.5 text-center text-[15px] font-semibold cursor-pointer transition-all duration-300 active:scale-95"
-                style={{
-                  borderColor: COLORS.loginBorder,
-                  color: COLORS.brandDark,
-                  backgroundColor: "white",
-                }}
-              >
-                <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
-                <span
-                  className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
-                  style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
-                />
-              </button>
+              <>
+                {/* Logged in → profile button → /app */}
+                <button
+                  type="button"
+                  onClick={handleClickProfile}
+                  aria-label="Open your profile"
+                  className="flex items-center gap-2 rounded-full border px-3 py-2.5 cursor-pointer transition-all duration-300 hover:bg-white active:scale-95 w-25"
+                  style={{
+                    borderColor: COLORS.loginBorder,
+                    backgroundColor: "white",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={profileAvatar}
+                    alt="Your profile"
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                  <span
+                    className="text-[15px] font-semibold"
+                    style={{ color: COLORS.brandDark }}
+                  >
+                    You
+                  </span>
+                </button>
+                {/* <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="group relative overflow-hidden rounded-full border px-5 py-2.5 text-center text-[15px] font-semibold cursor-pointer transition-all duration-300 active:scale-95"
+                  style={{
+                    borderColor: COLORS.loginBorder,
+                    color: COLORS.brandDark,
+                    backgroundColor: "white",
+                  }}
+                >
+                  <span className="relative z-10 transition-colors duration-300 group-hover:text-white">Log out</span>
+                  <span
+                    className="absolute inset-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 rounded-full"
+                    style={{ background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})` }}
+                  />
+                </button> */}
+              </>
             ) : (
+              /* Not logged in → Log in (opens LoginModal). Never show the
+                 profile button here — anonymous visitors have no /app session. */
               <button
                 type="button"
                 data-login-trigger

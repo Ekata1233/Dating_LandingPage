@@ -222,11 +222,14 @@ export function SelectField({
   field,
   value,
   error,
+  disabled,
   onChange,
 }: {
   field: FieldDef;
   value: string;
   error?: string;
+  /** Locks the control — e.g. a sub-field whose parent has no answer yet. */
+  disabled?: boolean;
   onChange: (v: string) => void;
 }) {
   const id = React.useId();
@@ -239,10 +242,12 @@ export function SelectField({
       <Select
         items={items}
         value={value || null}
+        disabled={disabled}
         onValueChange={(v) => onChange((v as string) ?? "")}
       >
         <SelectTrigger
           id={id}
+          disabled={disabled}
           className="h-11 w-full"
           aria-invalid={Boolean(error)}
           data-placeholder={field.placeholder}

@@ -6,6 +6,7 @@ import React, {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import axios from "axios";
@@ -19,9 +20,46 @@ import { authHeader, getClientToken } from "@/utils/token";
 const REFERRAL_DASHBOARD_URL = `${API_BASE_URL}/api/user/referral/dashboard`;
 const REFERRAL_HISTORY_URL = `${API_BASE_URL}/api/user/referral/history`;
 const APPLY_REFERRAL_URL = `${API_BASE_URL}/api/user/apply-referral`;
-const VALIDATE_REFERRAL_URL = `${API_BASE_URL}/api/user/validate`;
+const VALIDATE_REFERRAL_URL = `${API_BASE_URL}/api/user/referral-validate`;
 const RELIGION_URL = `${API_BASE_URL}/api/religion/get`;
 const LANGUAGES_URL = `${API_BASE_URL}/api/admin/languages/get-All`;
+
+const FAMILY_STATUS_URL = `${API_BASE_URL}/api/admin/family/options?type=familyStatus`;
+const FAMILY_TYPE_URL = `${API_BASE_URL}/api/admin/family/options?type=familyType`;
+const FATHER_OCCUPATION_URL = `${API_BASE_URL}/api/admin/family/options?type=fatherOccupation`;
+const FATHER_ORGANISATION_URL = `${API_BASE_URL}/api/admin/family/options?type=fatherOrganisation`;
+const MOTHER_OCCUPATION_URL = `${API_BASE_URL}/api/admin/family/options?type=motherOccupation`;
+const MOTHER_ORGANISATION_URL = `${API_BASE_URL}/api/admin/family/options?type=motherOrganisation`;
+const SIBLING_TYPE_URL = `${API_BASE_URL}/api/admin/family/options?type=siblingtype`;
+const SIBLING_OCCUPATION_URL = `${API_BASE_URL}/api/admin/family/options?type=siblingOccupation`;
+const SIBLING_MARITAL_STATUS_URL = `${API_BASE_URL}/api/admin/family/options?type=siblingMarital`;
+const FAMILY_HOME_URL = `${API_BASE_URL}/api/admin/family/options?type=familyHome`;
+const NATIVE_PLACE_URL = `${API_BASE_URL}/api/admin/family/options?type=nativePlace`;
+const FAMILY_INCOME_URL = `${API_BASE_URL}/api/admin/family/options?type=familyIncome`;
+const FAMILY_SAVE_URL = `${API_BASE_URL}/api/user/profile/family`;
+
+
+/**
+ * The twelve family option lists, keyed for consumers. `relation` reads the
+ * `siblingtype` list — it is the relation select the sibling rows use, which
+ * is why its key does not echo the query parameter.
+ */
+const FAMILY_OPTION_URLS: Record<FamilyOptionKey, string> = {
+    familyStatus: FAMILY_STATUS_URL,
+    familyType: FAMILY_TYPE_URL,
+    fatherOccupation: FATHER_OCCUPATION_URL,
+    fatherOrganisation: FATHER_ORGANISATION_URL,
+    motherOccupation: MOTHER_OCCUPATION_URL,
+    motherOrganisation: MOTHER_ORGANISATION_URL,
+    relation: SIBLING_TYPE_URL,
+    siblingOccupation: SIBLING_OCCUPATION_URL,
+    siblingMarital: SIBLING_MARITAL_STATUS_URL,
+    familyHome: FAMILY_HOME_URL,
+    nativePlace: NATIVE_PLACE_URL,
+    familyIncome: FAMILY_INCOME_URL,
+};
+
+const FAMILY_OPTION_KEYS = Object.keys(FAMILY_OPTION_URLS) as FamilyOptionKey[];
 
 
 /* ------------------------------------------------------------------ */
@@ -34,6 +72,28 @@ export interface ReferralStats {
     rewarded: number;
     pending: number;
 }
+export interface FamilyOptions {
+    id: number;
+    value: string;
+}
+
+/** One of the twelve family option lists — see `FAMILY_OPTION_URLS`. */
+export type FamilyOptionKey =
+    | "familyStatus"
+    | "familyType"
+    | "fatherOccupation"
+    | "fatherOrganisation"
+    | "motherOccupation"
+    | "motherOrganisation"
+    | "relation"
+    | "siblingOccupation"
+    | "siblingMarital"
+    | "familyHome"
+    | "nativePlace"
+    | "familyIncome";
+
+/** All twelve lists at once; `null` until the fetch has landed. */
+export type FamilyOptionsMap = Record<FamilyOptionKey, FamilyOptions[]>;
 
 export interface ReferralHistoryItem {
     [key: string]: unknown;
@@ -61,6 +121,11 @@ export interface ReferralDashboardResponse {
     message?: string;
     data?: ReferralDashboardData;
 }
+export interface FamilyOptionsResponse {
+    success: boolean;
+    message?: string;
+    data?: FamilyOptions[];
+}
 
 export interface ReferralHistoryResponse {
     success: boolean;
@@ -81,7 +146,24 @@ export interface ReferralActionResponse {
     message?: string;
     data?: unknown;
 }
+export interface Sibling {
+  relationId: number;
+  occupationId: number;
+  maritalId: number;
+}
 
+export interface FamilyProfilePayload {
+  familyStatusId: number;
+  familyTypeId: number;
+  fatherOccupationId: number;
+  fatherOrganisationId: number;
+  motherOccupationId: number;
+  motherOrganisationId: number;
+  familyHomeId: number;
+  nativePlaceId: number;
+  familyIncomeId: number;
+  siblings: Sibling[];
+}
 /* ---------------------------- Religion ---------------------------- */
 
 export interface Community {
@@ -187,6 +269,18 @@ interface UserProfileDataContextData {
 
     validateReferralLoading: boolean;
     validateReferralError: string | null;
+
+    /* Family option lists (twelve GETs behind one lazy fetch) */
+    familyOptions: FamilyOptionsMap | null;
+    familyOptionsLoading: boolean;
+    familyOptionsError: string | null;
+    ensureFamilyOptions: () => void;
+    refetchFamilyOptions: () => Promise<void>;
+
+    /* Family save — the endpoint exists; no UI calls it yet. */
+    saveFamily: (
+        data: FamilyProfilePayload
+    ) => Promise<ReferralActionResponse | null>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -222,6 +316,14 @@ const UserProfileDataContext =
         validateReferral: async () => null,
         validateReferralLoading: false,
         validateReferralError: null,
+
+        familyOptions: null,
+        familyOptionsLoading: false,
+        familyOptionsError: null,
+        ensureFamilyOptions: () => { },
+        refetchFamilyOptions: async () => { },
+
+        saveFamily: async () => null,
     });
 
 /* ------------------------------------------------------------------ */
@@ -300,6 +402,22 @@ export function UserProfileDataProvider({
 
     const [validateReferralError, setValidateReferralError] =
         useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* FAMILY OPTION LISTS (lazy)                                       */
+    /* ---------------------------------------------------------------- */
+
+    const [familyOptions, setFamilyOptions] =
+        useState<FamilyOptionsMap | null>(null);
+
+    const [familyOptionsLoading, setFamilyOptionsLoading] = useState(false);
+
+    const [familyOptionsError, setFamilyOptionsError] =
+        useState<string | null>(null);
+
+    /* Set once the fetch has been asked for, so StrictMode double-effects
+       and re-mounts of the edit page don't fire the twelve GETs twice. */
+    const familyRequestedRef = useRef(false);
 
     /* ---------------------------------------------------------------- */
     /* Generic Auth GET                                                 */
@@ -454,6 +572,61 @@ export function UserProfileDataProvider({
     }, [authGet, applyLanguages]);
 
     /* ---------------------------------------------------------------- */
+    /* FAMILY OPTION LISTS                                              */
+    /* ---------------------------------------------------------------- */
+
+    const refetchFamilyOptions = useCallback(async () => {
+        setFamilyOptionsLoading(true);
+        setFamilyOptionsError(null);
+
+        const responses = await Promise.all(
+            FAMILY_OPTION_KEYS.map((key) => authGet(FAMILY_OPTION_URLS[key]))
+        );
+
+        const next = {} as FamilyOptionsMap;
+        let okCount = 0;
+        let firstMessage: string | null = null;
+
+        FAMILY_OPTION_KEYS.forEach((key, index) => {
+            const response = responses[index] as FamilyOptionsResponse | null;
+
+            if (response?.success && Array.isArray(response.data)) {
+                next[key] = response.data;
+                okCount += 1;
+            } else {
+                next[key] = [];
+                firstMessage = firstMessage ?? response?.message ?? null;
+            }
+        });
+
+        /* Nothing came back: keep the map null so consumers show the retry
+           state rather than a form full of empty selects. */
+        if (okCount === 0) {
+            setFamilyOptionsError(
+                firstMessage || "Couldn't load family options."
+            );
+        } else {
+            setFamilyOptions(next);
+            /* Partial success: surface the first failure as a banner while
+               the lists that did arrive stay usable. */
+            setFamilyOptionsError(
+                okCount === FAMILY_OPTION_KEYS.length ? null : firstMessage
+            );
+        }
+
+        setFamilyOptionsLoading(false);
+    }, [authGet]);
+
+    /* Only the profile edit page asks for these — marketing pages must not
+       pay for twelve extra requests, so nothing runs until mount. */
+    const ensureFamilyOptions = useCallback(() => {
+        if (familyRequestedRef.current) return;
+        familyRequestedRef.current = true;
+        void refetchFamilyOptions();
+    }, [refetchFamilyOptions]);
+
+
+    /* ---------------------------------------------------------------- */
     /* APPLY REFERRAL                                                   */
     /* ---------------------------------------------------------------- */
 
@@ -463,6 +636,14 @@ export function UserProfileDataProvider({
         try {
             setApplyReferralLoading(true);
             setApplyReferralError(null);
+            const validityResponse = await validateReferral(data)
+            if (!validityResponse) {
+                setApplyReferralError(
+                    validateReferralError ||
+                    "Invalid Referral code"
+                );
+                return null;
+            }
             const response = await axios.post(
                 APPLY_REFERRAL_URL,
                 data,
@@ -470,7 +651,6 @@ export function UserProfileDataProvider({
                     headers: authHeader(),
                 }
             );
-
             if (response.data?.success) {
                 /*
                  * Refresh dashboard/history after successfully
@@ -491,7 +671,7 @@ export function UserProfileDataProvider({
 
             return null;
         } catch (err) {
-            console.error("Apply Referral Error:", err);
+            // console.error("Apply Referral Error:", err);
 
             if (axios.isAxiosError(err)) {
                 setApplyReferralError(
@@ -509,6 +689,54 @@ export function UserProfileDataProvider({
             setApplyReferralLoading(false);
         }
     };
+    /**
+     * PATCH the family save endpoint. Defined here alongside the other
+     * account APIs, but deliberately not called by any UI yet — the Family
+     * section collects without saving.
+     */
+    const SaveFamily = useCallback(async (
+        data: FamilyProfilePayload
+    ): Promise<ReferralActionResponse | null> => {
+        try {
+            setApplyReferralLoading(true);
+            setApplyReferralError(null);
+
+            const response = await axios.patch(
+                FAMILY_SAVE_URL,
+                data,
+                {
+                    headers: authHeader(),
+                }
+            );
+            if (response.data?.success) {
+                return response.data as ReferralActionResponse;
+            }
+
+            setApplyReferralError(
+                response.data?.message ||
+                "Couldn't save your family details."
+            );
+
+            return null;
+        } catch (err) {
+            // console.error("Save Family Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setApplyReferralError(
+                    err.response?.data?.message ||
+                    "Something went wrong while saving your family details."
+                );
+            } else {
+                setApplyReferralError(
+                    "Something went wrong while saving your family details."
+                );
+            }
+
+            return null;
+        } finally {
+            setApplyReferralLoading(false);
+        }
+    }, []);
 
     /* ---------------------------------------------------------------- */
     /* VALIDATE REFERRAL                                                */
@@ -539,7 +767,7 @@ export function UserProfileDataProvider({
 
             return null;
         } catch (err) {
-            console.error("Validate Referral Error:", err);
+            // console.error("Validate Referral Error:", err);
 
             if (axios.isAxiosError(err)) {
                 setValidateReferralError(
@@ -640,6 +868,15 @@ export function UserProfileDataProvider({
             validateReferral,
             validateReferralLoading,
             validateReferralError,
+
+            /* Family option lists */
+            familyOptions,
+            familyOptionsLoading,
+            familyOptionsError,
+            ensureFamilyOptions,
+            refetchFamilyOptions,
+
+            saveFamily: SaveFamily,
         }),
         [
             referralDashboard,
@@ -667,6 +904,14 @@ export function UserProfileDataProvider({
 
             validateReferralLoading,
             validateReferralError,
+
+            familyOptions,
+            familyOptionsLoading,
+            familyOptionsError,
+            ensureFamilyOptions,
+            refetchFamilyOptions,
+
+            SaveFamily,
         ]
     );
 

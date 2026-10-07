@@ -8,7 +8,12 @@
 /*  Nothing here is a step, nothing advances, and nothing is invented:          */
 /*                                                                            */
 /*    values   -> GET /api/user/onboarding-details, via `OnBoardingDataContext` */
-/*                (`profileDetails`). Nothing is seeded from a mock.             */
+/*                (`profileDetails`). Nothing is seeded from a mock. The six     */
+/*                edit-only extras (religion, caste, mother tongue, zodiac,      */
+/*                love language, communication style) are the exception: that    */
+/*                payload does not carry them, so they come from                */
+/*                GET /api/user/feed/details/:userId via `useUserDetails` — the  */
+/*                same `loadDetails` the feed cards read.                        */
 /*    options  -> the same option lists the onboarding steps read: intentions,   */
 /*                lifestyle questions, interests questions, profession /         */
 /*                experience / employment-type / salary-range / ambition, and    */
@@ -56,6 +61,7 @@ import {
   Search,
   Sparkles,
   User,
+  Users,
   Video,
   Wine,
   X,
@@ -82,6 +88,12 @@ import {
   type PromptItem,
 } from "@/app/context/OnBoardingDataContext";
 import {
+  useUserProfileData,
+  type FamilyOptionKey,
+  type FamilyOptions,
+} from "@/app/context/UserProfileDataContext";
+import { useUserDetails } from "@/app/context/UsersContext";
+import {
   DateField,
   MultiField,
   RadioField,
@@ -94,6 +106,7 @@ import {
   toBasicInfoRequest,
   toBioRequest,
   toCareerRequest,
+  toEditBasicInfoRequest,
   toIntentionsRequest,
   toInterestedInRequest,
   toInterestsRequests,
@@ -500,6 +513,100 @@ function optionDescription(options: unknown, value: string): string {
   return text(option.description ?? option.subtitle);
 }
 
+/**
+ * The option id a saved value points at, matched on value *or* on label —
+ * the feed details hand back whichever the backend stored (an id, a wire
+ * enum, or the display name), and this is the one place the saved shape and
+ * the option list's shape are allowed to differ. Unmatched resolves to "",
+ * which reads as "not set" rather than inventing an answer.
+ */
+function resolveOptionId(options: readonly FieldOption[], saved: unknown): string {
+  const raw = text(saved).trim();
+  if (!raw) return "";
+
+  const wanted = raw.toLowerCase();
+  const hit = options.find(
+    (option) =>
+      option.value.toLowerCase() === wanted || option.label.trim().toLowerCase() === wanted
+  );
+
+  return hit ? hit.value : "";
+}
+
+/** Mother tongue is multi: a list, or one string that may name several. */
+function resolveOptionIds(options: readonly FieldOption[], saved: unknown): string[] {
+  const entries = Array.isArray(saved) ? saved : [saved];
+
+  return entries
+    .flatMap((entry) => text(entry).split(","))
+    .map((entry) => resolveOptionId(options, entry))
+    .filter((entry) => entry !== "");
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Siblings (the Family section's repeater)                                   */
+/* -------------------------------------------------------------------------- */
+
+/** One sibling row: three option ids, any of which may be "" (not set). */
+interface SiblingRow {
+  relation: string;
+  occupation: string;
+  marital: string;
+}
+
+const EMPTY_SIBLING: SiblingRow = { relation: "", occupation: "", marital: "" };
+
+/**
+ * The stored siblings as form rows. The feed endpoint types the list as
+ * `unknown[]` — it may hand back ids, display names, or the object shape the
+ * save payload takes — so every field is matched value-or-label against its
+ * list and anything unrecognised reads as "not set" rather than a stray id.
+ * Rows with nothing resolvable at all are dropped.
+ */
+function hydrateSiblings(
+  raw: unknown,
+  lists: Record<FamilyOptionKey, FieldOption[]> | null
+): SiblingRow[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry) => {
+      const record =
+        entry && typeof entry === "object"
+          ? (entry as Record<string, unknown>)
+          : {};
+
+      const relation = text(
+        record.relation ?? record.relationId ?? (typeof entry === "string" ? entry : "")
+      );
+      const occupation = text(record.occupation ?? record.occupationId);
+      const marital = text(record.marital ?? record.maritalId ?? record.maritalStatus);
+
+      return {
+        relation: resolveOptionId(lists?.relation ?? [], relation),
+        occupation: resolveOptionId(lists?.siblingOccupation ?? [], occupation),
+        marital: resolveOptionId(lists?.siblingMarital ?? [], marital),
+      };
+    })
+    .filter((row) => row.relation !== "" || row.occupation !== "" || row.marital !== "");
+}
+
+/** Whatever landed in `fields.siblings`, read back defensively as rows. */
+function asSiblingRows(value: unknown): SiblingRow[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((entry) => {
+    const record =
+      entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+
+    return {
+      relation: text(record.relation),
+      occupation: text(record.occupation),
+      marital: text(record.marital),
+    };
+  });
+}
+
 /** `2004-07-09` -> `09 / 07 / 2004`. Anything else is shown as stored. */
 function formatDate(value: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
@@ -644,43 +751,89 @@ const BIO_FALLBACK_MAX_LENGTH = 300;
  * Derived from the schemas rather than hand-written, so a field added to a step
  * is covered by the next edit here rather than silently dropped from the save.
  */
-const additionalFields = [
-        {
-        name: "zodiac",
-        label: "Zodiac sign",
-        kind: "select",
-        options: ZODIAC,
-        placeholder: "Zodiac sign",
-        message: "Please enter your zodiac sign.",
-      },
-        {
-        name: "communicationStyle",
-        label: "Communication style",
-        kind: "select",
-        options: COMMUNICATIONSTYLE,
-        placeholder: "Communication style",
-        message: "Please enter your communication style.",
-      },
-      //   {
-      //   name: "religion",
-      //   label: "Religion",
-      //   kind: "select",
-      //   placeholder: "Religion",
-      //   options:[],
-      //   minLength: 2,
-      //   maxLength: 80,
-      //   message: "Please enter your religion.",
-      // },
-        {
-        name: "loveLanguage",
-        label: "Love language",
-        kind: "select",
-        options: LOVELANGUAGE,
-        placeholder: "Love language",
-        message: "Please enter your love language.",
-      },
+/**
+ * The Basic-details rows the profile editor shows and onboarding does not.
+ * They ride their own PATCH (`toEditBasicInfoRequest` → /edit-profile/basic-
+ * info), so they live here rather than in `STEP_SCHEMAS.basics` — a schema
+ * entry would make the onboarding `Basics` step render them too.
+ *
+ * `religion`, `caste` and `motherTongue` carry no options: their lists come
+ * from the API (`useUserProfileData`) and are layered on in `renderField`,
+ * the same way the career selects take theirs from `careerSources`. Mother
+ * tongue is the one `multi` of the set — it stores a list of language ids.
+ */
+const EDIT_BASIC_FIELDS: FieldDef[] = [
+  {
+    name: "religion",
+    label: "Religion",
+    kind: "select",
+    placeholder: "Select religion",
+  },
+  {
+    name: "caste",
+    label: "Caste",
+    kind: "select",
+    placeholder: "Select caste",
+  },
+  {
+    name: "motherTongue",
+    label: "Mother tongue",
+    kind: "multi",
+    placeholder: "Select mother tongue",
+  },
+  {
+    name: "zodiac",
+    label: "Zodiac sign",
+    kind: "select",
+    options: ZODIAC,
+    placeholder: "Zodiac sign",
+  },
+  {
+    name: "loveLanguage",
+    label: "Love language",
+    kind: "select",
+    options: LOVELANGUAGE,
+    placeholder: "Love language",
+  },
+  {
+    name: "communicationStyle",
+    label: "Communication style",
+    kind: "select",
+    options: COMMUNICATIONSTYLE,
+    placeholder: "Communication style",
+  },
 ];
-const BASIC_FIELDS = new Set(...STEP_SCHEMAS.basics.fields.map((f) => f.name),...additionalFields,);
+
+/** The edit-only fields whose option lists are fetched, not declared. */
+const EDIT_API_OPTION_FIELDS = new Set(["religion", "caste", "motherTongue"]);
+
+/**
+ * The Family section: nine API-backed selects plus the sibling repeater.
+ *
+ * The names mirror the eventual save payload minus its `Id` suffix
+ * (`familyStatusId` -> `familyStatus`), so wiring the endpoint later is a
+ * lookup rather than a translation. There is no save endpoint yet — the
+ * section collects, and the form keeps these fields out of `dirty` so Save
+ * never claims to have stored them. Options are layered on from
+ * `useUserProfileData`'s family lists, the same way the basic-details
+ * selects take theirs from `editOptionSource`.
+ */
+const FAMILY_FIELD_DEFS: FieldDef[] = [
+  { name: "familyStatus", label: "Family status", kind: "select", placeholder: "Select family status" },
+  { name: "familyType", label: "Family type", kind: "select", placeholder: "Select family type" },
+  { name: "fatherOccupation", label: "Father's occupation", kind: "select", placeholder: "Select occupation" },
+  { name: "fatherOrganisation", label: "Father's organisation", kind: "select", placeholder: "Select organisation" },
+  { name: "motherOccupation", label: "Mother's occupation", kind: "select", placeholder: "Select occupation" },
+  { name: "motherOrganisation", label: "Mother's organisation", kind: "select", placeholder: "Select organisation" },
+  { name: "familyHome", label: "Family home", kind: "select", placeholder: "Select family home" },
+  { name: "nativePlace", label: "Native place", kind: "select", placeholder: "Select native place" },
+  { name: "familyIncome", label: "Family income", kind: "select", placeholder: "Select family income" },
+];
+/* The two halves of "Basic details": the schema fields PATCH to
+   /profile/basic-info, the edit-only extras to /edit-profile/basic-info. Kept
+   apart so each half validates and saves exactly what it owns. */
+const SCHEMA_BASIC_FIELDS = new Set(STEP_SCHEMAS.basics.fields.map((f) => f.name));
+const EDIT_BASIC_FIELD_NAMES = new Set(EDIT_BASIC_FIELDS.map((f) => f.name));
 const PREFERENCE_FIELDS = new Set(STEP_SCHEMAS.preference.fields.map((f) => f.name));
 const CAREER_FIELDS = new Set(STEP_SCHEMAS.career.fields.map((f) => f.name));
 const LOCATION_FIELDS = new Set([
@@ -688,6 +841,11 @@ const LOCATION_FIELDS = new Set([
   "max_distance_km",
 ]);
 const BIO_FIELDS = new Set(STEP_SCHEMAS.bio.fields.map((f) => f.name));
+/** The whole Family section, sibling repeater included, for form bookkeeping. */
+const FAMILY_FIELD_NAMES = new Set<string>([
+  ...FAMILY_FIELD_DEFS.map((field) => field.name),
+  "siblings",
+]);
 
 /**
  * The schema that owns a given field name, or `undefined` for the sections with
@@ -695,10 +853,12 @@ const BIO_FIELDS = new Set(STEP_SCHEMAS.bio.fields.map((f) => f.name));
  * intentions field is validated against its option list rather than a schema).
  */
 function schemaForField(name: string) {
-  if (BASIC_FIELDS.has(name)) return STEP_SCHEMAS.basics;
+  if (SCHEMA_BASIC_FIELDS.has(name)) return STEP_SCHEMAS.basics;
   if (PREFERENCE_FIELDS.has(name)) return STEP_SCHEMAS.preference;
   if (CAREER_FIELDS.has(name)) return STEP_SCHEMAS.career;
   if (BIO_FIELDS.has(name)) return STEP_SCHEMAS.bio;
+  /* Family has no schema: its names are the save payload's, not onboarding's,
+     and it validates locally (or not at all) until an endpoint exists. */
   return undefined;
 }
 
@@ -718,6 +878,24 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 }) => {
   const { intentions, lifestyle, interests, profileDetails } = useOnBoardingData();
   const careerSources = useCareerOptionSources();
+  /* Option lists for the edit-only basics: religions (with their communities
+     as the caste list) and languages as the mother-tongue list. */
+  const {
+    religions,
+    religionsLoading,
+    religionsError,
+    refetchReligions,
+    languages,
+    languagesLoading,
+    languagesError,
+    refetchLanguages,
+    /* The twelve family option lists — fetched lazily, only when this page
+       mounts (see `ensureFamilyOptions` below). */
+    familyOptions,
+    familyOptionsError,
+    ensureFamilyOptions,
+    refetchFamilyOptions,
+  } = useUserProfileData();
   const { categories: promptCategories, loading: promptsLoading, error: promptsError } =
     usePromptCategories();
 
@@ -737,6 +915,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     updateLocation,
     createPhotos,
     deletePhoto,
+    editBasicInfo
   } = useProfileData();
 
   /* Only what the user has actually touched lives in state. Everything else is
@@ -869,7 +1048,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
         );
 
         /* Pull the server's own list in the background — that is where the ids and
-           the primary/order it reports come from. */
+           the primary/order it reports from. */
         void refetch();
       }
     } finally {
@@ -933,10 +1112,165 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   const [openRow, setOpenRow] = React.useState<string | null>(null);
   const toggleRow = (id: string) => setOpenRow((current) => (current === id ? null : id));
 
-  const seedFields = React.useMemo(
-    () => (details ? fieldsFromDetails(details, initialData) : { ...initialData }),
-    [details, initialData]
+  /* --------------------- edit-only basics: options --------------------- */
+
+  /* The three lists that do not depend on the form. They sit before
+     `seedFields` on purpose: turning the feed details' saved names into ids
+     needs the list, and the list has no reason to wait for the form. */
+  const religionOptions = React.useMemo(
+    () => religions.map((row) => ({ value: String(row.id), label: row.name })),
+    [religions]
   );
+
+  const languageOptions = React.useMemo(
+    () => languages.map((row) => ({ value: String(row.id), label: row.name })),
+    [languages]
+  );
+
+  /** Every community across every religion — used to *name* a saved caste. */
+  const allCommunityOptions = React.useMemo(
+    () =>
+      religions.flatMap((row) =>
+        (row.communities ?? []).map((community) => ({
+          value: String(community.id),
+          label: community.name,
+        }))
+      ),
+    [religions]
+  );
+
+  /* The twelve family lists as FieldOptions ({id, value} -> {value, label}),
+     the same shape the religion/language lists above use. Null until the
+     fetch lands, which the Family section renders as its loading state. */
+  const familyOptionLists = React.useMemo<Record<FamilyOptionKey, FieldOption[]> | null>(
+    () => {
+      if (!familyOptions) return null;
+
+      const toOptions = (rows: FamilyOptions[]) =>
+        rows.map((row) => ({ value: String(row.id), label: row.value }));
+
+      return {
+        familyStatus: toOptions(familyOptions.familyStatus),
+        familyType: toOptions(familyOptions.familyType),
+        fatherOccupation: toOptions(familyOptions.fatherOccupation),
+        fatherOrganisation: toOptions(familyOptions.fatherOrganisation),
+        motherOccupation: toOptions(familyOptions.motherOccupation),
+        motherOrganisation: toOptions(familyOptions.motherOrganisation),
+        relation: toOptions(familyOptions.relation),
+        siblingOccupation: toOptions(familyOptions.siblingOccupation),
+        siblingMarital: toOptions(familyOptions.siblingMarital),
+        familyHome: toOptions(familyOptions.familyHome),
+        nativePlace: toOptions(familyOptions.nativePlace),
+        familyIncome: toOptions(familyOptions.familyIncome),
+      };
+    },
+    [familyOptions]
+  );
+
+  /** The list behind a family row — [] while the fetch is still in flight. */
+  const familyRowOptions = (name: string): readonly FieldOption[] =>
+    familyOptionLists?.[name as FamilyOptionKey] ?? [];
+
+  /* The onboarding-details payload carries none of the six extras, so they
+     come from the feed details endpoint — the same `loadDetails` the feed
+     cards read — keyed by this profile's own user id. */
+  const feed = useUserDetails(details?.userId);
+  const { ensure: ensureFeed, refresh: refreshFeed } = feed;
+
+  React.useEffect(() => {
+    ensureFeed();
+  }, [ensureFeed]);
+
+  /* The family option lists are fetched lazily — this is the only page that
+     wants them, so nothing runs on the marketing pages. */
+  React.useEffect(() => {
+    ensureFamilyOptions();
+  }, [ensureFamilyOptions]);
+
+  /**
+   * The six extras as form values: `null` until the feed details land, then
+   * always an answer ("" where the profile has none).
+   *
+   * That endpoint sends zodiac / love language / communication style as their
+   * wire enums — exactly what the static options hold — and religion / caste /
+   * mother tongue as display names, so those three resolve against the id
+   * lists above. Matching on value *or* label means an id, an enum or a name
+   * all land on the same option.
+   *
+   * Family rides the same endpoint, nested under `family`, and resolves the
+   * same way — the family lists belong in the deps, because name -> id needs
+   * both the saved string and the options, and the twelve lists often land
+   * after the details do.
+   */
+  const feedExtras = React.useMemo(() => {
+    const saved = feed.details;
+    if (!saved) return null;
+
+    const savedFamily = saved.family;
+
+    return {
+      religion: resolveOptionId(religionOptions, saved.religion),
+      caste: resolveOptionId(allCommunityOptions, saved.community),
+      motherTongue: resolveOptionIds(languageOptions, saved.motherTongue),
+      zodiac: resolveOptionId(ZODIAC, saved.zodiac),
+      loveLanguage: resolveOptionId(LOVELANGUAGE, saved.loveLanguage),
+      communicationStyle: resolveOptionId(COMMUNICATIONSTYLE, saved.communicationStyle),
+
+      familyStatus: resolveOptionId(
+        familyOptionLists?.familyStatus ?? [],
+        savedFamily?.familyStatus
+      ),
+      familyType: resolveOptionId(
+        familyOptionLists?.familyType ?? [],
+        savedFamily?.familyType
+      ),
+      fatherOccupation: resolveOptionId(
+        familyOptionLists?.fatherOccupation ?? [],
+        savedFamily?.fatherOccupation
+      ),
+      fatherOrganisation: resolveOptionId(
+        familyOptionLists?.fatherOrganisation ?? [],
+        savedFamily?.fatherOrganisation
+      ),
+      motherOccupation: resolveOptionId(
+        familyOptionLists?.motherOccupation ?? [],
+        savedFamily?.motherOccupation
+      ),
+      motherOrganisation: resolveOptionId(
+        familyOptionLists?.motherOrganisation ?? [],
+        savedFamily?.motherOrganisation
+      ),
+      familyHome: resolveOptionId(
+        familyOptionLists?.familyHome ?? [],
+        savedFamily?.familyHome
+      ),
+      nativePlace: resolveOptionId(
+        familyOptionLists?.nativePlace ?? [],
+        savedFamily?.nativePlace
+      ),
+      familyIncome: resolveOptionId(
+        familyOptionLists?.familyIncome ?? [],
+        savedFamily?.familyIncome
+      ),
+      siblings: hydrateSiblings(savedFamily?.siblings, familyOptionLists),
+    };
+  }, [
+    feed.details,
+    religionOptions,
+    allCommunityOptions,
+    languageOptions,
+    familyOptionLists,
+  ]);
+
+  const seedFields = React.useMemo(() => {
+    const base = details ? fieldsFromDetails(details, initialData) : { ...initialData };
+
+    /* The extras layer over the base once they arrive — and again whenever the
+       option lists land after them, since name -> id needs both. Fields the
+       user has edited live in `fieldOverrides` and always win. */
+    return feedExtras ? { ...base, ...feedExtras } : base;
+  }, [details, initialData, feedExtras]);
+
   const fields = React.useMemo(
     () => ({ ...seedFields, ...fieldOverrides }),
     [seedFields, fieldOverrides]
@@ -948,11 +1282,21 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   );
   const prompts = promptOverrides ?? seedPrompts;
 
-  const dirty = Object.keys(fieldOverrides).length > 0 || promptOverrides !== null;
+  /* Family is collected but has no save endpoint yet, so its edits never make
+     the form "dirty" — Save must not promise to store them. */
+  const dirty =
+    Object.keys(fieldOverrides).some((name) => !FAMILY_FIELD_NAMES.has(name)) ||
+    promptOverrides !== null;
 
   const setField = React.useCallback(
     (name: string, value: unknown) => {
-      setFieldOverrides((prev) => ({ ...prev, [name]: value }));
+      setFieldOverrides((prev) =>
+        /* Caste belongs to the religion above it, so a new religion makes the
+           old caste meaningless — clear it instead of saving a contradiction. */
+        name === "religion"
+          ? { ...prev, religion: value, caste: "" }
+          : { ...prev, [name]: value }
+      );
       setSaved(false);
       setSaveError(null);
 
@@ -983,6 +1327,18 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   const readString = (name: string) => asString(fields[name]);
   const readList = (name: string) => asList(fields[name]);
 
+  /* The sibling repeater reads the same flat store: `siblings` is the one
+     family value that is a list rather than a single id. It never feeds the
+     save fan-out (no endpoint yet) and never flips `dirty`. */
+  const siblings = React.useMemo(() => asSiblingRows(fields.siblings), [fields.siblings]);
+
+  const writeSiblings = (next: SiblingRow[]) => setField("siblings", next);
+
+  const updateSibling = (index: number, key: keyof SiblingRow, value: string) =>
+    writeSiblings(
+      siblings.map((row, i) => (i === index ? { ...row, [key]: value } : row))
+    );
+
   /**
    * A radio is single-select, so its value is a plain string — but the onboarding
    * hydration for `genders` seeds a one-element array. `asString` returns "" for an
@@ -992,6 +1348,64 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   const readRadio = (name: string) => {
     const stored = fields[name];
     return Array.isArray(stored) ? asString(stored[0]) : asString(stored);
+  };
+
+  /* The caste picker only offers the selected religion's communities, so a
+     caste can never contradict the religion above it. With no religion picked
+     yet (or one the list no longer holds) the full flattened list is shown so
+     the field is still answerable. */
+  const casteOptions = React.useMemo(() => {
+    const selected = asString(fields.religion);
+    const religion = religions.find((row) => String(row.id) === selected);
+
+    if (!religion) return allCommunityOptions;
+
+    return (religion.communities ?? []).map((community) => ({
+      value: String(community.id),
+      label: community.name,
+    }));
+  }, [religions, fields.religion, allCommunityOptions]);
+
+  /**
+   * The option list + fetch state behind an edit-only select, or `null` for
+   * the three whose options are static (and for every other field).
+   */
+  const editOptionSource = (
+    name: string
+  ): {
+    options: readonly FieldOption[];
+    loading: boolean;
+    error: string | null;
+    refetch: () => void;
+  } | null => {
+    if (name === "religion") {
+      return {
+        options: religionOptions,
+        loading: religionsLoading,
+        error: religionsError,
+        refetch: () => void refetchReligions(),
+      };
+    }
+
+    if (name === "caste") {
+      return {
+        options: casteOptions,
+        loading: religionsLoading,
+        error: religionsError,
+        refetch: () => void refetchReligions(),
+      };
+    }
+
+    if (name === "motherTongue") {
+      return {
+        options: languageOptions,
+        loading: languagesLoading,
+        error: languagesError,
+        refetch: () => void refetchLanguages(),
+      };
+    }
+
+    return null;
   };
 
   /* ------------------------------ location ------------------------------ */
@@ -1012,11 +1426,11 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   const displayValue = hasLocation
     ? formatLocation({
-        area: readString("area"),
-        city: locationCity,
-        state: readString("state"),
-        country: readString("country"),
-      })
+      area: readString("area"),
+      city: locationCity,
+      state: readString("state"),
+      country: readString("country"),
+    })
     : "";
 
   const detectLocation = async () => {
@@ -1120,7 +1534,11 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     const data = fields as Record<string, unknown>;
     const errors: FieldErrors = {};
 
-    if (touches(BASIC_FIELDS)) Object.assign(errors, validateStepData(STEP_SCHEMAS.basics, data));
+    /* Only the schema half has rules — the edit-only extras are validated by
+       the option lists themselves (nothing to pick means nothing to enter). */
+    if (touches(SCHEMA_BASIC_FIELDS)) {
+      Object.assign(errors, validateStepData(STEP_SCHEMAS.basics, data));
+    }
     if (touches(PREFERENCE_FIELDS)) {
       Object.assign(errors, validateStepData(STEP_SCHEMAS.preference, data));
     }
@@ -1166,11 +1584,24 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     try {
       await onSave?.({ fields, prompts });
 
-      if (touches(BASIC_FIELDS)) {
+      /* The two halves of Basic details ride different endpoints: the onboarding
+         schema fields to /profile/basic-info, the edit-only extras to
+         /edit-profile/basic-info. Either may fire alone; both when one save
+         touched each. The summary gets one entry either way. */
+      const savedBasics = touches(SCHEMA_BASIC_FIELDS);
+      const savedEditBasics = touches(EDIT_BASIC_FIELD_NAMES);
+
+      if (savedBasics) {
         const res = await updateBasicInfo(toBasicInfoRequest(fields));
         if (!res?.success) throw new SaveFailed(res?.message, "basic details");
-        savedSections.push("Basic details");
       }
+
+      if (savedEditBasics) {
+        const res = await editBasicInfo(toEditBasicInfoRequest(fields));
+        if (!res?.success) throw new SaveFailed(res?.message, "basic details");
+      }
+
+      if (savedBasics || savedEditBasics) savedSections.push("Basic details");
 
       if (touches(PREFERENCE_FIELDS)) {
         const res = await updateInterestedIn(toInterestedInRequest(fields));
@@ -1240,6 +1671,11 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
       void refetch();
 
+      /* The extras seed from the feed-details cache, not this payload — bust it
+         too, or clearing the overrides would re-derive the rows from the
+         pre-save copy until something else invalidated it. */
+      if (savedEditBasics) refreshFeed();
+
       /* `onSaved` runs last, after this render's state has settled, so the caller's
          refetch reads the profile the save just wrote. Left out, the edit page has
          done its job and the profile itself is where the user belongs. */
@@ -1275,45 +1711,101 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
    *
    * This is the editor a summary row opens — unchanged from before the restyle.
    */
+  /**
+   * The editor for a select whose option list belongs to an API rather than
+   * the schema: the schema (or the edit-only field def) owns the name and the
+   * label, the list is layered on here — exactly how the onboarding career
+   * step treats `careerSources`.
+   */
+  /**
+   * The editor for a field whose option list belongs to an API rather than the
+   * schema: the field def owns the name and the label, the list is layered on
+   * here — exactly how the onboarding career step treats `careerSources`.
+   * Renders the control its `kind` asks for (select today, multi for mother
+   * tongue), so an API-backed field only has to name its source.
+   */
+  const renderApiField = (
+    field: FieldDef,
+    source: {
+      options: readonly FieldOption[];
+      loading: boolean;
+      error: string | null;
+      refetch: () => void;
+    },
+    disabled = false,
+    disabledHint?: string
+  ) => {
+    if (source.error) {
+      return (
+        <div key={field.name} className="space-y-1.5">
+          <p className="text-xs font-semibold">{field.label}</p>
+          <p role="alert" className="text-[11px] font-medium text-destructive">
+            {source.error}
+          </p>
+          <button
+            type="button"
+            onClick={source.refetch}
+            className="text-[11px] font-semibold text-primary underline underline-offset-2"
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+
+    const layered: FieldDef = {
+      ...field,
+      options: source.options,
+      /* A locked control needs to say why — `FieldShell` renders this. */
+      ...(disabled && disabledHint ? { hint: disabledHint } : {}),
+    };
+
+    return (
+      <div key={field.name} className="space-y-1.5">
+        {field.kind === "multi" ? (
+          <MultiField
+            field={layered}
+            values={readList(field.name)}
+            error={fieldErrors[field.name]}
+            onChange={(v) => setField(field.name, v)}
+          />
+        ) : (
+          <SelectField
+            field={layered}
+            value={readString(field.name)}
+            error={fieldErrors[field.name]}
+            disabled={disabled}
+            onChange={(v) => setField(field.name, v)}
+          />
+        )}
+        {source.loading && (
+          <p className="text-[11px] text-muted-foreground">Loading options…</p>
+        )}
+      </div>
+    );
+  };
+
   const renderField = (field: FieldDef) => {
     const error = fieldErrors[field.name];
 
     if (isCareerField(field.name)) {
-      const source = careerSources[field.name];
+      return renderApiField(field, careerSources[field.name]);
+    }
 
-      if (source.error) {
-        return (
-          <div key={field.name} className="space-y-1.5">
-            <p className="text-xs font-semibold">{field.label}</p>
-            <p role="alert" className="text-[11px] font-medium text-destructive">
-              {source.error}
-            </p>
-            <button
-              type="button"
-              onClick={() => void source.refetch()}
-              className="text-[11px] font-semibold text-primary underline underline-offset-2"
-            >
-              Try again
-            </button>
-          </div>
+    if (EDIT_API_OPTION_FIELDS.has(field.name)) {
+      const source = editOptionSource(field.name);
+      if (source) {
+        /* Caste is religion's sub-question: with no religion picked there is
+           no list to show, so the control stays locked until one is chosen. */
+        const locked = field.name === "caste" && !asString(fields.religion);
+
+        return renderApiField(
+          field,
+          source,
+          locked,
+          locked ? "Choose your religion first." : undefined
         );
       }
-
-      return (
-        <div key={field.name} className="space-y-1.5">
-          <SelectField
-            /* The schema owns the name and the label; the option list belongs to
-               the API, so it is layered on here. */
-            field={{ ...field, options: source.options }}
-            value={readString(field.name)}
-            error={error}
-            onChange={(v) => setField(field.name, v)}
-          />
-          {source.loading && (
-            <p className="text-[11px] text-muted-foreground">Loading options…</p>
-          )}
-        </div>
-      );
     }
 
     if (field.kind === "select") {
@@ -1398,6 +1890,20 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
    * uses (the API's list for the career selects, the schema's for the rest).
    */
   const describeField = (field: FieldDef): { display: string; note?: React.ReactNode } => {
+    /* Multi is checked first: its value is an array, which `readString` reads
+       as "" — falling through to the blank guard below would hide every pick. */
+    if (field.kind === "multi") {
+      const options =
+        field.name === "motherTongue"
+          ? languageOptions
+          : (field as { options?: unknown }).options;
+
+      const picks = asList(fields[field.name]);
+      if (picks.length === 0) return { display: "" };
+
+      return { display: picks.map((value) => optionLabel(options, value)).join(", ") };
+    }
+
     const raw = readString(field.name);
 
     if (!raw) return { display: "" };
@@ -1426,20 +1932,17 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       return { display: optionLabel((field as { options?: unknown }).options, value) };
     }
 
-    if (field.kind === "multi") {
-      const options = (field as { options?: unknown }).options;
-
-      return {
-        display: asList(fields[field.name])
-          .map((value) => optionLabel(options, value))
-          .join(", "),
-      };
-    }
-
     if (field.kind === "select") {
+      /* Same list the editor uses — except caste, which is *named* from every
+         community so a saved caste still reads as text even when the religion
+         above it has since changed (the picker itself is the filtered list). */
       const options = isCareerField(field.name)
         ? careerSources[field.name].options
-        : (field as { options?: unknown }).options;
+        : field.name === "religion"
+          ? religionOptions
+          : field.name === "caste"
+            ? allCommunityOptions
+            : (field as { options?: unknown }).options;
 
       const label = optionLabel(options, raw);
 
@@ -1716,8 +2219,14 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       </Section>
 
       {/* ------------------------------- basics ----------------------------- */}
-      <Section icon={PlusCircle} title="Basic details" flush>
+      <Section
+        icon={PlusCircle}
+        title="Basic details"
+        hint="The essentials, plus a few extras you can only set here."
+        flush
+      >
         {STEP_SCHEMAS.basics.fields.map(renderRow)}
+        {EDIT_BASIC_FIELDS.map(renderRow)}
       </Section>
 
       {/* ---------------------------- preferences --------------------------- */}
@@ -1755,8 +2264,8 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
             const display =
               field.kind === "multi"
                 ? readList(field.name)
-                    .map((value) => optionLabel(options, value))
-                    .join(", ")
+                  .map((value) => optionLabel(options, value))
+                  .join(", ")
                 : optionLabel(options, readString(field.name));
 
             return (
@@ -1791,6 +2300,134 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
         {/* Same order the onboarding career step uses: education, work, ambition. */}
         {(["education", "work", "ambition"] as const).flatMap((groupId) =>
           STEP_SCHEMAS.career.fields.filter((field) => field.group === groupId).map(renderRow)
+        )}
+      </Section>
+
+      {/* ------------------------------- family ---------------------------- */}
+      <Section
+        icon={Users}
+        title="Family"
+        hint="Saving this section isn't live yet — your picks here won't be stored."
+        flush
+      >
+        {!familyOptions ? (
+          familyOptionsError ? (
+            <div className="pec-pad space-y-1.5">
+              <p role="alert" className="text-[11px] font-medium text-destructive">
+                {familyOptionsError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void refetchFamilyOptions()}
+                className="text-[11px] font-semibold text-primary underline underline-offset-2"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <p className="pec-pad text-[11px] text-muted-foreground">
+              Loading family options…
+            </p>
+          )
+        ) : (
+          <>
+            {/* Partial failure: the lists that arrived stay usable, with the
+                first failure surfaced as a banner above them. */}
+            {familyOptionsError && (
+              <div className="pec-pad space-y-1.5">
+                <p role="alert" className="text-[11px] font-medium text-destructive">
+                  {familyOptionsError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void refetchFamilyOptions()}
+                  className="text-[11px] font-semibold text-primary underline underline-offset-2"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {FAMILY_FIELD_DEFS.map((field) =>
+              renderRow({ ...field, options: familyRowOptions(field.name) })
+            )}
+
+            {/* -------------------------- siblings -------------------------- */}
+            <div className="pec-pad space-y-3 border-t border-border">
+              <div>
+                <p className="pec-row-label">Siblings</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Add one row for each brother or sister.
+                </p>
+              </div>
+
+              {siblings.map((sibling, index) => (
+                <div
+                  key={index}
+                  className="space-y-2.5 rounded-xl border border-border bg-card p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold">Sibling {index + 1}</p>
+                    <button
+                      type="button"
+                      aria-label={`Remove sibling ${index + 1}`}
+                      onClick={() => writeSiblings(siblings.filter((_, i) => i !== index))}
+                      className="text-muted-foreground transition-colors hover:text-destructive"
+                    >
+                      <X className="size-4" aria-hidden="true" />
+                    </button>
+                  </div>
+
+                  <SelectField
+                    field={{
+                      name: `siblings.${index}.relation`,
+                      label: "Relation",
+                      kind: "select",
+                      options: familyOptionLists?.relation,
+                      placeholder: "Select relation",
+                    }}
+                    value={sibling.relation}
+                    onChange={(v) => updateSibling(index, "relation", v)}
+                  />
+                  <SelectField
+                    field={{
+                      name: `siblings.${index}.occupation`,
+                      label: "Occupation",
+                      kind: "select",
+                      options: familyOptionLists?.siblingOccupation,
+                      placeholder: "Select occupation",
+                    }}
+                    value={sibling.occupation}
+                    onChange={(v) => updateSibling(index, "occupation", v)}
+                  />
+                  <SelectField
+                    field={{
+                      name: `siblings.${index}.marital`,
+                      label: "Marital status",
+                      kind: "select",
+                      options: familyOptionLists?.siblingMarital,
+                      placeholder: "Select marital status",
+                    }}
+                    value={sibling.marital}
+                    onChange={(v) => updateSibling(index, "marital", v)}
+                  />
+                </div>
+              ))}
+
+              {siblings.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">No siblings added yet.</p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => writeSiblings([...siblings, { ...EMPTY_SIBLING }])}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-card px-4 py-3 text-xs font-semibold text-primary transition-colors hover:border-primary"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Add sibling
+              </button>
+            </div>
+          </>
         )}
       </Section>
 

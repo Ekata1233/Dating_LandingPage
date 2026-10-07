@@ -9,27 +9,31 @@ import { useRouter } from "next/navigation";
 import { deleteSession } from "@/lib/sessions";
 import { toast } from "sonner";
 import ResumeAccountMain from "../../desktop/ResumeAccountMain";
+import { useOnBoardingData } from "@/app/context/OnBoardingDataContext";
 
 export default function Page() {
     /* The screen draws its own back row, so the top bar's chevron is not the only
        way out of here. */
-    const { resumeAccount,resumeLoading,resumeError } = useAccountSettings();
+    const { resumeAccount, resumeLoading, resumeError } = useAccountSettings();
+    const { profileDetails } = useOnBoardingData()
+
     const onBack = useSectionBack();
     const router = useRouter();
     function handleResumeAccount() {
         resumeAccount().then(async (response) => {
             if (response?.success) {
-                toast.success(response.message 
-                    // || "Account resumed successfully."
-                    );
+                toast.success(response.message
+                    || "Account resumed successfully."
+                );
+                await profileDetails.refetch();
             }
-            else{
-                toast.error(response?.message 
-                    // || "Failed to resume account."
+            else {
+                toast.error(response?.message
+                    || "Failed to resume account."
                 );
             }
 
-            }
+        }
         );
     }
     return (

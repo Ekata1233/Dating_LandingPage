@@ -1,4 +1,5 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useRouter } from "next/router";
 import React, { useCallback } from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -80,7 +81,6 @@ const C = {
 };
 
 const FONT = "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
-
 const svgFill: React.CSSProperties = { width: "100%", height: "100%", display: "block" };
 
 /* ---------------------------------- icons ---------------------------------- */
@@ -148,38 +148,7 @@ const PlusIcon = () => (
 );
 
 /* -------------------------------- defaults --------------------------------- */
-const DEFAULT_CONTACTS: ContactOption[] = [
-    {
-        id: "chat",
-        icon: "chat",
-        title: "Live Chat",
-        description: "Chat with our support team",
-        status: { text: "Online · ~2 min", tone: "success" },
-    },
-    {
-        id: "email",
-        icon: "email",
-        title: "Email Us",
-        description: "support@welvors.com",
-        status: { text: "Replies in 24h", tone: "muted" },
-        href: "mailto:support@welvors.com",
-    },
-    {
-        id: "call",
-        icon: "call",
-        title: "Request a Call",
-        description: "We call you back",
-        status: { text: "Mon-Sat, 10am-7pm", tone: "muted" },
-    },
-    {
-        id: "whatsapp",
-        icon: "whatsapp",
-        title: "WhatsApp",
-        description: "+91 97653 03735",
-        status: { text: "Fastest reply", tone: "success" },
-        href: "https://wa.me/919765303735",
-    },
-];
+
 
 const DEFAULT_FAQS: FaqItem[] = [
     {
@@ -209,7 +178,6 @@ const DEFAULT_FAQS: FaqItem[] = [
 export default function HelpSupport({
     title = "Help & Support",
     showHeader = true,
-    contacts = DEFAULT_CONTACTS,
     faqTitle = "Popular questions",
     faqs = DEFAULT_FAQS,
     defaultOpenIds = ["datenow", "block"],
@@ -222,12 +190,45 @@ export default function HelpSupport({
 }: HelpSupportProps) {
     const [openIds, setOpenIds] = React.useState<string[]>(defaultOpenIds);
     const { setActiveSection } = useActiveSection();
-
+    const contacts: ContactOption[] = [
+        {
+            id: "chat",
+            icon: "chat",
+            title: "Live Chat",
+            description: "Chat with our support team",
+            status: { text: "Online · ~2 min", tone: "success" },
+        },
+        {
+            id: "email",
+            icon: "email",
+            title: "Email Us",
+            description: "support@welvors.com",
+            status: { text: "Replies in 24h", tone: "muted" },
+            href: "mailto:support@welvors.com",
+        },
+        {
+            id: "call",
+            icon: "call",
+            title: "Request a Call",
+            description: "We call you back",
+            status: { text: "Mon-Sat, 10am-7pm", tone: "muted" },
+            onClick(){ setActiveSection("callback") },
+        },
+        {
+            id: "whatsapp",
+            icon: "whatsapp",
+            title: "WhatsApp",
+            description: "+91 97653 03735",
+            status: { text: "Fastest reply", tone: "success" },
+            href: "https://wa.me/919765303735",
+        },
+    ];
     const handleCLick = useCallback(
         () => () => setActiveSection("profile"),
 
         [setActiveSection]
-    );    const toggle = (id: string) =>
+    ); 
+    const toggle = (id: string) =>
         setOpenIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : allowMultiple ? [...prev, id] : [id]
         );

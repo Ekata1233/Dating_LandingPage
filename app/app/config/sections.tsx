@@ -10,7 +10,7 @@
 /* -------------------------------------------------------------------------- */
 
 import type { ReactNode } from "react";
-import { CirclePlay, Heart, House, MessageSquare } from "lucide-react";
+import { Calendar, CirclePlay, Heart, House, MessageSquare } from "lucide-react";
 
 /* --------------------------------- routing -------------------------------- */
 
@@ -27,6 +27,8 @@ export type ActiveSection =
   | "pause-account"
   | "delete-account"
   | "resume-account"
+  | "events"
+  | "callback"
   | "logout";
 
 /** The section /app itself redirects to. */
@@ -46,6 +48,8 @@ export const SECTION_PATH: Record<ActiveSection, string> = {
   "pause-account": "/app/profile/pause-account",
   "delete-account": "/app/profile/delete-account",
   "resume-account": "/app/profile/resume-account",
+  "events": "/events",
+  "callback": "/app/profile/help/callbacks",
   logout: "/app/profile/logout",
 };
 
@@ -72,7 +76,7 @@ export const pathForSection = (section: ActiveSection): string =>
 /* ------------------------------- navigation -------------------------------- */
 
 /** The five bottom-nav slots. "you" always renders the profile avatar. */
-export type NavSlot = "you" | "home" | "date-now" | "admirer" | "chat";
+export type NavSlot = "you" | "home" | "date-now" | "admirer" | "chat" | "events";
 
 interface NavItemBase {
   section: ActiveSection;
@@ -115,6 +119,13 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Chats",
     icon: <MessageSquare size={18} />,
   },
+  {
+    kind: "icon",
+    section: "events",
+    label: "Events",
+    icon: <Calendar size={20} />,
+  },
+
 ];
 
 export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
@@ -129,6 +140,8 @@ export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
   "pause-account": "you",
   "delete-account": "you",
   "resume-account": "you",
+  "events": "events",
+  "callback": "you",
   logout: "you",
 };
 
@@ -157,6 +170,8 @@ export const SECTION_META: Record<ActiveSection, SectionMeta> = {
   "refer-earn": { title: "Refer & Earn", backTo: "profile" },
   help: { title: "Help & Support", backTo: "profile" },
   "pause-account": { title: "Pause Account", backTo: "profile" },
+  "events": { title: "Events", backTo: "profile" },
+  "callback": { title: "Callback", backTo: "help" },
   "delete-account": { title: "Delete Account", backTo: "profile" },
   "resume-account": { title: "Resume Account", backTo: "profile" },
   logout: { title: "Log out", backTo: "profile" },

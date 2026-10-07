@@ -47,6 +47,7 @@ const AppRail: React.FC<AppRailProps> = ({ section }) => {
     case "profile":
     case "edit-profile":
     case "refer-earn":
+    case "callback":
     case "pause-account":
     case "resume-account":
     case "delete-account":

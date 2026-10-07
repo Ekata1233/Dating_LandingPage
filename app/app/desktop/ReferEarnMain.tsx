@@ -1,7 +1,8 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
-import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { ReferralStats, useUserProfileData } from "@/app/context/UserProfileDataContext";
 import Link from "next/link";
 import React, { useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 /* -------------------------------------------------------------------------- */
 /*  ReferAndEarn                                                              */
@@ -54,7 +55,7 @@ export interface ReferAndEarnProps {
     currencySymbol?: string;
     withdrawNote?: string;
 
-    referrals?: Partial<Record<ReferralTab, ReferralItem[]>>;
+    referrals?: ReferralStats;
     rules?: string[];
 
     onBack?: () => void;
@@ -252,11 +253,12 @@ const DEFAULT_RULES = [
     "Self-referrals or fake accounts are not eligible and may lead to a ban.",
 ];
 
-const TABS: { key: ReferralTab; label: string }[] = [
+const TABS = [
     { key: "joined", label: "Joined" },
     { key: "rewarded", label: "Rewarded" },
     { key: "pending", label: "Pending" },
-];
+] as const;
+
 
 /* -------------------------------- component -------------------------------- */
 export default function ReferAndEarn({
@@ -266,7 +268,6 @@ export default function ReferAndEarn({
     steps = DEFAULT_STEPS,
     currencySymbol = "₹",
     withdrawNote = "Withdraw to UPI anytime",
-    referrals = {},
     rules = DEFAULT_RULES,
     onBack,
     showBack = true,
@@ -282,14 +283,18 @@ export default function ReferAndEarn({
     const [copied, setCopied] = React.useState(false);
     const [valid, setValid] = React.useState(false);
     const { setActiveSection } = useActiveSection();
-    const { referralDashboard, referralHistory,applyReferral,validateReferral,validateReferralError } = useUserProfileData()
+    const { referralDashboard, referralHistory, applyReferral, validateReferral, validateReferralError, applyReferralError } = useUserProfileData()
     const inviteCode = referralDashboard?.referralCode ?? "";
     const totalEarned = referralDashboard?.stats.totalEarned ?? 0;
-    const handleCLick = useCallback(
+    const stats = referralDashboard?.stats ?? {
+        totalEarned: 0,
+        joined: 0,
+        rewarded: 0,
+        pending: 0,
+    }; const handleCLick = useCallback(
         () => () => setActiveSection("profile"),
         [setActiveSection]
     );
-    const list = referrals[tab] ?? [];
     const canApply = friendCode.trim().length > 0;
 
     const handleCopy = async () => {
@@ -313,8 +318,14 @@ export default function ReferAndEarn({
     // }, [])
     const handleApply = async () => {
         if (!canApply) return;
-        // onApplyCode?.(friendCode.trim());
-        const response = await applyReferral({referralCode : friendCode.trim()});
+        const response = await applyReferral({ referralCode: friendCode.trim() });
+
+        if (response?.success) {
+            toast.success(response.message)
+        }
+        else {
+            toast.error(applyReferralError || "Referral already applied.")
+        }
         console.log("response", response);
         setFriendCode("");
     };
@@ -790,10 +801,20 @@ export default function ReferAndEarn({
                             <h2 style={{ margin: `${U(9)} 0 ${U(3.4)}`, fontSize: U(3.5), fontWeight: 700 }}>Your referrals</h2>
 
                             {/* tabs */}
-                            <div role="tablist" style={{ display: "flex", gap: U(2.2), alignItems: "stretch" }}>
+                            {/* tabs */}
+                            <div
+                                role="tablist"
+                                style={{
+                                    display: "flex",
+                                    gap: U(2.2),
+                                    alignItems: "stretch",
+                                }}
+                            >
                                 {TABS.map(({ key, label }) => {
                                     const active = tab === key;
-                                    const count = referrals[key]?.length ?? 0;
+
+                                    const count = stats[key] ?? 0;
+
                                     return (
                                         <button
                                             key={key}
@@ -813,7 +834,8 @@ export default function ReferAndEarn({
                                                 padding: `0 ${U(2.6)}`,
                                                 borderRadius: U(6),
                                                 background: active ? "#fff1f4" : C.white,
-                                                border: `${U(0.3)} solid ${active ? C.pink : "#ebebeb"}`,
+                                                border: `${U(0.3)} solid ${active ? C.pink : "#ebebeb"
+                                                    }`,
                                                 color: active ? C.pinkText : C.ink,
                                                 fontSize: U(3.4),
                                                 fontWeight: active ? 500 : 400,
@@ -821,6 +843,7 @@ export default function ReferAndEarn({
                                             }}
                                         >
                                             {label}
+
                                             <span
                                                 style={{
                                                     minWidth: U(4.4),
@@ -851,7 +874,7 @@ export default function ReferAndEarn({
                                     minHeight: U(25.6),
                                     display: "flex",
                                     flexDirection: "column",
-                                    justifyContent: list.length ? "flex-start" : "center",
+                                    justifyContent: referralDashboard?.history.length ? "flex-start" : "center",
                                     background: C.white,
                                     border: `${HAIR} solid ${C.border}`,
                                     borderRadius: U(5),
@@ -859,14 +882,14 @@ export default function ReferAndEarn({
                                     overflow: "hidden",
                                 }}
                             >
-                                {list.length === 0 ? (
+                                {referralDashboard?.history.length === 0 ? (
                                     <p style={{ margin: 0, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
                                         No referrals yet
                                     </p>
                                 ) : (
-                                    list.map((r, i) => (
+                                    referralDashboard?.history.map((r, i) => (
                                         <div
-                                            key={r.id}
+                                            key={i}
                                             style={{
                                                 display: "flex",
                                                 alignItems: "center",
@@ -890,23 +913,23 @@ export default function ReferAndEarn({
                                                     justifyContent: "center",
                                                 }}
                                             >
-                                                {r.name.slice(0, 1).toUpperCase()}
+                                                {/* {r?.name.slice(0, 1).toUpperCase()} */}
                                             </span>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                            {/* <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div className="wre-ellipsis" style={{ fontSize: U(3.4), fontWeight: 500 }}>
-                                                    {r.name}
+                                                    {r?.name}
                                                 </div>
                                                 {r.subtitle && (
                                                     <div className="wre-ellipsis" style={{ fontSize: U(2.7), color: C.grey }}>
                                                         {r.subtitle}
                                                     </div>
                                                 )}
-                                            </div>
-                                            {r.amount && (
+                                            </div> */}
+                                            {/* {r.amount && (
                                                 <span style={{ fontSize: U(3.4), fontWeight: 600, color: "#e08a10", whiteSpace: "nowrap" }}>
                                                     {r.amount}
                                                 </span>
-                                            )}
+                                            )} */}
                                         </div>
                                     ))
                                 )}

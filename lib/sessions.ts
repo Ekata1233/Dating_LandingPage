@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-import { getJwtSecretKey } from "@/lib/jwtSecret";
+import { isUsableSessionToken } from "@/lib/sessionToken";
 
 const cookie = {
   name: "welvors_token",
@@ -33,13 +33,10 @@ export async function createSession(welvors_token: string): Promise<void> {
 export async function verifySession(): Promise<{ result : boolean }> {
   const cookieStore = await cookies();
   const cookieValue = cookieStore.get(cookie.name)?.value;
-  if (!cookieValue) {
-    return {result : false};
-  }
 
-  return {
-    result : true
-  };
+  /* Same bar as the proxy: the cookie must exist AND be a usable (decodable,
+     unexpired) JWT — a forged/garbage cookie must not read as "logged in". */
+  return { result: isUsableSessionToken(cookieValue) };
 }
 
 export async function deleteSession(): Promise<void> {

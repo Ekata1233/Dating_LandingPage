@@ -50,6 +50,15 @@ interface AccountSettingsContextData {
     pauseError: string | null;
     resumeError: string | null;
     deleteError: string | null;
+
+    /**
+     * Session answer from the last successful pause/resume: `true` after a
+     * pause, `false` after a resume, `null` until one happens. It lets the
+     * Account & Support list flip its row the moment the API says success,
+     * without waiting for `profileDetails.refetch()` to come back — the
+     * server's `pausedAt` stays the fallback for first paint.
+     */
+    paused: boolean | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -68,6 +77,8 @@ const AccountSettingsContext = createContext<AccountSettingsContextData>({
     pauseError: null,
     resumeError: null,
     deleteError: null,
+
+    paused: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -87,6 +98,9 @@ export function AccountSettingsProvider({
     const [resumeError, setResumeError] = useState<string | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
+    /* See `paused` in the context type: written only by a successful action. */
+    const [paused, setPaused] = useState<boolean | null>(null);
+
     /* ---------------------------------------------------------------- */
     /* PAUSE ACCOUNT                                                    */
     /* ---------------------------------------------------------------- */
@@ -103,6 +117,10 @@ export function AccountSettingsProvider({
             });
 
             if (response.data?.success) {
+                /* Pause confirmed: the Account & Support list swaps to
+                   "Resume Account" right away. */
+                setPaused(true);
+
                 return response.data as AccountSettingsResponse;
             }
 
@@ -146,6 +164,9 @@ export function AccountSettingsProvider({
             });
 
             if (response.data?.success) {
+                /* Resume confirmed: the row swaps back to "Pause Account". */
+                setPaused(false);
+
                 return response.data as AccountSettingsResponse;
             }
 
@@ -234,6 +255,8 @@ export function AccountSettingsProvider({
                 pauseError,
                 resumeError,
                 deleteError,
+
+                paused,
             }}
         >
             {children}

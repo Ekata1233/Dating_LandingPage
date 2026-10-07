@@ -9,27 +9,31 @@ import { useRouter } from "next/navigation";
 import { deleteSession } from "@/lib/sessions";
 import { toast } from "sonner";
 import PauseAccountMain from "../../desktop/PauseAccountMain";
+import { useOnBoardingData } from "@/app/context/OnBoardingDataContext";
 
 export default function Page() {
     /* The screen draws its own back row, so the top bar's chevron is not the only
        way out of here. */
     const { pauseAccount, pauseLoading, pauseError } = useAccountSettings();
+    const { profileDetails } = useOnBoardingData()
     const onBack = useSectionBack();
     const router = useRouter();
     function handlePauseAccount(data: { reason: string }) {
         pauseAccount(data).then(async (response) => {
             if (response?.success) {
-                toast.success(response.message 
+                toast.success(response.message
                     || "Account paused successfully."
-                    );
+                );
+                await profileDetails.refetch();
+
             }
-            else{
-                toast.error(response?.message 
+            else {
+                toast.error(response?.message
                     || "Failed to pause account."
                 );
             }
 
-            }
+        }
         );
     }
     return (

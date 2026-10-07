@@ -8,6 +8,7 @@ import type {
   LifestyleRequest,
   PromptsRequest,
   LocationRequest,
+  EditBasicInfoRequest,
 } from "../context/OnBoardingApiContext";
 import type {
   LifestyleQuestion,
@@ -82,6 +83,29 @@ export function toBasicInfoRequest(data: StepData): BasicInfoRequest {
     height: num(data.height),
     gender: str(data.gender).trim(),
     gender_option: str(data.sexualOrientation).trim(),
+  };
+}
+/**
+ * The edit-only extras, PATCHed to `/api/user/edit-profile/basic-info`.
+ *
+ * Mother tongue is multi, so the stored list is mapped id-by-id — calling
+ * `Number()` on the array itself would collapse it to `NaN`. Blank or
+ * unparseable ids go as `null` rather than `0`/`NaN`, which is how the
+ * endpoint reads "cleared" (`text()` does the same for the enum strings).
+ * A caste only travels with the religion that gives it meaning.
+ */
+export function toEditBasicInfoRequest(data: StepData): EditBasicInfoRequest {
+  const tongues = (Array.isArray(data.motherTongue) ? data.motherTongue : [data.motherTongue])
+    .map((value) => Number.parseInt(str(value), 10))
+    .filter((value) => Number.isInteger(value) && value > 0);
+
+  return {
+    religionId: id(data.religion),
+    communityId: id(data.religion) ? id(data.caste) : null,
+    motherTongueId: tongues.length > 0 ? tongues : null,
+    zodiac: text(data.zodiac),
+    loveLanguage: text(data.loveLanguage),
+    communicationStyle: text(data.communicationStyle),
   };
 }
 export function toLocationRequest(data: StepData): LocationRequest {

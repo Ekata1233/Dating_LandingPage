@@ -27,67 +27,7 @@ import IconMRedHeart from "react-fluentui-emoji/icons/modern/IconMRedHeart";
 import FilterCard from "../components/ui/filterCard";
 
 const eventFilters = [
-  {
-    type: "ALL",
-    label: "All Events",
-    icon: IconMGlowingStar,
-  },
-  {
-    type: "SINGLES_MIXER",
-    label: "Singles Mixer",
-    icon: IconMPeopleHugging,
-  },
-  {
-    type: "SPEED_DATES",
-    label: "Speed Dates",
-    icon: IconMRevolvingHearts,
-  },
-  {
-    type: "SINGLES_NIGHT",
-    label: "Singles Night",
-    icon: IconMNightWithStars,
-  },
-  {
-    type: "DINNER_DATES",
-    label: "Dinner Dates",
-    icon: IconMForkAndKnifeWithPlate,
-  },
-  {
-    type: "ACTIVITY_MATCH",
-    label: "Activity Match",
-    icon: IconMOpenBook,
-  },
-  {
-    type: "PLAY_AND_MATCH",
-    label: "Play & Match",
-    icon: IconMVideoGame,
-  },
-  {
-    type: "TRAVEL_DATES",
-    label: "Travel Dates",
-    icon: IconMBasketball,
-  },
-  {
-    type: "TREK_DATES",
-    label: "Trek Dates",
-    icon: IconMMountain,
-  },
-  {
-    type: "THE_RESERVE",
-    label: "The Reserve",
-    icon: IconMGemStone,
-  },
-  {
-    type: "PROFESSIONALS_MEET",
-    label: "Professionals Meet",
-    icon: IconMBriefcase,
-  },
-  {
-    type: "OTHER_DATES",
-    label: "Other Dates",
-    icon: IconMRedHeart,
-  },
-];
+  { type: "ALL", label: "All Events", icon: IconMGlowingStar, img: "https://ik.imagekit.io/aezmcynwbe/welvors/all_events.jpeg?updatedAt=1790594692140" }, { type: "SINGLES_MIXER", label: "Singles Mixer", icon: IconMPeopleHugging, img: "https://ik.imagekit.io/aezmcynwbe/welvors/singles_mixer.jpeg" }, { type: "SPEED_DATES", label: "Speed Dates", icon: IconMRevolvingHearts, img: "https://ik.imagekit.io/aezmcynwbe/welvors/speed_dates.jpeg" }, { type: "SINGLES_NIGHT", label: "Singles Night", icon: IconMNightWithStars, img: "https://ik.imagekit.io/aezmcynwbe/welvors/singles_night.jpeg" }, { type: "DINNER_DATES", label: "Dinner Dates", icon: IconMForkAndKnifeWithPlate, img: "https://ik.imagekit.io/aezmcynwbe/welvors/dinner_date.jpeg" }, { type: "ACTIVITY_MATCH", label: "Activity Match", icon: IconMOpenBook, img: "https://ik.imagekit.io/aezmcynwbe/welvors/activity.jpeg" }, { type: "PLAY_AND_MATCH", label: "Play & Match", icon: IconMVideoGame, img: "https://ik.imagekit.io/aezmcynwbe/welvors/play.jpeg" }, { type: "TRAVEL_DATES", label: "Travel Dates", icon: IconMBasketball, img: "https://ik.imagekit.io/aezmcynwbe/welvors/travel.jpeg" }, { type: "TREK_DATES", label: "Trek Dates", icon: IconMMountain, img: "https://ik.imagekit.io/aezmcynwbe/welvors/trekking.jpeg" }, { type: "THE_RESERVE", label: "The Reserve", icon: IconMGemStone, img: "https://ik.imagekit.io/aezmcynwbe/welvors/reserve.jpeg" }, { type: "PROFESSIONALS_MEET", label: "Professionals Meet", icon: IconMBriefcase, img: "https://ik.imagekit.io/aezmcynwbe/welvors/newpro.jpeg" }, { type: "OTHER_DATES", label: "Other Dates", icon: IconMRedHeart, img: "https://ik.imagekit.io/aezmcynwbe/welvors/other.jpeg" },];
 
 const cities = [
   "Mumbai",
@@ -163,7 +103,7 @@ export default function EventsFeed() {
         </h1>
 
         {/* CITY DROPDOWN */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative w-fit sm:ml-auto" ref={dropdownRef}>
           <button
             onClick={() =>
               setIsCityDropdownOpen(!isCityDropdownOpen)
@@ -182,7 +122,7 @@ export default function EventsFeed() {
           </button>
 
           {isCityDropdownOpen && (
-            <div className="absolute right-0 z-50 mt-2 max-h-60 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+            <div className="absolute left-0 z-50 mt-2 max-h-60 w-48 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg sm:left-auto sm:right-0">
               {cities.map((city) => (
                 <button
                   key={city}
@@ -222,6 +162,7 @@ export default function EventsFeed() {
               key={filter.label}
               title={filter.label}
               isActive={activeFilter === filter.type}
+              imageSrc={filter.img}
               onClick={() => handleFilterClick(filter.type)}
             />
           );

@@ -10,6 +10,7 @@ import { authHeader } from "@/utils/token";
 /* ------------------------------------------------------------------ */
 
 const BASIC_INFO_URL = `${API_BASE_URL}/api/user/profile/basic-info`;
+const EDIT_BASIC_INFO_URL = `${API_BASE_URL}/api/user/edit-profile/basic-info`;
 const INTERESTED_IN_URL = `${API_BASE_URL}/api/user/profile/interested-in`;
 const INTENTIONS_URL = `${API_BASE_URL}/api/user/profile/looking-for`;
 const LIFESTYLE_URL = `${API_BASE_URL}/api/user/profile/answer`;
@@ -86,6 +87,18 @@ export interface BasicInfoRequest {
     gender: string;
     gender_option: string;
 }
+/* The profile editor's extras, PATCHed to `EDIT_BASIC_INFO_URL` — shown while
+   editing, never during onboarding. The three option-list fields go back as
+   the API's own ids (mother tongue as a list, since that field is multi); the
+   static three as their enum values. `null` means "cleared". */
+export interface EditBasicInfoRequest {
+    religionId: number | null;
+    communityId: number | null;
+    motherTongueId: number[] | null;
+    zodiac: string | null;
+    loveLanguage: string | null;
+    communicationStyle: string | null;
+}
 export interface LocationRequest {
     country: string;
     state: string;
@@ -159,6 +172,9 @@ interface ProfileContextData {
     updateBasicInfo: (
         data: BasicInfoRequest
     ) => Promise<ProfileResponse | null>;
+    editBasicInfo: (
+        data: EditBasicInfoRequest
+    ) => Promise<ProfileResponse | null>;
 
     updateInterestedIn: (
         data: InterestedInRequest
@@ -226,6 +242,7 @@ interface ProfileContextData {
 
 const ProfileContext = createContext<ProfileContextData>({
     updateBasicInfo: async () => null,
+    editBasicInfo: async () => null,
     updateInterestedIn: async () => null,
     updateIntentions: async () => null,
     updateLifestyle: async () => null,
@@ -310,11 +327,50 @@ export function ProfileProvider({
             const response = await axios.patch(BASIC_INFO_URL, data, {
                 headers: authHeader(),
             });
-
+            console.log("Sending Data : ",data)
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
+            console.log("Response : ",response)
+            setBasicInfoError(
+                response.data?.message ||
+                "Couldn't update basic information."
+            );
 
+            return null;
+        } catch (err) {
+            console.error("Update Basic Info Error:", err);
+
+            if (axios.isAxiosError(err)) {
+                setBasicInfoError(
+                    err.response?.data?.message ||
+                    "Something went wrong while updating basic information."
+                );
+            } else {
+                setBasicInfoError(
+                    "Something went wrong while updating basic information."
+                );
+            }
+
+            return null;
+        } finally {
+            setBasicInfoLoading(false);
+        }
+    };
+    const editBasicInfo = async (
+        data: EditBasicInfoRequest
+    ): Promise<ProfileResponse | null> => {
+        try {
+            setBasicInfoLoading(true);
+            setBasicInfoError(null);
+            const response = await axios.patch(EDIT_BASIC_INFO_URL, data, {
+                headers: authHeader(),
+            });
+            console.log("Sending Data : ",data)
+            if (response.data?.success) {
+                return response.data as ProfileResponse;
+            }
+            console.log("Response : ",response)
             setBasicInfoError(
                 response.data?.message ||
                 "Couldn't update basic information."
@@ -760,6 +816,7 @@ export function ProfileProvider({
         <ProfileContext.Provider
             value={{
                 updateBasicInfo,
+                editBasicInfo,
                 updateInterestedIn,
                 updateIntentions,
                 updateLifestyle,

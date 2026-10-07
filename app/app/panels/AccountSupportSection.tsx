@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { useActiveSection, type ActiveSection } from "@/app/context/ActiveSectionContext";
+import { useAccountSettings } from "@/app/context/AccountSettingsContext";
+import { useOnBoardingData } from "@/app/context/OnBoardingDataContext";
 
 /* -------------------------------------------------------------------------- */
 /*  Account & Support — the six rows under the profile card.                    */
@@ -26,7 +28,13 @@ import { useActiveSection, type ActiveSection } from "@/app/context/ActiveSectio
 /*  `pathForSection(item.section)` (see ActiveSectionContext), which is why     */
 /*  this component only needs the context and no data wiring at all. The       */
 /*  pause / resume / delete endpoints live behind the destination pages,       */
-/*  through AccountSettingsContext — they are not this list's concern.          */
+/*  through AccountSettingsContext — they are not this list's concern.         */
+/*                                                                            */
+/*  Exactly one of "Pause Account" / "Resume Account" renders: paused means    */
+/*  the server's `profileDetails.pausedAt` has a value. A pause/resume that    */
+/*  just succeeded in this session also counts immediately (the context's      */
+/*  `paused` flag), so the row flips the moment the API answers `success`      */
+/*  rather than when the follow-up refetch lands.                             */
 /*                                                                            */
 /*  Sizing: every rule below is in `cqw`, which resolves against the nearest   */
 /*  `container-type: inline-size` ancestor. In the rail that is ProfileSidebar's*/
@@ -141,6 +149,17 @@ const AccountSupportSection: React.FC<AccountSupportSectionProps> = ({
   className = "",
 }) => {
   const { activeSection, setActiveSection } = useActiveSection();
+  const { profileDetails } = useOnBoardingData();
+  const { paused } = useAccountSettings();
+
+  const pausedAt = profileDetails.details?.flows?.REVIEW_FINISH?.pausedAt;
+
+  /* Paused ⇔ `pausedAt` has a value: then "Pause Account" hides and "Resume
+     Account" shows; `pausedAt` null ⇔ the other way round. A pause/resume
+     performed this session overrides the stale server value for the gap
+     between the API answering and `profileDetails.refetch()` completing, so
+     the row swaps the instant the response is `success: true`. */
+  const isPaused = paused ?? Boolean(pausedAt);
 
   const block = (
     <section
@@ -151,55 +170,61 @@ const AccountSupportSection: React.FC<AccountSupportSectionProps> = ({
       </div>
 
       <div className="account-list">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="account-row"
-            onClick={() => setActiveSection(item.section)}
-          >
-            <div
-              className="account-icon"
-              style={{
-                backgroundColor: item.iconBg,
-              }}
+        {items
+          .filter((i) =>
+            isPaused
+              ? i.section !== "resume-account"
+              : i.section !== "pause-account"
+          )
+          .map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="account-row"
+              onClick={() => setActiveSection(item.section)}
             >
-              <item.icon size={20} color={item.color} />
-            </div>
-
-            <div className="account-text">
               <div
-                className="account-title"
-                style={
-                  activeSection == item.section && item.titleColor
-                    ? { color: item.titleColor }
-                    : { color: "black" }
-                }
+                className="account-icon"
+                style={{
+                  backgroundColor: item.iconBg,
+                }}
               >
-                {item.title}
+                <item.icon size={20} color={item.color} />
               </div>
 
-              <div className="account-subtitle">
-                {item.subtitle}
-              </div>
-            </div>
+              <div className="account-text">
+                <div
+                  className="account-title"
+                  style={
+                    activeSection === item.section && item.titleColor
+                      ? { color: item.titleColor }
+                      : { color: "black" }
+                  }
+                >
+                  {item.title}
+                </div>
 
-            <svg
-              className="account-chevron"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M9 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        ))}
+                <div className="account-subtitle">
+                  {item.subtitle}
+                </div>
+              </div>
+
+              <svg
+                className="account-chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          ))}
       </div>
     </section>
   );

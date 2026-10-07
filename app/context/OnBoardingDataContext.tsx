@@ -225,6 +225,8 @@ export interface OnboardingDetailsApi {
             onboardingStep: string;
             nextStep: string;
             onboardingCompleted: boolean;
+            pausedAt: string | null;
+            pauseReason: string | null;
         };
     };
 }
@@ -589,7 +591,6 @@ export function OnBoardingDataProvider({ children }: { children: React.ReactNode
     const [promptCategories, setPromptCategories] = useState<PromptCategory[]>([]);
     const [promptsLoading, setPromptsLoading] = useState(true);
     const [promptsError, setPromptsError] = useState<string | null>(null);
-
     const applyIntentions = useCallback((res: any) => {
         if (res?.success && res.data) {
             setIntention(toIntentionQuestion(res.data as IntentionQuestionApi[]));
@@ -1031,6 +1032,7 @@ export function useCareerOptionSources(): Record<CareerFieldName, CareerOptionSo
             experience: experiences,
             salaryRange: salaryRanges,
             ambition: ambitions,
+            
         }),
         [professions, employmentTypes, experiences, salaryRanges, ambitions]
     );
