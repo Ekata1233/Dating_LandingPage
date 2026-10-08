@@ -124,6 +124,10 @@ export interface DetailFamily {
     familyHome: string | null;
     nativePlace: string | null;
     familyIncome: string | null;
+    /** The `siblingtype` option id (or label) describing the sibling counts. */
+    siblingTypeId?: number | string | null;
+    /** Same answer under the backend's other key — read as either. */
+    siblingType?: number | string | null;
     siblings: unknown[];
 }
 

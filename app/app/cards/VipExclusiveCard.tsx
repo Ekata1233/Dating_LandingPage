@@ -1,7 +1,12 @@
 import React from "react";
 
-import { MOCK_PLANS } from "../shared/mockData";
 import type { PlanCardProps } from "./PremiumPlusCard";
+import {
+  featureLabel,
+  formatPlanName,
+  formatPrice,
+  pickTopFeatures,
+} from "@/lib/planUtils";
 
 const CheckIcon = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
@@ -37,15 +42,17 @@ const CrownIcon = () => (
   </svg>
 );
 
-const DEFAULT_PLAN = MOCK_PLANS.find((p) => p.id === "vip")!;
-
 export default function VipExclusiveCard({
-  plan = DEFAULT_PLAN,
+  plan,
   width = "250px",
   onSelect,
   busy = false,
   className = "",
 }: PlanCardProps) {
+  const features = pickTopFeatures(plan, 5);
+  const name = formatPlanName(plan.name);
+  const hasDiscount = plan.originalPrice > plan.price;
+
   return (
     <div
       className={className}
@@ -81,45 +88,48 @@ export default function VipExclusiveCard({
         </div>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span
-              style={{
-                color: "#1a1a1a",
-                fontSize: "14px",
-                fontWeight: 700,
-              }}
-                >
-                  {plan.name}
-                </span>
-                {plan.badge && (
-                <span
-                  style={{
-                    background: "#c1892f",
-                    color: "#ffffff",
-                    fontSize: "8px",
-                    fontWeight: 700,
-                    padding: "2px 6px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {plan.badge}
-                </span>
-                )}
-              </div>
-              <div style={{ marginTop: "2px" }}>
-                <span style={{ color: "#1a1a1a", fontSize: "14px", fontWeight: 700 }}>
-                  {plan.price}
-                </span>
-                <span style={{ color: "#9a9a9a", fontSize: "10px", marginLeft: "3px" }}>
-                  {plan.period}
-                </span>
-              </div>
+            <span style={{ color: "#1a1a1a", fontSize: "14px", fontWeight: 700 }}>
+              {name}
+            </span>
+            {plan.badgeLabel && (
+              <span
+                style={{
+                  background: "#c1892f",
+                  color: "#ffffff",
+                  fontSize: "8px",
+                  fontWeight: 700,
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                }}
+              >
+                {plan.badgeLabel}
+              </span>
+            )}
+          </div>
+          <div style={{ marginTop: "2px" }}>
+            <span style={{ color: "#1a1a1a", fontSize: "14px", fontWeight: 700 }}>
+              {formatPrice(plan.price)}
+            </span>
+            {hasDiscount && (
+              <span
+                style={{
+                  color: "#9a9a9a",
+                  fontSize: "10px",
+                  marginLeft: "4px",
+                  textDecoration: "line-through",
+                }}
+              >
+                {formatPrice(plan.originalPrice)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Features */}
       <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-        {plan.features.map((feature) => (
-          <div key={feature} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {features.map((feature) => (
+          <div key={feature.title} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <div
               style={{
                 width: "18px",
@@ -135,7 +145,7 @@ export default function VipExclusiveCard({
               <CheckIcon />
             </div>
             <span style={{ color: "#1a1a1a", fontSize: "11px", fontWeight: 400, lineHeight: 1.3 }}>
-              {feature}
+              {featureLabel(feature)}
             </span>
           </div>
         ))}
@@ -144,7 +154,7 @@ export default function VipExclusiveCard({
       {/* CTA */}
       <button
         type="button"
-        onClick={() => onSelect?.(plan.id)}
+        onClick={() => onSelect?.(plan.slug)}
         disabled={busy}
         style={{
           width: "100%",
@@ -160,7 +170,7 @@ export default function VipExclusiveCard({
           opacity: busy ? 0.6 : 1,
         }}
       >
-        {plan.cta} →
+        Get {name} →
       </button>
     </div>
   );

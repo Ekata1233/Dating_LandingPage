@@ -171,11 +171,6 @@ const AccountSupportSection: React.FC<AccountSupportSectionProps> = ({
 
       <div className="account-list">
         {items
-          .filter((i) =>
-            isPaused
-              ? i.section !== "resume-account"
-              : i.section !== "pause-account"
-          )
           .map((item) => (
             <button
               key={item.id}

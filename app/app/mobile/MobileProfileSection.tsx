@@ -9,7 +9,6 @@ import { Loader, Notice } from "../shared/Loader";
 import {
   MOCK_BALANCES,
   MOCK_DATE_PLANS_SUMMARY,
-  MOCK_PLANS,
 } from "../shared/mockData";
 import { BRAND } from "../shared/theme";
 import type { Profile } from "../shared/types";
@@ -116,7 +115,6 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
           layout="stack"
           balances={MOCK_BALANCES}
           datePlan={MOCK_DATE_PLANS_SUMMARY}
-          plans={MOCK_PLANS}
         />
       </div>
 

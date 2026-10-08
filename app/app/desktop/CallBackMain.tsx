@@ -1,3 +1,4 @@
+import { Callback, CallbackStatus } from "@/app/context/AccountSettingsContext";
 import React from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -31,10 +32,17 @@ import React from "react";
 /*  Zero dependencies: no Tailwind-required classNames beyond layout utility */
 /*  classes already used by DeleteAccountMain, no icon library, no CSS files. */
 /* -------------------------------------------------------------------------- */
+export function formatDate(input: string | Date) {
+    const d = new Date(input);
+    if (isNaN(d.getTime())) return "";
 
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`;
+}
 /* ---------------------------------- types ---------------------------------- */
-export type CallbackStatus = "requested" | "scheduled" | "completed" | "missed" | "cancelled";
-
 export interface CallbackHistoryItem {
     id: string;
     topic: string;
@@ -57,11 +65,10 @@ export interface TopicOption {
 }
 
 export interface CallbackBooking {
-    day: "today" | "tomorrow" | "custom";
-    dayLabel: string;
-    timeWindow: TimeWindowOption;
-    topic?: TopicOption;
-    reference: string;
+    day: string;
+    dayLabel: string
+    timeWindow: string;
+    topic: string;
 }
 
 export interface CallbacksProps {
@@ -77,7 +84,7 @@ export interface CallbacksProps {
     timeWindows?: TimeWindowOption[];
     topics?: TopicOption[];
 
-    history?: CallbackHistoryItem[];
+    history: Callback[];
 
     onBack?: () => void;
     showBack?: boolean;
@@ -161,11 +168,11 @@ const DEFAULT_TOPICS: TopicOption[] = [
 ];
 
 const STATUS_STYLE: Record<CallbackStatus, { label: string; fg: string; bg: string }> = {
-    requested: { label: "REQUESTED", fg: C.blue, bg: C.blueSoft },
-    scheduled: { label: "SCHEDULED", fg: C.amber, bg: C.amberSoft },
-    completed: { label: "COMPLETED", fg: C.green, bg: C.greenSoft },
-    missed: { label: "MISSED", fg: C.pinkText, bg: C.pinkSoft },
-    cancelled: { label: "CANCELLED", fg: C.grey, bg: "#f1eeea" },
+    REQUESTED: { label: "REQUESTED", fg: C.blue, bg: C.blueSoft },
+    SCHEDULED: { label: "SCHEDULED", fg: C.amber, bg: C.amberSoft },
+    RESOLVED: { label: "COMPLETED", fg: C.green, bg: C.greenSoft },
+    MISSED: { label: "MISSED", fg: C.pinkText, bg: C.pinkSoft },
+    CANCELLED: { label: "CANCELLED", fg: C.grey, bg: "#f1eeea" },
 };
 
 function makeReference() {
@@ -186,7 +193,7 @@ export default function CallbackMain({
     userPhone = "+91 98765 43210",
     timeWindows = DEFAULT_TIME_WINDOWS,
     topics = DEFAULT_TOPICS,
-    history = [],
+    history,
     onBack,
     showBack = true,
     onConfirm,
@@ -201,23 +208,18 @@ export default function CallbackMain({
     const [day, setDay] = React.useState<"today" | "tomorrow" | "custom" | null>(null);
     const [customDate, setCustomDate] = React.useState<Date | null>(null);
     const [timeWindowId, setTimeWindowId] = React.useState<string | null>(null);
-    const [topicId, setTopicId] = React.useState<string | null>(null);
+    const [topicId, setTopicId] = React.useState<string>("");
 
 
     const dateInputRef = React.useRef<HTMLInputElement>(null);
 
     const selectedTimeWindow = timeWindows.find((t) => t.id === timeWindowId) ?? null;
-    const selectedTopic = topics.find((t) => t.id === topicId) ?? null;
-    const canConfirm = day !== null && (day !== "custom" || customDate !== null) && selectedTimeWindow !== null;
+    const selectedTopic = topics.find((t) => t.id === topicId);
+    const canConfirm = day !== null && (day !== "custom" || customDate !== null) && selectedTimeWindow !== null && selectedTopic;
 
-    const dayLabel =
-        day === "today"
-            ? "Today"
-            : day === "tomorrow"
-              ? "Tomorrow"
-              : day === "custom" && customDate
-                ? formatPickedDate(customDate)
-                : "Pick a date";
+    const dayLabel = day === "custom" && customDate
+        ? formatDate(customDate)
+        : "Pick a date";
 
     const handlePickDate = () => dateInputRef.current?.showPicker?.() ?? dateInputRef.current?.click();
 
@@ -232,9 +234,8 @@ export default function CallbackMain({
         const booking: CallbackBooking = {
             day: day as "today" | "tomorrow" | "custom",
             dayLabel,
-            timeWindow: selectedTimeWindow,
-            topic: selectedTopic ?? undefined,
-            reference: makeReference(),
+            timeWindow: selectedTimeWindow.label,
+            topic: selectedTopic?.label || "",
         };
         onConfirm?.(booking);
     };
@@ -473,7 +474,7 @@ export default function CallbackMain({
                                     </p>
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: U(2.6) }}>
                                         {topics.map((t) => (
-                                            <Pill key={t.id} selected={topicId === t.id} onClick={() => setTopicId((cur) => (cur === t.id ? null : t.id))}>
+                                            <Pill key={t.id} selected={topicId === t.id} onClick={() => setTopicId((cur) => (cur === t.id ? "" : t.id))}>
                                                 {t.label}
                                             </Pill>
                                         ))}
@@ -547,7 +548,7 @@ function Pill({
     );
 }
 
-function HistoryList({ history }: { history: CallbackHistoryItem[] }) {
+function HistoryList({ history }: { history: Callback[] }) {
     return (
         <>
             <h2 style={{ margin: `${U(6.4)} 0 0`, fontSize: U(5.4), fontWeight: 700, lineHeight: 1.2 }}>
@@ -589,27 +590,24 @@ function HistoryList({ history }: { history: CallbackHistoryItem[] }) {
                                             letterSpacing: "0.05em",
                                         }}
                                     >
-                                        {s.label}
+                                        {item.status}
                                     </span>
                                 </div>
                                 <p style={{ margin: `${U(1.2)} 0 0`, fontSize: U(2.9), color: C.grey }}>
-                                    {item.date} · {item.timeWindow}
+                                    {formatDate(item.callbackDate)} · {item.timeWindow}
                                 </p>
-                                {item.note && (
-                                    <p
-                                        style={{
-                                            margin: `${U(3)} 0 0`,
-                                            paddingTop: U(3),
-                                            borderTop: `${HAIR} dashed ${C.border}`,
-                                            fontSize: U(3.1),
-                                            lineHeight: 1.5,
-                                        }}
-                                    >
-                                        {item.note}
-                                    </p>
-                                )}
+                                <p
+                                    style={{
+                                        margin: `${U(3)} 0 0`,
+                                        paddingTop: U(3),
+                                        borderTop: `${HAIR} dashed ${C.border}`,
+                                        fontSize: U(3.1),
+                                        lineHeight: 1.5,
+                                    }}
+                                >
+                                    {item.resolutionNote == null ? "We will call you soon" : item.resolutionNote}                                    </p>
                                 <p style={{ margin: `${U(2.4)} 0 0`, fontSize: U(2.7), color: C.greyLight }}>
-                                    {item.reference}
+                                    {item.callbackNumber}
                                 </p>
                             </div>
                         );

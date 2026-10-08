@@ -38,12 +38,8 @@ const NATIVE_PLACE_URL = `${API_BASE_URL}/api/admin/family/options?type=nativePl
 const FAMILY_INCOME_URL = `${API_BASE_URL}/api/admin/family/options?type=familyIncome`;
 const FAMILY_SAVE_URL = `${API_BASE_URL}/api/user/profile/family`;
 
+const MY_BALANCES_URL = `${API_BASE_URL}/api/user/my-balances`;
 
-/**
- * The twelve family option lists, keyed for consumers. `relation` reads the
- * `siblingtype` list — it is the relation select the sibling rows use, which
- * is why its key does not echo the query parameter.
- */
 const FAMILY_OPTION_URLS: Record<FamilyOptionKey, string> = {
     familyStatus: FAMILY_STATUS_URL,
     familyType: FAMILY_TYPE_URL,
@@ -65,7 +61,30 @@ const FAMILY_OPTION_KEYS = Object.keys(FAMILY_OPTION_URLS) as FamilyOptionKey[];
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+export interface BalanceItem {
+    balance: number;
+    hasBalance: boolean;
+}
 
+export interface WalletBalance {
+    balance: number;
+    currency: string; // e.g. "INR"
+    formattedBalance: string; // e.g. "₹0"
+}
+
+export interface UserBalances {
+    roses: BalanceItem;
+    compliments: BalanceItem;
+    boosts: BalanceItem;
+    wallet: WalletBalance;
+    datePlans: BalanceItem;
+}
+
+export interface UserBalancesResponse {
+    success: boolean;
+    message?: string;
+    data?: UserBalances;
+}
 export interface ReferralStats {
     totalEarned: number;
     joined: number;
@@ -147,22 +166,25 @@ export interface ReferralActionResponse {
     data?: unknown;
 }
 export interface Sibling {
-  relationId: number;
-  occupationId: number;
-  maritalId: number;
+    /** The `siblingtype` option naming this row's side of the family. */
+    relationId?: number;
+    occupationId?: number;
+    maritalId?: number;
 }
 
 export interface FamilyProfilePayload {
-  familyStatusId: number;
-  familyTypeId: number;
-  fatherOccupationId: number;
-  fatherOrganisationId: number;
-  motherOccupationId: number;
-  motherOrganisationId: number;
-  familyHomeId: number;
-  nativePlaceId: number;
-  familyIncomeId: number;
-  siblings: Sibling[];
+    familyStatusId?: number;
+    familyTypeId?: number;
+    fatherOccupationId?: number;
+    fatherOrganisationId?: number;
+    motherOccupationId?: number;
+    motherOrganisationId?: number;
+    familyHomeId?: number;
+    nativePlaceId?: number;
+    familyIncomeId?: number;
+    /** The `siblingtype` option for the sister/brother counts the user picked. */
+    siblingTypeId?: number;
+    siblings: Sibling[];
 }
 /* ---------------------------- Religion ---------------------------- */
 
@@ -230,6 +252,12 @@ function activeByPriority<T extends { active: boolean; priority: number; name: s
 /* ------------------------------------------------------------------ */
 
 interface UserProfileDataContextData {
+    /* My Balances */
+    balances: UserBalances | null;
+    balancesLoading: boolean;
+    balancesError: string | null;
+    refetchBalances: () => Promise<void>;
+
     /* Referral Dashboard */
     referralDashboard: ReferralDashboardData | null;
     referralDashboardLoading: boolean;
@@ -277,10 +305,12 @@ interface UserProfileDataContextData {
     ensureFamilyOptions: () => void;
     refetchFamilyOptions: () => Promise<void>;
 
-    /* Family save — the endpoint exists; no UI calls it yet. */
+    /* Family save — PATCH /api/user/profile/family, called by the edit page. */
     saveFamily: (
         data: FamilyProfilePayload
     ) => Promise<ReferralActionResponse | null>;
+    saveFamilyLoading: boolean;
+    saveFamilyError: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -289,6 +319,11 @@ interface UserProfileDataContextData {
 
 const UserProfileDataContext =
     createContext<UserProfileDataContextData>({
+        balances: null,
+        balancesLoading: true,
+        balancesError: null,
+        refetchBalances: async () => { },
+
         referralDashboard: null,
         referralDashboardLoading: true,
         referralDashboardError: null,
@@ -303,6 +338,7 @@ const UserProfileDataContext =
         religionsLoading: true,
         religionsError: null,
         refetchReligions: async () => { },
+
 
         languages: [],
         languagesLoading: true,
@@ -324,6 +360,8 @@ const UserProfileDataContext =
         refetchFamilyOptions: async () => { },
 
         saveFamily: async () => null,
+        saveFamilyLoading: false,
+        saveFamilyError: null,
     });
 
 /* ------------------------------------------------------------------ */
@@ -335,6 +373,17 @@ export function UserProfileDataProvider({
 }: {
     children: React.ReactNode;
 }) {
+    /* ---------------------------------------------------------------- */
+    /* My Balances State                                               */
+    /* ---------------------------------------------------------------- */
+
+    const [balances, setBalances] = useState<UserBalances | null>(null);
+
+    const [balancesLoading, setBalancesLoading] = useState(true);
+
+    const [balancesError, setBalancesError] =
+        useState<string | null>(null);
+
     /* ---------------------------------------------------------------- */
     /* Referral Dashboard State                                        */
     /* ---------------------------------------------------------------- */
@@ -420,6 +469,16 @@ export function UserProfileDataProvider({
     const familyRequestedRef = useRef(false);
 
     /* ---------------------------------------------------------------- */
+    /* FAMILY SAVE                                                      */
+    /* ---------------------------------------------------------------- */
+
+    /* Kept apart from the referral state the other account APIs share: the
+       profile edit page runs this one, and a failed family save must not put
+       a family message under the referral form on another page. */
+    const [saveFamilyLoading, setSaveFamilyLoading] = useState(false);
+    const [saveFamilyError, setSaveFamilyError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
     /* Generic Auth GET                                                 */
     /* ---------------------------------------------------------------- */
 
@@ -435,6 +494,38 @@ export function UserProfileDataProvider({
             return null;
         }
     }, []);
+
+    /* ---------------------------------------------------------------- */
+    /* MY BALANCES                                                      */
+    /* ---------------------------------------------------------------- */
+
+    const applyBalances = useCallback(
+        (response: UserBalancesResponse | null) => {
+            if (response?.success && response.data) {
+                setBalances(response.data);
+                setBalancesError(null);
+            } else {
+                setBalances(null);
+
+                setBalancesError(
+                    response?.message ||
+                    "Couldn't load your balances."
+                );
+            }
+
+            setBalancesLoading(false);
+        },
+        []
+    );
+
+    const refetchBalances = useCallback(async () => {
+        setBalancesLoading(true);
+        setBalancesError(null);
+
+        const response = await authGet(MY_BALANCES_URL);
+
+        applyBalances(response);
+    }, [authGet, applyBalances]);
 
     /* ---------------------------------------------------------------- */
     /* REFERRAL DASHBOARD                                               */
@@ -653,12 +744,13 @@ export function UserProfileDataProvider({
             );
             if (response.data?.success) {
                 /*
-                 * Refresh dashboard/history after successfully
+                 * Refresh dashboard/history/balances after successfully
                  * applying a referral.
                  */
                 await Promise.all([
                     refetchReferralDashboard(),
                     refetchReferralHistory(),
+                    refetchBalances(),
                 ]);
 
                 return response.data as ReferralActionResponse;
@@ -690,16 +782,17 @@ export function UserProfileDataProvider({
         }
     };
     /**
-     * PATCH the family save endpoint. Defined here alongside the other
-     * account APIs, but deliberately not called by any UI yet — the Family
-     * section collects without saving.
+     * PATCH the family save endpoint: the nine family selects, the two sibling
+     * counts as one `siblingTypeId`, and one row per sibling. Unsuccessful
+     * answers come back as a `success: false` response (never `null`) so the
+     * caller can show the backend's own message.
      */
     const SaveFamily = useCallback(async (
         data: FamilyProfilePayload
     ): Promise<ReferralActionResponse | null> => {
         try {
-            setApplyReferralLoading(true);
-            setApplyReferralError(null);
+            setSaveFamilyLoading(true);
+            setSaveFamilyError(null);
 
             const response = await axios.patch(
                 FAMILY_SAVE_URL,
@@ -712,29 +805,24 @@ export function UserProfileDataProvider({
                 return response.data as ReferralActionResponse;
             }
 
-            setApplyReferralError(
+            const message =
                 response.data?.message ||
-                "Couldn't save your family details."
-            );
+                "Couldn't save your family details.";
+            setSaveFamilyError(message);
 
-            return null;
+            return { success: false, message };
         } catch (err) {
             // console.error("Save Family Error:", err);
 
-            if (axios.isAxiosError(err)) {
-                setApplyReferralError(
-                    err.response?.data?.message ||
-                    "Something went wrong while saving your family details."
-                );
-            } else {
-                setApplyReferralError(
-                    "Something went wrong while saving your family details."
-                );
-            }
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message ||
+                "Something went wrong while saving your family details."
+                : "Something went wrong while saving your family details.";
+            setSaveFamilyError(message);
 
-            return null;
+            return { success: false, message };
         } finally {
-            setApplyReferralLoading(false);
+            setSaveFamilyLoading(false);
         }
     }, []);
 
@@ -802,11 +890,13 @@ export function UserProfileDataProvider({
                     historyResponse,
                     religionResponse,
                     languagesResponse,
+                    balancesResponse,
                 ] = await Promise.all([
                     authGet(REFERRAL_DASHBOARD_URL),
                     authGet(REFERRAL_HISTORY_URL),
                     authGet(RELIGION_URL),
                     authGet(LANGUAGES_URL),
+                    authGet(MY_BALANCES_URL),
                 ]);
 
                 if (!alive) return;
@@ -815,6 +905,7 @@ export function UserProfileDataProvider({
                 applyReferralHistory(historyResponse);
                 applyReligions(religionResponse);
                 applyLanguages(languagesResponse);
+                applyBalances(balancesResponse);
             })();
 
             return () => {
@@ -827,6 +918,7 @@ export function UserProfileDataProvider({
         applyReferralHistory,
         applyReligions,
         applyLanguages,
+        applyBalances,
     ]);
 
     /* ---------------------------------------------------------------- */
@@ -835,6 +927,12 @@ export function UserProfileDataProvider({
 
     const value = useMemo<UserProfileDataContextData>(
         () => ({
+            /* Balances */
+            balances,
+            balancesLoading,
+            balancesError,
+            refetchBalances,
+
             /* Dashboard */
             referralDashboard,
             referralDashboardLoading,
@@ -877,8 +975,16 @@ export function UserProfileDataProvider({
             refetchFamilyOptions,
 
             saveFamily: SaveFamily,
+            saveFamilyLoading,
+            saveFamilyError,
         }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [
+            balances,
+            balancesLoading,
+            balancesError,
+            refetchBalances,
+
             referralDashboard,
             referralDashboardLoading,
             referralDashboardError,
@@ -912,6 +1018,8 @@ export function UserProfileDataProvider({
             refetchFamilyOptions,
 
             SaveFamily,
+            saveFamilyLoading,
+            saveFamilyError,
         ]
     );
 

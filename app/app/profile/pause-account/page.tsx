@@ -28,7 +28,7 @@ export default function Page() {
 
             }
             else {
-                toast.error(response?.message
+                toast.error(pauseError
                     || "Failed to pause account."
                 );
             }

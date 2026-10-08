@@ -1,3 +1,4 @@
+import { Faq } from "@/app/context/AccountSettingsContext";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { useRouter } from "next/router";
 import React, { useCallback } from "react";
@@ -45,7 +46,7 @@ export interface HelpSupportProps {
     showHeader?: boolean;
     contacts?: ContactOption[];
     faqTitle?: string;
-    faqs?: FaqItem[];
+    faqs: Faq[];
     /** Ids of FAQ items that start expanded */
     defaultOpenIds?: string[];
     /** When false, opening one FAQ closes the others (default true) */
@@ -150,36 +151,14 @@ const PlusIcon = () => (
 /* -------------------------------- defaults --------------------------------- */
 
 
-const DEFAULT_FAQS: FaqItem[] = [
-    {
-        id: "verify",
-        question: "How do I verify my profile?",
-        answer: "Open your profile, tap Verification and follow the steps to confirm your identity.",
-    },
-    {
-        id: "wallet",
-        question: "How does the Welvors Wallet work?",
-        answer:
-            "Your rewards and credits are stored in the Welvors Wallet. You can withdraw the balance to UPI or bank anytime.",
-    },
-    {
-        id: "datenow",
-        question: "How do Date Now plans work?",
-        answer: "You can create a Date Now plan or request to join another available plan.",
-    },
-    {
-        id: "block",
-        question: "How do I block or report someone?",
-        answer: "Open the user's profile or conversation and select the block or report option.",
-    },
-];
+
 
 /* -------------------------------- component -------------------------------- */
 export default function HelpSupport({
     title = "Help & Support",
     showHeader = true,
     faqTitle = "Popular questions",
-    faqs = DEFAULT_FAQS,
+    faqs,
     defaultOpenIds = ["datenow", "block"],
     allowMultiple = true,
     onBack,

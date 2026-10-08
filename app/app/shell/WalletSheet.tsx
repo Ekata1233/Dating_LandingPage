@@ -31,7 +31,7 @@ const WalletSheet: React.FC<WalletSheetProps> = ({
       title="Wallet & Plans"
       className={className}
     >
-      <HomeSidebar layout="stack" />
+      <HomeSidebar  />
     </MobileSheet>
   );
 };

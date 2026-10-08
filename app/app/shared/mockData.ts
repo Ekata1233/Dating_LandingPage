@@ -173,7 +173,7 @@ export const MOCK_BALANCES: BalanceItem[] = [
   { label: "Roses", value: "96", bg: "#fdeecb", emoji: "⭐" },
   { label: "Compliments", value: "0", bg: "#fbe1e6", emoji: "💌" },
   { label: "My Boosts", value: "0", bg: "#dcebfa", emoji: "🚀" },
-  // { label: "My Wallet", value: "₹1,150", bg: "#fbdce8", emoji: "👛" },
+  { label: "My Wallet", value: "₹1,150", bg: "#fbdce8", emoji: "👛" },
 ];
 
 export const MOCK_DATE_PLANS_SUMMARY: DatePlansSummary = {

@@ -91,6 +91,8 @@ import {
   useUserProfileData,
   type FamilyOptionKey,
   type FamilyOptions,
+  type FamilyProfilePayload,
+  type Sibling,
 } from "@/app/context/UserProfileDataContext";
 import { useUserDetails } from "@/app/context/UsersContext";
 import {
@@ -514,6 +516,19 @@ function optionDescription(options: unknown, value: string): string {
 }
 
 /**
+ * A saved option arrives as an id, a label, or the object either one lives in —
+ * so `{ id: 31, value: "2 Sisters" }` reads as "31" and never "[object Object]".
+ */
+function unwrapOption(saved: unknown): unknown {
+  if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+    const record = saved as Record<string, unknown>;
+    return record.id ?? record.value ?? record.name ?? record.label ?? "";
+  }
+
+  return saved;
+}
+
+/**
  * The option id a saved value points at, matched on value *or* on label —
  * the feed details hand back whichever the backend stored (an id, a wire
  * enum, or the display name), and this is the one place the saved shape and
@@ -521,7 +536,7 @@ function optionDescription(options: unknown, value: string): string {
  * which reads as "not set" rather than inventing an answer.
  */
 function resolveOptionId(options: readonly FieldOption[], saved: unknown): string {
-  const raw = text(saved).trim();
+  const raw = text(unwrapOption(saved)).trim();
   if (!raw) return "";
 
   const wanted = raw.toLowerCase();
@@ -533,78 +548,503 @@ function resolveOptionId(options: readonly FieldOption[], saved: unknown): strin
   return hit ? hit.value : "";
 }
 
+/**
+ * The value a select holds for a stored answer: its option id when the list can
+ * name it, the stored text itself when it cannot. A saved answer the list has
+ * dropped still reads on the field instead of as "not set", and a save still
+ * sends an id only when one is actually known.
+ */
+function optionValueFor(options: readonly FieldOption[], saved: unknown): string {
+  return resolveOptionId(options, saved) || text(unwrapOption(saved)).trim();
+}
+
 /** Mother tongue is multi: a list, or one string that may name several. */
 function resolveOptionIds(options: readonly FieldOption[], saved: unknown): string[] {
   const entries = Array.isArray(saved) ? saved : [saved];
 
   return entries
-    .flatMap((entry) => text(entry).split(","))
+    .flatMap((entry) => text(unwrapOption(entry)).split(","))
     .map((entry) => resolveOptionId(options, entry))
     .filter((entry) => entry !== "");
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Siblings (the Family section's repeater)                                   */
+/*  Siblings (the Family section's two counts, one row per sibling)             */
 /* -------------------------------------------------------------------------- */
 
-/** One sibling row: three option ids, any of which may be "" (not set). */
+/** Which half of the sibling list a row sits under — the row's relation. */
+type SiblingGroup = "sister" | "brother";
+
+interface SiblingCounts {
+  sisters: number;
+  brothers: number;
+}
+
+/** One sibling row: the two answers a row collects. `group` *is* the relation. */
 interface SiblingRow {
-  relation: string;
+  group: SiblingGroup;
   occupation: string;
   marital: string;
 }
 
-const EMPTY_SIBLING: SiblingRow = { relation: "", occupation: "", marital: "" };
+/**
+ * A row as the feed handed it over — before anything knows which half of the
+ * family it belongs to. `group` is null when the stored relation is missing,
+ * composite ("More than 2 Siblings"), or an id this list cannot name.
+ */
+interface StoredSiblingRow {
+  group: SiblingGroup | null;
+  occupation: string;
+  marital: string;
+}
+
+const emptySibling = (group: SiblingGroup): SiblingRow => ({
+  group,
+  occupation: "",
+  marital: "",
+});
 
 /**
- * The stored siblings as form rows. The feed endpoint types the list as
- * `unknown[]` — it may hand back ids, display names, or the object shape the
- * save payload takes — so every field is matched value-or-label against its
- * list and anything unrecognised reads as "not set" rather than a stray id.
- * Rows with nothing resolvable at all are dropped.
+ * What the two count selects offer. `4` stands for "More than 3" — the list has
+ * no larger exact value, and a saved count past it gets its own entry appended
+ * (see `countOptionsFor`) so a big family is never collapsed on the way back in.
  */
-function hydrateSiblings(
+const SIBLING_COUNT_OPTIONS: readonly FieldOption[] = [
+  { value: "0", label: "None" },
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "More than 3" },
+];
+
+const SIBLING_COUNT_MAX = 4;
+
+/**
+ * The list a sibling row's select shows — with that row's own saved answer
+ * appended when the fetched list no longer holds it. Without this a stored id
+ * the list has dropped would leave the trigger blank, which reads as "the
+ * profile has nothing here" even though it does.
+ */
+function selectOptionsWith(
+  options: readonly FieldOption[] | undefined,
+  value: string
+): readonly FieldOption[] {
+  const list = options ?? [];
+  if (value === "" || list.some((option) => option.value === value)) return list;
+
+  return [...list, { value, label: value }];
+}
+
+/** The list a select shows — with an exact entry when the saved count exceeds it. */
+const countOptionsFor = (count: number): readonly FieldOption[] =>
+  count > SIBLING_COUNT_MAX
+    ? [...SIBLING_COUNT_OPTIONS, { value: String(count), label: String(count) }]
+    : SIBLING_COUNT_OPTIONS;
+
+/** "" means "not answered"; any other number is how many siblings there are. */
+function isCounted(value: unknown): boolean {
+  const raw = text(value).trim();
+  return raw !== "" && Number.isFinite(Number(raw));
+}
+
+function countFrom(value: unknown): number {
+  const n = Number(text(value));
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+/** The relation text a stored sibling row carries, in whichever shape it arrived. */
+function relationTextOf(entry: unknown): string {
+  const record = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+
+  return text(
+    unwrapOption(
+      record.relation ?? record.relationId ?? record.siblingType ?? (typeof entry === "string" ? entry : "")
+    )
+  );
+}
+
+/**
+ * The group a stored relation names. Read-only: it turns old rows — which each
+ * carried their own relation select — into rows the counts-driven UI can place.
+ * A composite label ("1 Brother & 1 Sister") names no single side, so it reads
+ * as no group rather than a guess.
+ */
+function groupFromRelation(relation: unknown): SiblingGroup | null {
+  const label = text(relation).trim().toLowerCase();
+  const sister = label.includes("sister");
+  const brother = label.includes("brother");
+
+  if (sister && !brother) return "sister";
+  if (brother && !sister) return "brother";
+  return null;
+}
+
+/**
+ * Parses a `siblingtype` option — "No Siblings", "2 Sisters", "4 Brothers",
+ * "1 Brother & 1 Sister" — into counts. The one value that says nothing exact,
+ * "More than 2 Siblings", reads as null and is the caller's problem.
+ */
+function countsFromSiblingTypeLabel(label: unknown): SiblingCounts | null {
+  const raw = text(label).trim().toLowerCase();
+  if (!raw) return null;
+  if (raw === "no siblings") return { sisters: 0, brothers: 0 };
+
+  const both = /^(\d+)\s+brothers?\s*&\s*(\d+)\s+sisters?$/.exec(raw);
+  if (both) return { sisters: Number(both[2]), brothers: Number(both[1]) };
+
+  const brothers = /^(\d+)\s+brothers?$/.exec(raw);
+  if (brothers) return { sisters: 0, brothers: Number(brothers[1]) };
+
+  const sisters = /^(\d+)\s+sisters?$/.exec(raw);
+  if (sisters) return { sisters: Number(sisters[1]), brothers: 0 };
+
+  return null;
+}
+
+/**
+ * The two counts a saved family implies, read first from the profile's
+ * `siblingType` (one answer for the whole family) and then from the stored
+ * rows, whose relation may name one side each.
+ *
+ * `null` means the profile says nothing about siblings at all, so both selects
+ * stay unanswered rather than claiming "None".
+ *
+ * Whatever it works out, the counts never come back smaller than the rows that
+ * arrived: a row the relation could not place still needs a slot, or its
+ * occupation and marital status would be sliced off by `padSiblingRows`.
+ */
+function hydrateSiblingCounts(
+  raw: unknown,
+  siblingTypeId: unknown,
+  lists: Record<FamilyOptionKey, FieldOption[]> | null,
+  rowCount = 0
+): SiblingCounts | null {
+  const rows = Array.isArray(raw) ? raw : [];
+  if (rows.length === 0 && !text(siblingTypeId).trim()) return null;
+
+  const fromType = countsFromSiblingTypeLabel(
+    optionLabel(lists?.relation ?? [], text(siblingTypeId))
+  );
+
+  const fromRows = rows.reduce<SiblingCounts>(
+    (total, entry) => {
+      const counts = countsFromSiblingTypeLabel(
+        optionLabel(lists?.relation ?? [], relationTextOf(entry))
+      );
+      if (!counts) return total;
+
+      return {
+        sisters: total.sisters + counts.sisters,
+        brothers: total.brothers + counts.brothers,
+      };
+    },
+    { sisters: 0, brothers: 0 }
+  );
+
+  /* "More than 2 Siblings" names no exact split, so the stored rows are kept
+     by halving them — an uneven guess beats dropping a sibling on a save. */
+  const halved = rows.length > 0
+    ? {
+        sisters: Math.floor(rows.length / 2),
+        brothers: rows.length - Math.floor(rows.length / 2),
+      }
+    : { sisters: 0, brothers: 0 };
+
+  const counts =
+    fromType ??
+    (fromRows.sisters + fromRows.brothers > 0 ? fromRows : null) ??
+    halved;
+
+  /* Each side must also cover the rows that belong to it. The type answer
+     describes the family as a whole and can understate — or name — neither
+     side, and `padSiblingRows` slices a row off a side with no slot, taking
+     that sibling's occupation and marital status with it. */
+  const sideRows = rows.reduce<SiblingCounts>(
+    (total, entry) => {
+      const group = groupFromRelation(
+        optionLabel(lists?.relation ?? [], relationTextOf(entry))
+      );
+
+      if (group === "sister") return { ...total, sisters: total.sisters + 1 };
+      if (group === "brother") return { ...total, brothers: total.brothers + 1 };
+      return total;
+    },
+    { sisters: 0, brothers: 0 }
+  );
+
+  const sisters = Math.max(counts.sisters, sideRows.sisters);
+  const brothers = Math.max(counts.brothers, sideRows.brothers);
+
+  const needed = Math.max(rows.length, rowCount);
+  const total = sisters + brothers;
+  if (total >= needed) return { sisters, brothers };
+
+  /* Every extra slot stays empty — it exists so a stored answer has somewhere
+     to land, not to invent a sibling the profile never had. */
+  return { sisters: sisters + (needed - total), brothers };
+}
+
+/**
+ * The stored siblings as form rows. Nothing is thrown away here: a row whose
+ * relation names no single side comes back with `group: null` for
+ * `placeSiblingRows` to seat, because it may be the only record of that
+ * sibling's occupation and marital status.
+ */
+function hydrateSiblingRows(
   raw: unknown,
   lists: Record<FamilyOptionKey, FieldOption[]> | null
-): SiblingRow[] {
+): StoredSiblingRow[] {
   if (!Array.isArray(raw)) return [];
 
   return raw
     .map((entry) => {
       const record =
-        entry && typeof entry === "object"
-          ? (entry as Record<string, unknown>)
-          : {};
-
-      const relation = text(
-        record.relation ?? record.relationId ?? (typeof entry === "string" ? entry : "")
-      );
-      const occupation = text(record.occupation ?? record.occupationId);
-      const marital = text(record.marital ?? record.maritalId ?? record.maritalStatus);
+        entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
 
       return {
-        relation: resolveOptionId(lists?.relation ?? [], relation),
-        occupation: resolveOptionId(lists?.siblingOccupation ?? [], occupation),
-        marital: resolveOptionId(lists?.siblingMarital ?? [], marital),
+        group: groupFromRelation(
+          optionLabel(lists?.relation ?? [], relationTextOf(entry))
+        ),
+        occupation: optionValueFor(
+          lists?.siblingOccupation ?? [],
+          record.occupation ?? record.occupationId ?? record.occupation_id ?? record.job
+        ),
+        marital: optionValueFor(
+          lists?.siblingMarital ?? [],
+          record.marital ??
+            record.maritalId ??
+            record.maritalStatus ??
+            record.maritalStatusId ??
+            record.marital_status
+        ),
       };
     })
-    .filter((row) => row.relation !== "" || row.occupation !== "" || row.marital !== "");
+    .filter((row) => row.occupation !== "" || row.marital !== "");
+}
+
+/**
+ * Counts -> the rows the form shows. Readable rows keep their own group; the
+ * rest are seated in the first slot still empty, sisters before brothers —
+ * the order `toFamilyRequest` sends them in, so a save round-trips onto the
+ * same row it came from.
+ */
+function placeSiblingRows(rows: StoredSiblingRow[], counts: SiblingCounts): SiblingRow[] {
+  const grouped: SiblingRow[] = [];
+  const loose: StoredSiblingRow[] = [];
+
+  for (const row of rows) {
+    if (row.group) {
+      grouped.push({ group: row.group, occupation: row.occupation, marital: row.marital });
+    } else {
+      loose.push(row);
+    }
+  }
+
+  const placed = padSiblingRows(grouped, counts);
+
+  let next = 0;
+  return placed.map((slot) => {
+    if (next >= loose.length || slot.occupation !== "" || slot.marital !== "") return slot;
+
+    const row = loose[next];
+    next += 1;
+    return { group: slot.group, occupation: row.occupation, marital: row.marital };
+  });
+}
+
+/** Exactly `counts` rows per group, sisters first, keeping what was stored. */
+function padSiblingRows(rows: SiblingRow[], counts: SiblingCounts): SiblingRow[] {
+  const sisters = rows.filter((row) => row.group === "sister");
+  const brothers = rows.filter((row) => row.group === "brother");
+
+  const take = (group: SiblingGroup, own: SiblingRow[], count: number) => [
+    ...own.slice(0, count),
+    ...Array.from({ length: Math.max(0, count - own.length) }, () => emptySibling(group)),
+  ];
+
+  return [
+    ...take("sister", sisters, counts.sisters),
+    ...take("brother", brothers, counts.brothers),
+  ];
 }
 
 /** Whatever landed in `fields.siblings`, read back defensively as rows. */
 function asSiblingRows(value: unknown): SiblingRow[] {
   if (!Array.isArray(value)) return [];
 
-  return value.map((entry) => {
-    const record =
-      entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+  return value
+    .map((entry) => {
+      const record =
+        entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
 
-    return {
-      relation: text(record.relation),
-      occupation: text(record.occupation),
-      marital: text(record.marital),
-    };
+      const group =
+        record.group === "sister" || record.group === "brother"
+          ? record.group
+          : groupFromRelation(record.relation);
+
+      if (!group) return null;
+
+      return { group, occupation: text(record.occupation), marital: text(record.marital) };
+    })
+    .filter((row): row is SiblingRow => row !== null);
+}
+
+/**
+ * The relation id a row carries: each row is one brother or one sister, so it
+ * points at the list's single-sibling option for its own side — the composite
+ * options describe a whole family, not one person.
+ */
+function relationIdForGroup(group: SiblingGroup, options: readonly FieldOption[]): string {
+  const own = group === "sister" ? "sister" : "brother";
+  const other = group === "sister" ? "brother" : "sister";
+
+  const exact = options.find((option) => option.label.trim().toLowerCase() === `1 ${own}`);
+  if (exact) return exact.value;
+
+  const near = options.find((option) => {
+    const label = option.label.toLowerCase();
+    return label.includes(own) && !label.includes(other);
   });
+
+  return near?.value ?? "";
+}
+
+/**
+ * The `siblingtype` option describing a family of this shape, resolved against
+ * the fetched list so the id is the backend's rather than a hardcoded one.
+ * Anything the list cannot say exactly — 3 brothers, two of each — falls to the
+ * "More than 2 Siblings" catch-all.
+ */
+function siblingTypeIdFor(counts: SiblingCounts, options: readonly FieldOption[]): string {
+  const { sisters, brothers } = counts;
+  const candidates: string[] = [];
+
+  if (sisters === 0 && brothers === 0) candidates.push("No Siblings");
+  else if (sisters === 0) candidates.push(`${brothers} Brother${brothers === 1 ? "" : "s"}`);
+  else if (brothers === 0) candidates.push(`${sisters} Sister${sisters === 1 ? "" : "s"}`);
+  else if (sisters === 1 && brothers === 1) candidates.push("1 Brother & 1 Sister");
+
+  candidates.push("More than 2 Siblings");
+
+  for (const candidate of candidates) {
+    const id = resolveOptionId(options, candidate);
+    if (id) return id;
+  }
+
+  return "";
+}
+
+/**
+ * What a closed row says about a family: the backend's own sibling-type wording
+ * when the list can name this shape ("2 Sisters", "1 Brother & 1 Sister"), and
+ * the plain counts when it cannot. Kept as a read-only display — the counts
+ * behind it are still what the editor answers.
+ */
+function describeSiblingCounts(
+  counts: SiblingCounts,
+  lists: Record<FamilyOptionKey, FieldOption[]> | null
+): string {
+  const relation = lists?.relation ?? [];
+  const fromType = optionLabel(relation, siblingTypeIdFor(counts, relation));
+  /* An unresolved id renders as the raw number, which says nothing on a row. */
+  if (fromType && !/^\d+$/.test(fromType)) return fromType;
+
+  const parts: string[] = [];
+  if (counts.sisters > 0) parts.push(`${counts.sisters} Sister${counts.sisters === 1 ? "" : "s"}`);
+  if (counts.brothers > 0) parts.push(`${counts.brothers} Brother${counts.brothers === 1 ? "" : "s"}`);
+
+  return parts.join(" · ") || "No siblings";
+}
+
+/**
+ * The second line under that value: each stored sibling's own answers, named the
+ * way the editor names them. Built per render — a string over a handful of rows
+ * is not a derivation worth memoizing.
+ */
+function describeStoredSiblings(
+  siblings: readonly SiblingRow[],
+  counts: SiblingCounts,
+  lists: Record<FamilyOptionKey, FieldOption[]> | null
+): string {
+  const parts: string[] = [];
+
+  for (const group of ["sister", "brother"] as const) {
+    const own = siblings.filter((row) => row.group === group);
+    const count = group === "sister" ? counts.sisters : counts.brothers;
+
+    for (let index = 0; index < count; index += 1) {
+      const row = own[index] ?? emptySibling(group);
+      const occupation = optionLabel(lists?.siblingOccupation ?? [], row.occupation);
+      const marital = optionLabel(lists?.siblingMarital ?? [], row.marital);
+      const facts = [occupation, marital].filter((fact) => fact !== "");
+      if (facts.length === 0) continue;
+
+      const who = group === "sister" ? `Sister ${index + 1}` : `Brother ${index + 1}`;
+      parts.push(`${who}: ${facts.join(", ")}`);
+    }
+  }
+
+  return parts.join("  ·  ");
+}
+
+/**
+ * The Family section -> PATCH /api/user/profile/family. Every id rides the form
+ * as an option-id string; anything the user never answered is left out of the
+ * body rather than sent as `0`, which the backend would read as a real option.
+ *
+ * The rows are the counts' rows: a sibling whose occupation and marital status
+ * are both blank sends nothing at all, because `siblingTypeId` already says
+ * that sibling exists.
+ */
+function toFamilyRequest(
+  fields: Record<string, unknown>,
+  lists: Record<FamilyOptionKey, FieldOption[]> | null
+): FamilyProfilePayload {
+  const id = (name: string): number | undefined => {
+    const value = Number(text(fields[name]));
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  };
+
+  const counts: SiblingCounts = {
+    sisters: isCounted(fields.sisterCount) ? countFrom(fields.sisterCount) : 0,
+    brothers: isCounted(fields.brotherCount) ? countFrom(fields.brotherCount) : 0,
+  };
+
+  const relationOptions = lists?.relation ?? [];
+  /* An unanswered pair says nothing, so it sends no `siblingTypeId` — "No
+     Siblings" is an answer, not the absence of one. */
+  const answered = isCounted(fields.sisterCount) || isCounted(fields.brotherCount);
+  const siblingTypeId = answered
+    ? Number(siblingTypeIdFor(counts, relationOptions)) || undefined
+    : undefined;
+
+  const siblings = padSiblingRows(asSiblingRows(fields.siblings), counts)
+    .map((row): Partial<Sibling> => {
+      const relationId = Number(relationIdForGroup(row.group, relationOptions)) || undefined;
+      const occupationId = Number(row.occupation) || undefined;
+      const maritalId = Number(row.marital) || undefined;
+
+      return {
+        ...(relationId ? { relationId } : {}),
+        ...(occupationId ? { occupationId } : {}),
+        ...(maritalId ? { maritalId } : {}),
+      };
+    })
+    .filter((row) => Object.keys(row).length > 0);
+
+  return {
+    familyStatusId: id("familyStatus"),
+    familyTypeId: id("familyType"),
+    fatherOccupationId: id("fatherOccupation"),
+    fatherOrganisationId: id("fatherOrganisation"),
+    motherOccupationId: id("motherOccupation"),
+    motherOrganisationId: id("motherOrganisation"),
+    familyHomeId: id("familyHome"),
+    nativePlaceId: id("nativePlace"),
+    familyIncomeId: id("familyIncome"),
+    siblingTypeId,
+    siblings,
+  };
 }
 
 /** `2004-07-09` -> `09 / 07 / 2004`. Anything else is shown as stored. */
@@ -808,15 +1248,14 @@ const EDIT_BASIC_FIELDS: FieldDef[] = [
 const EDIT_API_OPTION_FIELDS = new Set(["religion", "caste", "motherTongue"]);
 
 /**
- * The Family section: nine API-backed selects plus the sibling repeater.
+ * The Family section: nine API-backed selects plus the two sibling counts.
  *
- * The names mirror the eventual save payload minus its `Id` suffix
- * (`familyStatusId` -> `familyStatus`), so wiring the endpoint later is a
- * lookup rather than a translation. There is no save endpoint yet — the
- * section collects, and the form keeps these fields out of `dirty` so Save
- * never claims to have stored them. Options are layered on from
- * `useUserProfileData`'s family lists, the same way the basic-details
- * selects take theirs from `editOptionSource`.
+ * The names mirror the save payload minus its `Id` suffix (`familyStatusId` ->
+ * `familyStatus`), so `toFamilyRequest` is a lookup rather than a translation.
+ * The two counts are the only sibling fields the user answers directly — every
+ * row below them, and the `siblingTypeId` sent with them, is derived. Options
+ * are layered on from `useUserProfileData`'s family lists, the same way the
+ * basic-details selects take theirs from `editOptionSource`.
  */
 const FAMILY_FIELD_DEFS: FieldDef[] = [
   { name: "familyStatus", label: "Family status", kind: "select", placeholder: "Select family status" },
@@ -841,9 +1280,11 @@ const LOCATION_FIELDS = new Set([
   "max_distance_km",
 ]);
 const BIO_FIELDS = new Set(STEP_SCHEMAS.bio.fields.map((f) => f.name));
-/** The whole Family section, sibling repeater included, for form bookkeeping. */
+/** The whole Family section, sibling counts included, for form bookkeeping. */
 const FAMILY_FIELD_NAMES = new Set<string>([
   ...FAMILY_FIELD_DEFS.map((field) => field.name),
+  "sisterCount",
+  "brotherCount",
   "siblings",
 ]);
 
@@ -895,6 +1336,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     familyOptionsError,
     ensureFamilyOptions,
     refetchFamilyOptions,
+    saveFamily,
   } = useUserProfileData();
   const { categories: promptCategories, loading: promptsLoading, error: promptsError } =
     usePromptCategories();
@@ -1208,6 +1650,19 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
     const savedFamily = saved.family;
 
+    /* Siblings are counts first: the two selects are what the user answers, and
+       the rows below them are padded out to those counts. `null` means the
+       profile never mentioned siblings, so both selects stay unanswered.
+       Rows are read before the counts so the counts can promise each stored
+       row a slot, then seated by `placeSiblingRows`. */
+    const storedSiblings = hydrateSiblingRows(savedFamily?.siblings, familyOptionLists);
+    const siblingCounts = hydrateSiblingCounts(
+      savedFamily?.siblings,
+      savedFamily?.siblingTypeId ?? savedFamily?.siblingType,
+      familyOptionLists,
+      storedSiblings.length
+    );
+
     return {
       religion: resolveOptionId(religionOptions, saved.religion),
       caste: resolveOptionId(allCommunityOptions, saved.community),
@@ -1252,7 +1707,9 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
         familyOptionLists?.familyIncome ?? [],
         savedFamily?.familyIncome
       ),
-      siblings: hydrateSiblings(savedFamily?.siblings, familyOptionLists),
+      sisterCount: siblingCounts ? String(siblingCounts.sisters) : "",
+      brotherCount: siblingCounts ? String(siblingCounts.brothers) : "",
+      siblings: siblingCounts ? placeSiblingRows(storedSiblings, siblingCounts) : [],
     };
   }, [
     feed.details,
@@ -1282,11 +1739,9 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   );
   const prompts = promptOverrides ?? seedPrompts;
 
-  /* Family is collected but has no save endpoint yet, so its edits never make
-     the form "dirty" — Save must not promise to store them. */
-  const dirty =
-    Object.keys(fieldOverrides).some((name) => !FAMILY_FIELD_NAMES.has(name)) ||
-    promptOverrides !== null;
+  /* Every section has an endpoint of its own, Family included — so any edit at
+     all makes the form dirty, and Save fans out to exactly what changed. */
+  const dirty = Object.keys(fieldOverrides).length > 0 || promptOverrides !== null;
 
   const setField = React.useCallback(
     (name: string, value: unknown) => {
@@ -1305,6 +1760,13 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
          against the value being written plus everything already on the form, so
          a field that is only one character short keeps its message. */
       setFieldErrors((prev) => {
+        /* A new count renumbers that group's rows, so every message under them
+           points at a row that may no longer exist. */
+        if (name === "sisterCount" || name === "brotherCount") {
+          const kept = Object.entries(prev).filter(([key]) => !key.startsWith("siblings."));
+          return kept.length === Object.keys(prev).length ? prev : Object.fromEntries(kept);
+        }
+
         if (!prev[name]) return prev;
 
         const schema = schemaForField(name);
@@ -1327,17 +1789,78 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   const readString = (name: string) => asString(fields[name]);
   const readList = (name: string) => asList(fields[name]);
 
-  /* The sibling repeater reads the same flat store: `siblings` is the one
-     family value that is a list rather than a single id. It never feeds the
-     save fan-out (no endpoint yet) and never flips `dirty`. */
+  /* The sibling rows live in the same flat store, but the two counts above them
+     decide how many of each group exist — so rows are padded *out* to the
+     counts on the way to the screen and to the save payload, rather than being
+     added or removed by hand. */
   const siblings = React.useMemo(() => asSiblingRows(fields.siblings), [fields.siblings]);
 
   const writeSiblings = (next: SiblingRow[]) => setField("siblings", next);
 
-  const updateSibling = (index: number, key: keyof SiblingRow, value: string) =>
-    writeSiblings(
-      siblings.map((row, i) => (i === index ? { ...row, [key]: value } : row))
-    );
+  /* The counts are ordinary form fields: nothing about a sibling is stored
+     before the user picks a number, which is why an unanswered select shows no
+     rows at all rather than an empty row. */
+  const sisterAnswered = isCounted(fields.sisterCount);
+  const brotherAnswered = isCounted(fields.brotherCount);
+  const sisterCount = countFrom(fields.sisterCount);
+  const brotherCount = countFrom(fields.brotherCount);
+
+  /** One group's rows, padded to its count so the two can never disagree. */
+  const siblingRowsFor = (group: SiblingGroup): SiblingRow[] => {
+    const own = siblings.filter((row) => row.group === group);
+    const count = group === "sister" ? sisterCount : brotherCount;
+
+    return Array.from({ length: count }, (_, index) => own[index] ?? emptySibling(group));
+  };
+
+  /**
+   * An edit is written back onto the rows the screen is showing — padded to
+   * the counts — not onto whatever the store happens to hold. A row that
+   * exists only as padding (a fresh count, an unanswered store) used to be
+   * mapped over nothing, so the answer was chosen and silently dropped.
+   */
+  const updateSibling = (
+    group: SiblingGroup,
+    index: number,
+    member: "occupation" | "marital",
+    value: string
+  ) => {
+    const own = siblingRowsFor(group);
+    const rest = siblings.filter((row) => row.group !== group);
+    const next = own.map((row, i) => (i === index ? { ...row, [member]: value } : row));
+
+    writeSiblings(group === "sister" ? [...next, ...rest] : [...rest, ...next]);
+
+    /* The row's message is stored under the name its select renders with, and
+       `setField` writes `siblings` — a name no message is keyed to. Clearing it
+       here is what makes the red go away the moment the answer is chosen. */
+    setFieldErrors((prev) => {
+      const target = `siblings.${group}.${index}.${member}`;
+      if (!prev[target]) return prev;
+
+      const kept = { ...prev };
+      delete kept[target];
+      return kept;
+    });
+  };
+
+  /**
+   * What the closed "Siblings" row shows before anyone taps it — the saved
+   * details from `/api/user/feed/details/:id`, not a prompt to start filling
+   * them in. `""` is how an untouched profile reads ("Not set"), because a row
+   * with no answer is not a family of zero.
+   */
+  const siblingsValue =
+    sisterAnswered || brotherAnswered
+      ? describeSiblingCounts({ sisters: sisterCount, brothers: brotherCount }, familyOptionLists)
+      : "";
+
+  /** The second line: each stored sibling's own occupation and marital status. */
+  const siblingsDetail = describeStoredSiblings(
+    siblings,
+    { sisters: sisterCount, brothers: brotherCount },
+    familyOptionLists
+  );
 
   /**
    * A radio is single-select, so its value is a plain string — but the onboarding
@@ -1551,6 +2074,26 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       errors.city = "Allow location access to detect your city.";
     }
 
+    /* Family has no schema, but it has one rule: a count that is not "None"
+       opens that many rows, and every one of them needs both answers. Without
+       this the save would happily store a sibling nobody described — and
+       `siblingTypeId` would claim a brother or sister the profile says nothing
+       about. */
+    if (touches(FAMILY_FIELD_NAMES)) {
+      for (const group of ["sister", "brother"] as const) {
+        const count = group === "sister" ? sisterCount : brotherCount;
+        if (count <= 0) continue;
+
+        siblingRowsFor(group).forEach((row, index) => {
+          const name = `siblings.${group}.${index}`;
+          const who = `${group === "sister" ? "Sister" : "Brother"} ${index + 1}`;
+
+          if (!row.occupation) errors[`${name}.occupation`] = `Choose ${who}'s occupation.`;
+          if (!row.marital) errors[`${name}.marital`] = `Choose ${who}'s marital status.`;
+        });
+      }
+    }
+
     return errors;
   };
 
@@ -1571,6 +2114,13 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     const found = validateTouched();
     if (Object.keys(found).length > 0) {
       setFieldErrors(found);
+
+      /* A message inside a collapsed row is a message nobody reads — pull the
+         row whose fields failed open so the red is where the eye lands. */
+      if (Object.keys(found).some((key) => key.startsWith("siblings."))) {
+        setOpenRow("siblings");
+      }
+
       setSaveError("Fix the highlighted fields before saving.");
       return;
     }
@@ -1627,6 +2177,17 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
         savedSections.push("Career & ambition");
       }
 
+      /* Family is one PATCH: the nine selects, the two counts as a single
+         `siblingTypeId`, and one row per sibling — all three derived from the
+         same form values in `toFamilyRequest`. */
+      const savedFamily = touches(FAMILY_FIELD_NAMES);
+
+      if (savedFamily) {
+        const res = await saveFamily(toFamilyRequest(fields, familyOptionLists));
+        if (!res?.success) throw new SaveFailed(res?.message, "family");
+        savedSections.push("Family");
+      }
+
       /* One request per answered question, same as onboarding. Blank questions
          produce no request at all — the endpoint cannot express "cleared". */
       if (touches(new Set(lifestyle.questions.map((q) => q.key)))) {
@@ -1673,8 +2234,10 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
       /* The extras seed from the feed-details cache, not this payload — bust it
          too, or clearing the overrides would re-derive the rows from the
-         pre-save copy until something else invalidated it. */
-      if (savedEditBasics) refreshFeed();
+         pre-save copy until something else invalidated it. Family is read from
+         that same cache, so it needs the refetch as much as the edit-only
+         basics do. */
+      if (savedEditBasics || savedFamily) refreshFeed();
 
       /* `onSaved` runs last, after this render's state has settled, so the caller's
          refetch reads the profile the save just wrote. Left out, the edit page has
@@ -2307,7 +2870,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       <Section
         icon={Users}
         title="Family"
-        hint="Saving this section isn't live yet — your picks here won't be stored."
+        hint="Your family details and siblings save with the rest of your profile."
         flush
       >
         {!familyOptions ? (
@@ -2353,80 +2916,156 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
             )}
 
             {/* -------------------------- siblings -------------------------- */}
-            <div className="pec-pad space-y-3 border-t border-border">
-              <div>
-                <p className="pec-row-label">Siblings</p>
+            {/* The one Family row that holds more than a single option. It
+                *shows* what /api/user/feed/details/:id stored — the sibling type
+                and each sibling's own answers — and tapping it opens the two
+                counts plus the rows they decide, the way every other row opens
+                its editor. */}
+            <FieldRow
+              label="Siblings"
+              value={siblingsValue}
+              description={siblingsDetail}
+              open={openRow === "siblings"}
+              onToggle={() => toggleRow("siblings")}
+            >
+              <div className="space-y-3">
                 <p className="text-[11px] text-muted-foreground">
-                  Add one row for each brother or sister.
+                  Pick how many sisters and brothers you have — a row opens for each one.
                 </p>
-              </div>
 
-              {siblings.map((sibling, index) => (
-                <div
-                  key={index}
-                  className="space-y-2.5 rounded-xl border border-border bg-card p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold">Sibling {index + 1}</p>
-                    <button
-                      type="button"
-                      aria-label={`Remove sibling ${index + 1}`}
-                      onClick={() => writeSiblings(siblings.filter((_, i) => i !== index))}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
-                    >
-                      <X className="size-4" aria-hidden="true" />
-                    </button>
+                <SelectField
+                  field={{
+                    name: "sisterCount",
+                    label: "How many sisters",
+                    kind: "select",
+                    /* Sisters are optional — the badge says so, and an unanswered
+                       select simply opens no rows below. */
+                    required: false,
+                    skippable: false,
+                    options: countOptionsFor(sisterCount),
+                    placeholder: "Select how many",
+                  }}
+                  value={readString("sisterCount")}
+                  error={fieldErrors.sisterCount}
+                  onChange={(v) => setField("sisterCount", v)}
+                />
+
+                <SelectField
+                  field={{
+                    name: "brotherCount",
+                    label: "How many brothers",
+                    kind: "select",
+                    options: countOptionsFor(brotherCount),
+                    placeholder: "Select how many",
+                  }}
+                  value={readString("brotherCount")}
+                  error={fieldErrors.brotherCount}
+                  onChange={(v) => setField("brotherCount", v)}
+                />
+
+                {sisterCount > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="pec-row-label">Sisters</p>
+
+                    {siblingRowsFor("sister").map((sibling, index) => (
+                      <div
+                        key={`sister-${index}`}
+                        className="space-y-2.5 rounded-xl border border-border bg-card p-3"
+                      >
+                        <p className="text-xs font-semibold">Sister {index + 1}</p>
+
+                        <SelectField
+                          field={{
+                            name: `siblings.sister.${index}.occupation`,
+                            label: "Occupation",
+                            kind: "select",
+                            options: selectOptionsWith(
+                              familyOptionLists?.siblingOccupation,
+                              sibling.occupation
+                            ),
+                            placeholder: "Select occupation",
+                          }}
+                          value={sibling.occupation}
+                          error={fieldErrors[`siblings.sister.${index}.occupation`]}
+                          onChange={(v) => updateSibling("sister", index, "occupation", v)}
+                        />
+                        <SelectField
+                          field={{
+                            name: `siblings.sister.${index}.marital`,
+                            label: "Marital status",
+                            kind: "select",
+                            options: selectOptionsWith(
+                              familyOptionLists?.siblingMarital,
+                              sibling.marital
+                            ),
+                            placeholder: "Select marital status",
+                          }}
+                          value={sibling.marital}
+                          error={fieldErrors[`siblings.sister.${index}.marital`]}
+                          onChange={(v) => updateSibling("sister", index, "marital", v)}
+                        />
+                      </div>
+                    ))}
                   </div>
+                )}
 
-                  <SelectField
-                    field={{
-                      name: `siblings.${index}.relation`,
-                      label: "Relation",
-                      kind: "select",
-                      options: familyOptionLists?.relation,
-                      placeholder: "Select relation",
-                    }}
-                    value={sibling.relation}
-                    onChange={(v) => updateSibling(index, "relation", v)}
-                  />
-                  <SelectField
-                    field={{
-                      name: `siblings.${index}.occupation`,
-                      label: "Occupation",
-                      kind: "select",
-                      options: familyOptionLists?.siblingOccupation,
-                      placeholder: "Select occupation",
-                    }}
-                    value={sibling.occupation}
-                    onChange={(v) => updateSibling(index, "occupation", v)}
-                  />
-                  <SelectField
-                    field={{
-                      name: `siblings.${index}.marital`,
-                      label: "Marital status",
-                      kind: "select",
-                      options: familyOptionLists?.siblingMarital,
-                      placeholder: "Select marital status",
-                    }}
-                    value={sibling.marital}
-                    onChange={(v) => updateSibling(index, "marital", v)}
-                  />
-                </div>
-              ))}
+                {brotherCount > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="pec-row-label">Brothers</p>
 
-              {siblings.length === 0 && (
-                <p className="text-[11px] text-muted-foreground">No siblings added yet.</p>
-              )}
+                    {siblingRowsFor("brother").map((sibling, index) => (
+                      <div
+                        key={`brother-${index}`}
+                        className="space-y-2.5 rounded-xl border border-border bg-card p-3"
+                      >
+                        <p className="text-xs font-semibold">Brother {index + 1}</p>
 
-              <button
-                type="button"
-                onClick={() => writeSiblings([...siblings, { ...EMPTY_SIBLING }])}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-card px-4 py-3 text-xs font-semibold text-primary transition-colors hover:border-primary"
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Add sibling
-              </button>
-            </div>
+                        <SelectField
+                          field={{
+                            name: `siblings.brother.${index}.occupation`,
+                            label: "Occupation",
+                            kind: "select",
+                            options: selectOptionsWith(
+                              familyOptionLists?.siblingOccupation,
+                              sibling.occupation
+                            ),
+                            placeholder: "Select occupation",
+                          }}
+                          value={sibling.occupation}
+                          error={fieldErrors[`siblings.brother.${index}.occupation`]}
+                          onChange={(v) => updateSibling("brother", index, "occupation", v)}
+                        />
+                        <SelectField
+                          field={{
+                            name: `siblings.brother.${index}.marital`,
+                            label: "Marital status",
+                            kind: "select",
+                            options: selectOptionsWith(
+                              familyOptionLists?.siblingMarital,
+                              sibling.marital
+                            ),
+                            placeholder: "Select marital status",
+                          }}
+                          value={sibling.marital}
+                          error={fieldErrors[`siblings.brother.${index}.marital`]}
+                          onChange={(v) => updateSibling("brother", index, "marital", v)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Neither count opens a row, so this is where the editor says
+                    what to do — and confirms "None" when both were answered. */}
+                {sisterCount + brotherCount === 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {sisterAnswered && brotherAnswered
+                      ? "No siblings to add."
+                      : "Choose a number above and a row opens for each sibling."}
+                  </p>
+                )}
+              </div>
+            </FieldRow>
           </>
         )}
       </Section>

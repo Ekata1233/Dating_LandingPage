@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
 import type { BalanceItem, DatePlansSummary } from "../shared/types";
+import { UserBalances, useUserProfileData } from "@/app/context/UserProfileDataContext";
 
 export interface BalanceItemProps {
   label: string;
@@ -21,15 +22,27 @@ export interface MyBalancesProps {
   onDatePlanClick?: () => void;
   className?: string;
 }
+export interface BalanceCard {
+  label: string;
+  value: string;
+  bg: string;
+  emoji: string;
+}
+export const toBalanceCards = (b: UserBalances | null): BalanceCard[] => [
+  { label: "Roses",       value: String(b?.roses.balance ?? 0),       bg: "#fdeecb", emoji: "⭐" },
+  { label: "Compliments", value: String(b?.compliments.balance ?? 0), bg: "#fbe1e6", emoji: "💌" },
+  { label: "My Boosts",   value: String(b?.boosts.balance ?? 0),      bg: "#dcebfa", emoji: "🚀" },
+  { label: "My Wallet",   value: b?.wallet.formattedBalance ?? "₹0",  bg: "#fbdce8", emoji: "👛" },
+];
 
 export default function MyBalances({
-  items = MOCK_BALANCES,
   datePlan = MOCK_DATE_PLANS_SUMMARY,
   onAdd,
   onDatePlanClick,
   className = "",
 }: MyBalancesProps) {
-  return (
+  const { balances } = useUserProfileData();
+  const cards = useMemo(() => toBalanceCards(balances), [balances]); return (
     <div
       className={className}
       style={{
@@ -59,7 +72,7 @@ export default function MyBalances({
           gap: "8px",
         }}
       >
-        {items.map((item) => (
+        {cards?.map((item) => (
           <div
             key={item.label}
             role={onAdd ? "button" : undefined}
@@ -68,11 +81,11 @@ export default function MyBalances({
             onKeyDown={
               onAdd
                 ? (e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onAdd(item.label);
-                    }
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onAdd(item.label);
                   }
+                }
                 : undefined
             }
             style={{
@@ -263,7 +276,7 @@ export default function MyBalances({
 
             {/* Count + label */}
             <div className="dp-count-wrap">
-              <div className="dp-count">{datePlan.count}</div>
+              <div className="dp-count">{balances?.datePlans.balance}</div>
               <div className="dp-count-sub">
                 {datePlan.countLabel}
                 <svg

@@ -28,7 +28,8 @@ export default function Page() {
                 await profileDetails.refetch();
             }
             else {
-                toast.error(response?.message
+                console.log(resumeError)
+                toast.error(resumeError
                     || "Failed to resume account."
                 );
             }

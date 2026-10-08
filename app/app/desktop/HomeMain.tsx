@@ -514,9 +514,19 @@ function HomeMain({
                   <img className="rounded-2xl w-full" src={extraPhotos[1]} alt={`${enriched.name} photo 3`} loading="lazy" draggable={false} />
                 </div>
               )}
+          {gallery.slice(3).map((image, index) => (
+            <div key={index}>
+              <img
+                className="rounded-2xl w-full"
+                src={image}
+                alt={`${profile.name} photo ${index + 3}`}
+                loading="lazy"
+                draggable={false}
+              />
+            </div>
+          ))}
             </div>
           </div>
-
           {/* Swipe labels */}
           {swipeDir === "right" && (
             <div className="absolute top-10 left-6 rotate-[-20deg] border-4 border-[#44ff44] rounded-lg px-4 py-1 z-20 pointer-events-none">

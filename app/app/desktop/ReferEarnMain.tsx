@@ -716,7 +716,7 @@ export default function ReferAndEarn({
                                         value={friendCode}
                                         onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
                                         placeholder="ENTER CODE"
-                                        maxLength={16}
+                                        maxLength={8}
                                         aria-label="Friend's code"
                                         style={{
                                             flex: 1,
