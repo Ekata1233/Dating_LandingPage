@@ -507,14 +507,7 @@ function HomeMain({
                 state={detailsState}
                 onRetry={detailsRetry}
               />
-
-              {/* GALLERY IMG 3 */}
-              {extraPhotos[1] && (
-                <div>
-                  <img className="rounded-2xl w-full" src={extraPhotos[1]} alt={`${enriched.name} photo 3`} loading="lazy" draggable={false} />
-                </div>
-              )}
-          {gallery.slice(3).map((image, index) => (
+          {gallery.slice(4).map((image, index) => (
             <div key={index}>
               <img
                 className="rounded-2xl w-full"

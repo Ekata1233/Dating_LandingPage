@@ -39,7 +39,7 @@ export default function Page() {
     return (
         <Screen
             desktop={<PauseAccountMain onBack={onBack} onKeepBrowsing={() => { router.push("/app/home") }} onPauseAccount={handlePauseAccount} />}
-            mobile={<PauseAccountMain fluid showBack={false} onBack={onBack} onKeepBrowsing={() => { router.push("/app/home") }} onPauseAccount={handlePauseAccount} />}
+            mobile={<PauseAccountMain fluid onBack={onBack} onKeepBrowsing={() => { router.push("/app/home") }} onPauseAccount={handlePauseAccount} />}
         />
     );
 }

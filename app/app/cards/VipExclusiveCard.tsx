@@ -1,12 +1,14 @@
 import React from "react";
 
-import type { PlanCardProps } from "./PremiumPlusCard";
 import {
   featureLabel,
   formatPlanName,
   formatPrice,
   pickTopFeatures,
 } from "@/lib/planUtils";
+import { useRouter } from "next/navigation";
+import { Plan } from "@/app/context/AccountSettingsContext";
+import { PlanCardProps } from "./PremiumPlusCard";
 
 const CheckIcon = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
@@ -52,7 +54,10 @@ export default function VipExclusiveCard({
   const features = pickTopFeatures(plan, 5);
   const name = formatPlanName(plan.name);
   const hasDiscount = plan.originalPrice > plan.price;
-
+  const router = useRouter()
+function handlePlanCardClick(plan: Plan) {
+  router.push(`/app/home/plans/${plan.id}`)
+}
   return (
     <div
       className={className}
@@ -154,7 +159,7 @@ export default function VipExclusiveCard({
       {/* CTA */}
       <button
         type="button"
-        onClick={() => onSelect?.(plan.slug)}
+        onClick={() => handlePlanCardClick(plan)}
         disabled={busy}
         style={{
           width: "100%",

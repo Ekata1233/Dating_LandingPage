@@ -20,7 +20,7 @@ export default function Page() {
   return (
     <Screen
       desktop={<LogoutMain onLogout={handleLogout} onStay={() => router.push("/app")} />}
-      mobile={<LogoutMain fluid showBack={false} onLogout={handleLogout} onBack={onBack} onStay={() => router.push("/app")} />}
+      mobile={<LogoutMain fluid onLogout={handleLogout} onBack={onBack} onStay={() => router.push("/app")} />}
     />
   );
 }

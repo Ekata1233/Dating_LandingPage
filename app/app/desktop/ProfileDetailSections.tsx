@@ -62,7 +62,10 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
   const hasFamily = profile.family.length > 0;
   const hasNetworking = profile.networking.length > 0;
   const hasPrompts = profile.prompts.length > 0;
-
+  const gallery = profile.gallery?.length ? profile.gallery : [profile.image];
+  /* Extra photos below the hero. Users with a single photo get none. */
+  const extraPhotos = gallery.slice(1);
+  const isOnline = Boolean(profile.isOnline);
   const hasAnyDetail =
     traits.length > 0 ||
     Boolean(lookingFor) ||
@@ -161,32 +164,35 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
         <Section title="CAREER" color="#8D6944">
           <div className="mt-2 grid grid-cols-2 gap-2">
             {profile.career.filter((fact) => fact.label !== "Big dreams").map((fact, index) => (
-                <span
-                  key={`${fact.label}-${index}`}
-                  className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
-                >
-                  <span className="bg-[#F7F2EE] rounded-full px-1 py-1 text-[#8D6944] shrink-0">
-                    <FactIcon name={fact.icon} className="text-[#8D6944]" />
-                  </span>
+              <span
+                key={`${fact.label}-${index}`}
+                className="bg-slate-50 px-3 py-2 rounded-[12px] text-[12px] text-[#5F5A55] flex items-center gap-2"
+              >
+                <span className="bg-[#F7F2EE] rounded-full px-1 py-1 text-[#8D6944] shrink-0">
+                  <FactIcon name={fact.icon} className="text-[#8D6944]" />
+                </span>
 
-                  <span className="min-w-0">
-                    <h1 className="block text-black" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.label}</h1>
-                    <h1 className="block text-[10px]" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.value}</h1>
-                  </span>
-                </span> 
+                <span className="min-w-0">
+                  <h1 className="block text-black" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.label}</h1>
+                  <h1 className="block text-[10px]" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{fact.value}</h1>
+                </span>
+              </span>
 
             ))}
-
           </div>
           <div className="w-full h-[1px] mt-5 flex justify-evenly items-center">
             <div className="w-[7rem] bg-[#8D6944] h-full"></div>
-            <Astroid  size={10} color="#8D6944" fill="#8D6944"/>
+            <Astroid size={10} color="#8D6944" fill="#8D6944" />
             <div className="w-[7rem] bg-[#8D6944] h-full"></div>
           </div>
           {profile.career.filter((fact) => fact.label === "Big dreams").map((fact, index) => (<span key={index} className="w-full flex flex-col justify-center pt-3 text-[12px] items-center text-black"><span>BIG DREAM</span><span className="text-[#5F5A55]">{fact.value}</span></span>))}
         </Section >
       )}
-
+      {extraPhotos[1] && (
+        <div>
+          <img className="rounded-2xl w-full" src={extraPhotos[1]} alt={`${profile.name} photo 3`} loading="lazy" draggable={false} />
+        </div>
+      )}
       {/* ------------------------------- LIFESTYLE --------------------------- */}
       {
         hasLifestyle && (
@@ -215,7 +221,11 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
           </Section>
         )
       }
-
+      {extraPhotos[2] && (
+        <div>
+          <img className="rounded-2xl w-full" src={extraPhotos[2]} alt={`${profile.name} photo 3`} loading="lazy" draggable={false} />
+        </div>
+      )}
       {/* ------------------------------ INTERESTS ---------------------------- */}
       {
         hasInterests && (

@@ -5,6 +5,7 @@ import React, {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import axios from "axios";
@@ -22,14 +23,76 @@ const SUPPORT_FAQ_URL = `${API_BASE_URL}/api/admin/support/faqs/get`; // GET
 const SUPPORT_CALLBACK_URL = `${API_BASE_URL}/api/user/support/callback`; // POST
 const CALLBACK_HISTORY_URL = `${API_BASE_URL}/api/user/support/callback/history`; // GET
 const PLAN_CARDS_URL = `${API_BASE_URL}/api/package/get/cards`; // GET
+const PLAN_DETAIL_URL = `${API_BASE_URL}/api/package/get`; // GET /:id
+
+/** Builds the detail URL for one plan. */
+const planDetailUrl = (id: string) =>
+    `${PLAN_DETAIL_URL}/${encodeURIComponent(id)}`;
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+export type BillingCycle =
+    | "YEARLY"
+    | "QUARTERLY"
+    | "MONTHLY"
+    | "HALF_YEARLY";
+
+export type ResetPeriod = "NONE" | "WEEKLY" | "DAILY";
+
+export interface PremiumPrice {
+    id: string;
+    billingCycle: BillingCycle;
+    months: number;
+    price: number;
+    originalPrice: number;
+    discountPercent: number;
+    isHighlighted: boolean;
+    active: boolean;
+}
+
+export interface PremiumFeatureDetails {
+    id: string;
+    code: string;
+    title: string;
+    category: string;
+    description: string;
+}
+
+export interface PremiumFeature {
+    id: string;
+    featureId: string;
+    feature: PremiumFeatureDetails;
+    enabled: boolean;
+    unlimited: boolean;
+    limit: number | null;
+    resetPeriod: ResetPeriod;
+}
+
+export interface PremiumPlan {
+    id: string;
+    name: string;
+    slug: string;
+    tagline: string;
+    badgeLabel: string;
+    discoveryPool: string;
+    visibilityRule: string;
+    description: string;
+    isPopular: boolean;
+    active: boolean;
+    sortOrder: number;
+    prices: PremiumPrice[];
+    limits: PremiumFeature[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PremiumApiResponse {
+    success: boolean;
+    data: PremiumPlan;
+}
 
 /* ------------------------------ Plans ----------------------------- */
-
-export type ResetPeriod = "NONE" | "DAILY" | "WEEKLY" | (string & {}); // add "MONTHLY" etc. if the backend has them
 
 export interface PlanFeature {
     title: string;
@@ -58,6 +121,14 @@ export interface PlansResponse {
     data?: Plan[];
 }
 
+/* --------------------------- Plan details ------------------------- */
+
+export interface PlanDetailResponse {
+    success: boolean;
+    message?: string;
+    data?: PremiumPlan;
+}
+
 /* ------------------------------ Support --------------------------- */
 
 export type CallbackStatus =
@@ -65,7 +136,7 @@ export type CallbackStatus =
     | "SCHEDULED"
     | "RESOLVED"
     | "MISSED"
-    | "CANCELLED"; // keeps autocomplete but accepts unknown backend values
+    | "CANCELLED";
 
 export interface Callback {
     id: string;
@@ -167,6 +238,16 @@ interface AccountSettingsContextData {
     plansError: string | null;
     refetchPlans: () => Promise<void>;
 
+    /* Plan details — cached per plan id, fetched on demand */
+    planDetails: Record<string, PremiumPlan>;
+    planDetailsLoading: Record<string, boolean>;
+    planDetailsError: Record<string, string | null>;
+    /** Fetches one plan's detail. Skips the call if cached unless `force`. */
+    fetchPlanDetail: (
+        id: string,
+        force?: boolean
+    ) => Promise<PremiumPlan | null>;
+
     /* FAQs */
     faqs: Faq[];
     faqsLoading: boolean;
@@ -211,6 +292,11 @@ const AccountSettingsContext = createContext<AccountSettingsContextData>({
     plansError: null,
     refetchPlans: async () => { },
 
+    planDetails: {},
+    planDetailsLoading: {},
+    planDetailsError: {},
+    fetchPlanDetail: async () => null,
+
     faqs: [],
     faqsLoading: true,
     faqsError: null,
@@ -253,6 +339,20 @@ export function AccountSettingsProvider({
     const [plans, setPlans] = useState<Plan[]>([]);
     const [plansLoading, setPlansLoading] = useState(true);
     const [plansError, setPlansError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Plan Details State (keyed by plan id)                            */
+    /* ---------------------------------------------------------------- */
+
+    const [planDetails, setPlanDetails] = useState<Record<string, PremiumPlan>>({});
+    const [planDetailsLoading, setPlanDetailsLoading] =
+        useState<Record<string, boolean>>({});
+    const [planDetailsError, setPlanDetailsError] =
+        useState<Record<string, string | null>>({});
+
+    /* Ids already requested or in flight, so StrictMode double-effects and
+       repeated mounts don't fire the same GET twice. */
+    const planDetailRequestedRef = useRef<Set<string>>(new Set());
 
     /* ---------------------------------------------------------------- */
     /* FAQ State                                                        */
@@ -451,6 +551,55 @@ export function AccountSettingsProvider({
     }, [authGet, applyPlans]);
 
     /* ---------------------------------------------------------------- */
+    /* PLAN DETAILS                                                     */
+    /* ---------------------------------------------------------------- */
+
+    const applyPlanDetail = useCallback(
+        (id: string, response: PlanDetailResponse | null): PremiumPlan | null => {
+            if (response?.success && response.data) {
+                const detail = response.data;
+
+                setPlanDetails((prev) => ({ ...prev, [id]: detail }));
+                setPlanDetailsError((prev) => ({ ...prev, [id]: null }));
+                setPlanDetailsLoading((prev) => ({ ...prev, [id]: false }));
+
+                return detail;
+            }
+
+            /* Allow a retry after a failure. */
+            planDetailRequestedRef.current.delete(id);
+
+            setPlanDetailsError((prev) => ({
+                ...prev,
+                [id]: response?.message || "Couldn't load plan details.",
+            }));
+            setPlanDetailsLoading((prev) => ({ ...prev, [id]: false }));
+
+            return null;
+        },
+        []
+    );
+
+    const fetchPlanDetail = useCallback(
+        async (id: string, force = false): Promise<PremiumPlan | null> => {
+            if (!id) return null;
+            if (!getClientToken()) return null;
+
+            /* Already cached or in flight — skip unless forced. */
+            if (!force && planDetailRequestedRef.current.has(id)) return null;
+            planDetailRequestedRef.current.add(id);
+
+            setPlanDetailsLoading((prev) => ({ ...prev, [id]: true }));
+            setPlanDetailsError((prev) => ({ ...prev, [id]: null }));
+
+            const response = await authGet(planDetailUrl(id));
+
+            return applyPlanDetail(id, response);
+        },
+        [authGet, applyPlanDetail]
+    );
+
+    /* ---------------------------------------------------------------- */
     /* FAQS                                                             */
     /* ---------------------------------------------------------------- */
 
@@ -621,6 +770,11 @@ export function AccountSettingsProvider({
             plansError,
             refetchPlans,
 
+            planDetails,
+            planDetailsLoading,
+            planDetailsError,
+            fetchPlanDetail,
+
             faqs,
             faqsLoading,
             faqsError,
@@ -650,6 +804,11 @@ export function AccountSettingsProvider({
             plansError,
             refetchPlans,
 
+            planDetails,
+            planDetailsLoading,
+            planDetailsError,
+            fetchPlanDetail,
+
             faqs,
             faqsLoading,
             faqsError,
@@ -674,9 +833,39 @@ export function AccountSettingsProvider({
 }
 
 /* ------------------------------------------------------------------ */
-/* Hook                                                               */
+/* Hooks                                                              */
 /* ------------------------------------------------------------------ */
 
 export function useAccountSettings() {
     return useContext(AccountSettingsContext);
+}
+
+/**
+ * Loads and returns one plan's detail. Pass the id from your page; the GET
+ * runs in a useEffect and is cached, so revisiting the page won't refetch.
+ */
+export function usePlanDetail(id?: string) {
+    const {
+        planDetails,
+        planDetailsLoading,
+        planDetailsError,
+        fetchPlanDetail,
+    } = useAccountSettings();
+
+    useEffect(() => {
+        if (id) void fetchPlanDetail(id);
+    }, [id, fetchPlanDetail]);
+
+    const plan = id ? planDetails[id] ?? null : null;
+    const error = id ? planDetailsError[id] ?? null : null;
+    /* True from the first render until data or an error arrives, so the page
+       never flashes an empty state before the effect has run. */
+    const loading = !!id && !plan && !error;
+
+    return {
+        plan,
+        loading: loading || (id ? !!planDetailsLoading[id] && !plan : false),
+        error,
+        refetch: () => (id ? fetchPlanDetail(id, true) : Promise.resolve(null)),
+    };
 }

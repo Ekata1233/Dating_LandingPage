@@ -11,6 +11,7 @@ import type { BalanceItem, DatePlansSummary } from '../shared/types'
 
 import { useUserProfileData, type UserBalances } from '@/app/context/UserProfileDataContext'
 import { useAccountSettings, type Plan } from '@/app/context/AccountSettingsContext'
+import { useActiveSection } from '@/app/context/ActiveSectionContext';
 
 export type WalletTab = "wallet" | "plans";
 
@@ -57,13 +58,16 @@ function HomeSidebar({
     onSelectPlan,
     className = "",
 }: HomeSidebarProps) {
+    const { activeSection } = useActiveSection()
     const [internalTab, setInternalTab] = React.useState<WalletTab>("wallet")
-    const activeTab = tab ?? internalTab
+    /* On /app/home/plans/[id]/* the panel is plans-only: no Wallet tab, and the
+       tab follows the route rather than local state. */
+    const plansOnly = activeSection === "plans"
+    const activeTab = tab ?? (plansOnly ? "plans" : internalTab)
 
     /* API data */
     const { balances: apiBalances } = useUserProfileData()
     const { plans: apiPlans, plansLoading, plansError, refetchPlans } = useAccountSettings()
-
     const balanceItems = useMemo(
         () => balances ?? toBalanceCards(apiBalances),
         [balances, apiBalances]
@@ -101,9 +105,11 @@ function HomeSidebar({
         <div className={`flex flex-col w-full h-full min-h-0 ${className}`}>
             {/* Tabs */}
             <div className="flex px-3 py-4">
-                <button onClick={() => select("wallet")} className={`flex-1 cursor-pointer text-[14px] py-3 text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
-                    Wallet
-                </button>
+                {!plansOnly && (
+                    <button onClick={() => select("wallet")} className={`flex-1 cursor-pointer text-[14px] py-3 text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
+                        Wallet
+                    </button>
+                )}
                 <button onClick={() => select("plans")} className={`cursor-pointer flex-1 text-[14px] py-3  text-center font-semibold border-b-2 ${activeTab === "plans" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
                     Plans
                 </button>

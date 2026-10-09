@@ -14,7 +14,7 @@ export default function Page() {
   return (
     <Screen
       desktop={<ReferAndEarn />}
-      mobile={<ReferAndEarn fluid showBack={false} onBack={onBack} />}
+      mobile={<ReferAndEarn fluid onBack={onBack} />}
     />
   );
 }

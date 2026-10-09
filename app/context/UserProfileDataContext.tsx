@@ -39,7 +39,88 @@ const FAMILY_INCOME_URL = `${API_BASE_URL}/api/admin/family/options?type=familyI
 const FAMILY_SAVE_URL = `${API_BASE_URL}/api/user/profile/family`;
 
 const MY_BALANCES_URL = `${API_BASE_URL}/api/user/my-balances`;
+const ROSES_URL = `${API_BASE_URL}/api/admin/purchase-store/data/ROSE`;
+const COMPLIMENTS_URL = `${API_BASE_URL}/admin/purchase-store/data/COMPLIMENT`;
+const BOOSTS_URL = `${API_BASE_URL}/api/user/my-balances`;
+const WALLET_URL = `${API_BASE_URL}/api/user/my-balances`;
+const DATEPLANS_URL = `${API_BASE_URL}/user/date-now/date-plan-packages/get-all`;
+export interface DatePlanPackage {
+  id: string;
+  title: string;
+  description: string;
+  planCount: number;
+  price: string;
+  pricePerPlan: string;
+  discount: number;
+  isPopular: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
+export interface DatePlanInfoItem {
+  title: string;
+  description: string;
+}
+
+export interface DatePlanInfo {
+  id: string;
+  howOnePlanWorks: DatePlanInfoItem[];
+  whyPeopleBuyPlans: DatePlanInfoItem[];
+  goodToKnow: DatePlanInfoItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DatePlansData {
+  availableDatePlan: number;
+  packages: DatePlanPackage[];
+  info: DatePlanInfo;
+}
+
+export interface DatePlansApiResponse {
+  success: boolean;
+  data: DatePlansData;
+}
+export interface StorePack {
+  id: string;
+  itemType: string;
+  title: string;
+  quantity: number;
+  pricePerUnit: string;
+  totalPrice: string;
+  badge: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoreInfo {
+  id: string;
+  itemType: string;
+  title: string;
+  description: string;
+  tag: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoreData {
+  itemType: string;
+  availableRoses: number;
+  packs: StorePack[];
+  info: StoreInfo[];
+}
+
+export interface StoreApiResponse {
+  success: boolean;
+  message: string;
+  data: StoreData;
+}
 const FAMILY_OPTION_URLS: Record<FamilyOptionKey, string> = {
     familyStatus: FAMILY_STATUS_URL,
     familyType: FAMILY_TYPE_URL,
@@ -167,7 +248,7 @@ export interface ReferralActionResponse {
 }
 export interface Sibling {
     /** The `siblingtype` option naming this row's side of the family. */
-    relationId?: number;
+    siblingTypeId?: number;
     occupationId?: number;
     maritalId?: number;
 }
@@ -183,7 +264,6 @@ export interface FamilyProfilePayload {
     nativePlaceId?: number;
     familyIncomeId?: number;
     /** The `siblingtype` option for the sister/brother counts the user picked. */
-    siblingTypeId?: number;
     siblings: Sibling[];
 }
 /* ---------------------------- Religion ---------------------------- */
@@ -793,7 +873,7 @@ export function UserProfileDataProvider({
         try {
             setSaveFamilyLoading(true);
             setSaveFamilyError(null);
-
+            console.log("Sending Data : ",data)
             const response = await axios.patch(
                 FAMILY_SAVE_URL,
                 data,
@@ -801,6 +881,7 @@ export function UserProfileDataProvider({
                     headers: authHeader(),
                 }
             );
+            console.log("Response Data : ",response)
             if (response.data?.success) {
                 return response.data as ReferralActionResponse;
             }

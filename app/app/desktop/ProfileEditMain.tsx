@@ -1025,7 +1025,7 @@ function toFamilyRequest(
       const maritalId = Number(row.marital) || undefined;
 
       return {
-        ...(relationId ? { relationId } : {}),
+        ...(siblingTypeId ? { siblingTypeId, } : {}),
         ...(occupationId ? { occupationId } : {}),
         ...(maritalId ? { maritalId } : {}),
       };
@@ -1042,7 +1042,6 @@ function toFamilyRequest(
     familyHomeId: id("familyHome"),
     nativePlaceId: id("nativePlace"),
     familyIncomeId: id("familyIncome"),
-    siblingTypeId,
     siblings,
   };
 }

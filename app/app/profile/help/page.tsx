@@ -13,7 +13,7 @@ export default function Page() {
   return (
     <Screen
       desktop={<HelpSupport faqs={faqs}/>}
-      mobile={<HelpSupport fluid showBack={false} onBack={onBack} faqs={faqs} />}
+      mobile={<HelpSupport fluid onBack={onBack} faqs={faqs} />}
     />
   );
 }

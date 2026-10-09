@@ -33,6 +33,7 @@ const AppRail: React.FC<AppRailProps> = ({ section }) => {
 
   switch (section) {
     case "home":
+    case "plans":
       return <HomeSidebar />;
 
     case "admirer":

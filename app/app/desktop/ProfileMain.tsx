@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   Astroid,
   Briefcase,
@@ -18,15 +18,21 @@ import {
 import { Loader, Notice } from "../shared/Loader";
 import ProfileDetailSections, { Section } from "./ProfileDetailSections";
 import type { Profile } from "../shared/types";
+import { mergeUserDetails } from "../shared/mapUser";
 import { useMyProfile } from "../shared/useMyProfile";
+import { useUserDetails } from "@/app/context/UsersContext";
 
 /* -------------------------------------------------------------------------- */
 /*  My profile (desktop + mobile preview).                                    */
 /*                                                                            */
 /*  Same card as `HomeMain` (hero photo, chips, name/age, ABOUT / BASICS /    */
 /*  deep sections, gallery), but pointed at the signed-in user instead of a   */
-/*  swipe deck. No swipe gestures, action buttons or keyboard bar.            */
+/*  swipe deck. Deep details are loaded the same way as HomeMain:             */
+/*  `useUserDetails` + `mergeUserDetails` + `ProfileDetailSections`.          */
 /* -------------------------------------------------------------------------- */
+
+/** Card scroll depth (px) that counts as "the user opened the profile". */
+const DETAILS_SCROLL_TRIGGER_PX = 40;
 
 export interface ProfileMainProps {
   /** Pre-resolved profile. The hook fetches one when this is omitted. */
@@ -53,16 +59,50 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
 
   const cardScrollRef = useRef<HTMLDivElement>(null);
 
+  /* ------------------------------------------------------------------ */
+  /*  Deep profile (same flow as HomeMain)                              */
+  /*                                                                    */
+  /*  `useUserDetails` only reads the cache; `ensure()` is a no-op once  */
+  /*  the user is cached or in flight, so it is safe to call freely.     */
+  /*  There is no swipe burst here, so we request as soon as the         */
+  /*  profile is known instead of waiting for an idle delay.             */
+  /* ------------------------------------------------------------------ */
+  const { details, state: detailsState, ensure: requestDetails, refresh: detailsRetry } =
+    useUserDetails(profile?.id);
+
+  const requestDetailsRef = useRef(requestDetails);
+  useEffect(() => {
+    requestDetailsRef.current = requestDetails;
+  }, [requestDetails]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    requestDetailsRef.current?.();
+  }, [profile?.id]);
+
+  /* The profile enriched with whatever the details endpoint returned. */
+  const enriched = useMemo(
+    () => (profile && details ? mergeUserDetails(profile, details) : profile),
+    [profile, details]
+  );
+
+  const handleCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (e.currentTarget.scrollTop > DETAILS_SCROLL_TRIGGER_PX) requestDetails();
+  };
+
   const openProfile = () => {
-    if (!profile) return;
-    onExpand?.(profile.id);
+    if (!enriched) return;
+    /* Explicit intent: don't wait for anything. */
+    requestDetails();
+    onExpand?.(enriched.id);
     const el = cardScrollRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
   const gallery = useMemo(
-    () => (profile?.gallery?.length ? profile.gallery : profile ? [profile.image] : []),
-    [profile]
+    () =>
+      enriched?.gallery?.length ? enriched.gallery : enriched ? [enriched.image] : [],
+    [enriched]
   );
   /* Extra photos below the hero. Users with a single photo get none. */
   const extraPhotos = gallery.slice(1);
@@ -90,7 +130,7 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
     );
   }
 
-  if (!profile) {
+  if (!enriched) {
     return (
       <main className={frameClass}>
         <Notice
@@ -105,20 +145,20 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
 
   /* Rows without a real value are dropped instead of rendering a dash. */
   const facts = ([
-    { label: "Birth Date", value: profile.birth_date, icon: Calendar },
-    { label: "Height", value: profile.height, icon: Ruler },
-    { label: "Location", value: profile.location, icon: MapPin },
-    { label: "Occupation", value: profile.occupation, icon: Briefcase },
-    { label: "Looking for", value: profile.lookingFor, icon: Heart },
-    { label: "Education", value: profile.education, icon: GraduationCap },
-    { label: "Religion", value: profile.religion, icon: Church },
-    { label: "Community", value: profile.community, icon: Users },
-    { label: "Mother tongue", value: profile.motherTongue, icon: Languages },
-    { label: "Zodiac", value: profile.zodiac, icon: Moon },
-    { label: "Gender", value: profile.gender, icon: User },
+    { label: "Birth Date", value: enriched.birth_date, icon: Calendar },
+    { label: "Height", value: enriched.height, icon: Ruler },
+    { label: "Location", value: enriched.location, icon: MapPin },
+    { label: "Occupation", value: enriched.occupation, icon: Briefcase },
+    { label: "Looking for", value: enriched.lookingFor, icon: Heart },
+    { label: "Education", value: enriched.education, icon: GraduationCap },
+    { label: "Religion", value: enriched.religion, icon: Church },
+    { label: "Community", value: enriched.community, icon: Users },
+    { label: "Mother tongue", value: enriched.motherTongue, icon: Languages },
+    { label: "Zodiac", value: enriched.zodiac, icon: Moon },
+    { label: "Gender", value: enriched.gender, icon: User },
   ] as Fact[]).filter((fact) => Boolean(fact.value));
 
-  const isOnline = Boolean(profile.isOnline);
+  const isOnline = Boolean(enriched.isOnline);
 
   return (
     <main className={`flex-1 flex px-2 py-2 flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
@@ -131,12 +171,16 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
           } rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out`}
         >
           {/* Scrollable content – scroll down to view full profile */}
-          <div ref={cardScrollRef} className="h-full overflow-y-auto scrollbar-hide overscroll-contain">
+          <div
+            ref={cardScrollRef}
+            onScroll={handleCardScroll}
+            className="h-full overflow-y-auto scrollbar-hide overscroll-contain"
+          >
             {/* Photo – full card height */}
             <div className="relative h-full shrink-0">
               <img
-                src={profile.image}
-                alt={profile.name}
+                src={enriched.image}
+                alt={enriched.name}
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
@@ -152,27 +196,27 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
                       Online
                     </span>
                   )}
-                  {profile.isBoosted && (
+                  {enriched.isBoosted && (
                     <span className="rounded-full bg-[#a78bfa]/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                       Boosted
                     </span>
                   )}
-                  {typeof profile.trust === "number" && (
+                  {typeof enriched.trust === "number" && (
                     <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-white flex items-center gap-1">
                       <span className="bg-blue-400 rounded-full w-[5px] h-[5px]" />
-                      {profile.trust}% trust
+                      {enriched.trust}% trust
                     </span>
                   )}
-                  {profile.interestedIn && (
+                  {enriched.interestedIn && (
                     <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-white flex items-center gap-1">
                       <span className="bg-pink-400 rounded-full w-[5px] h-[5px]" />
-                      Interested in {profile.interestedIn}
+                      Interested in {enriched.interestedIn}
                     </span>
                   )}
-                  {typeof profile.replyTime === "string" && profile.replyTime && (
+                  {typeof enriched.replyTime === "string" && enriched.replyTime && (
                     <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-white flex items-center gap-1">
                       <span className="bg-yellow-400 rounded-full w-[5px] h-[5px]" />
-                      {profile.replyTime}
+                      {enriched.replyTime}
                     </span>
                   )}
                 </div>
@@ -180,13 +224,13 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
                 <div className="flex items-end justify-between">
                   <div className="min-w-0">
                     <h2 className="text-3xl font-extrabold text-white drop-shadow-lg truncate">
-                      {profile.name}
-                      {profile.age > 0 && (
-                        <span className="ml-2 font-normal text-white/80">{profile.age}</span>
+                      {enriched.name}
+                      {enriched.age > 0 && (
+                        <span className="ml-2 font-normal text-white/80">{enriched.age}</span>
                       )}
                     </h2>
-                    {profile.bio && (
-                      <p className="text-sm text-white/60 mt-1 line-clamp-2">{profile.bio}</p>
+                    {enriched.bio && (
+                      <p className="text-sm text-white/60 mt-1 line-clamp-2">{enriched.bio}</p>
                     )}
                   </div>
                 </div>
@@ -211,8 +255,8 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
                   <Astroid size={12} fill="currentColor" />
                   <span>ABOUT</span>
                 </h3>
-                {profile.about ? (
-                  <p className="mt-2 text-[13px] leading-relaxed text-[#5F5A55]">{profile.about}</p>
+                {enriched.about ? (
+                  <p className="mt-2 text-[13px] leading-relaxed text-[#5F5A55]">{enriched.about}</p>
                 ) : (
                   <p className="mt-2 text-[12px] text-[#9C948C]">No bio yet.</p>
                 )}
@@ -251,37 +295,28 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
                   <img
                     className="rounded-2xl w-full"
                     src={extraPhotos[0]}
-                    alt={`${profile.name} photo 2`}
+                    alt={`${enriched.name} photo 2`}
                     loading="lazy"
                     draggable={false}
                   />
                 </div>
               )}
 
-              {/* Deep profile sections. The onboarding-details payload already
-                  carries everything, so state is always "ready". */}
-              <ProfileDetailSections profile={profile} state="ready" onRetry={retry} />
-
-              {/* GALLERY IMG 3 */}
-              {extraPhotos[1] && (
-                <div>
-                  <img
-                    className="rounded-2xl w-full"
-                    src={extraPhotos[1]}
-                    alt={`${profile.name} photo 3`}
-                    loading="lazy"
-                    draggable={false}
-                  />
-                </div>
-              )}
+              {/* Deep profile: TRAITS, LOOKING FOR, PROMPTS, CAREER, LIFESTYLE,
+                  INTERESTS, FAMILY, NETWORKING. Same wiring as HomeMain. */}
+              <ProfileDetailSections
+                profile={enriched}
+                state={detailsState}
+                onRetry={detailsRetry}
+              />
 
               {/* Remaining photos */}
-              {gallery.slice(3).map((image, index) => (
+              {gallery.slice(4).map((image, index) => (
                 <div key={index}>
                   <img
                     className="rounded-2xl w-full"
                     src={image}
-                    alt={`${profile.name} photo ${index + 4}`}
+                    alt={`${enriched.name} photo ${index + 4}`}
                     loading="lazy"
                     draggable={false}
                   />

@@ -1,6 +1,5 @@
 import { Faq } from "@/app/context/AccountSettingsContext";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
-import { useRouter } from "next/router";
 import React, { useCallback } from "react";
 
 /* -------------------------------------------------------------------------- */

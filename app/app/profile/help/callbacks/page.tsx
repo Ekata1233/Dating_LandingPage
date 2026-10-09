@@ -37,7 +37,7 @@ export default function Page() {
     return (
         <Screen
             desktop={<CallbackMain onBack={onBack} history={callbackHistory} onHelp={() => { router.push("/app/profile/help") }} onConfirm={handleConfirmCallback} />}
-            mobile={<CallbackMain fluid showBack={false} history={callbackHistory} onHelp={() => { router.push("/app/profile/help") }} onBack={onBack} onConfirm={handleConfirmCallback} />}
+            mobile={<CallbackMain fluid history={callbackHistory} onHelp={() => { router.push("/app/profile/help") }} onBack={onBack} onConfirm={handleConfirmCallback} />}
         />
     );
 }

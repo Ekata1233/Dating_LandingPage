@@ -7,7 +7,8 @@ import {
   formatPrice,
   pickTopFeatures,
 } from "@/lib/planUtils";
-
+import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useRouter } from "next/navigation";
 export interface PlanCardProps {
   /** Plan from the API. */
   plan: Plan;
@@ -52,6 +53,7 @@ const FlameIcon = () => (
   </svg>
 );
 
+
 export default function PremiumPlusCard({
   plan,
   width = "250px",
@@ -62,7 +64,10 @@ export default function PremiumPlusCard({
   const features = pickTopFeatures(plan, 5);
   const name = formatPlanName(plan.name);
   const hasDiscount = plan.originalPrice > plan.price;
-
+  const router = useRouter()
+function handlePlanCardClick(plan: Plan) {
+  router.push(`/app/home/plans/${plan.id}`)
+}
   return (
     <div
       className={className}
@@ -164,7 +169,7 @@ export default function PremiumPlusCard({
       {/* CTA */}
       <button
         type="button"
-        onClick={() => onSelect?.(plan.slug)}
+        onClick={() => handlePlanCardClick(plan)}
         disabled={busy}
         style={{
           width: "100%",

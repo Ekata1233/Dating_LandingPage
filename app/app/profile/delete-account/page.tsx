@@ -32,7 +32,7 @@ export default function Page() {
     return (
         <Screen
             desktop={<DeleteAccountMain onBack={onBack} onContinue={() => { router.push("/app/home") }} onDeleteAccount={handleDeleteAccount} />}
-            mobile={<DeleteAccountMain fluid showBack={false} onContinue={() => { router.push("/app/home") }} onBack={onBack} onDeleteAccount={handleDeleteAccount} />}
+            mobile={<DeleteAccountMain fluid onContinue={() => { router.push("/app/home") }} onBack={onBack} onDeleteAccount={handleDeleteAccount} />}
         />
     );
 }

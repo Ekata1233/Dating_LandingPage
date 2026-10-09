@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
 import type { BalanceItem, DatePlansSummary } from "../shared/types";
 import { UserBalances, useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { useRouter } from "next/navigation";
 
 export interface BalanceItemProps {
   label: string;
@@ -29,10 +30,10 @@ export interface BalanceCard {
   emoji: string;
 }
 export const toBalanceCards = (b: UserBalances | null): BalanceCard[] => [
-  { label: "Roses",       value: String(b?.roses.balance ?? 0),       bg: "#fdeecb", emoji: "⭐" },
+  { label: "Roses", value: String(b?.roses.balance ?? 0), bg: "#fdeecb", emoji: "⭐" },
   { label: "Compliments", value: String(b?.compliments.balance ?? 0), bg: "#fbe1e6", emoji: "💌" },
-  { label: "My Boosts",   value: String(b?.boosts.balance ?? 0),      bg: "#dcebfa", emoji: "🚀" },
-  { label: "My Wallet",   value: b?.wallet.formattedBalance ?? "₹0",  bg: "#fbdce8", emoji: "👛" },
+  { label: "My Boosts", value: String(b?.boosts.balance ?? 0), bg: "#dcebfa", emoji: "🚀" },
+  { label: "My Wallet", value: b?.wallet.formattedBalance ?? "₹0", bg: "#fbdce8", emoji: "👛" },
 ];
 
 export default function MyBalances({
@@ -42,7 +43,15 @@ export default function MyBalances({
   className = "",
 }: MyBalancesProps) {
   const { balances } = useUserProfileData();
-  const cards = useMemo(() => toBalanceCards(balances), [balances]); return (
+  const cards = useMemo(() => toBalanceCards(balances), [balances]);
+  const router = useRouter()
+  function handleCardOnClick(item: BalanceItem) {
+    router.push(`/app/home/myBalances/${item.label.toLowerCase().replace(/\s/g, '')}`)
+  }
+  function handleDatePlanClick() {
+    router.push(`/app/home/myBalances/datePlans`)
+  }
+  return (
     <div
       className={className}
       style={{
@@ -65,7 +74,6 @@ export default function MyBalances({
       </div>
 
       <div
-        className="cursor-pointer"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -74,20 +82,11 @@ export default function MyBalances({
       >
         {cards?.map((item) => (
           <div
+            className="cursor-pointer"
             key={item.label}
             role={onAdd ? "button" : undefined}
             tabIndex={onAdd ? 0 : undefined}
-            onClick={() => onAdd?.(item.label)}
-            onKeyDown={
-              onAdd
-                ? (e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onAdd(item.label);
-                  }
-                }
-                : undefined
-            }
+            onClick={() => handleCardOnClick(item)}
             style={{
               position: "relative",
               background: "#ffffff",
@@ -97,7 +96,6 @@ export default function MyBalances({
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
               textAlign: "center",
               boxSizing: "border-box",
-              cursor: onAdd ? "pointer" : "default",
             }}
           >
             {/* Plus badge */}
@@ -153,7 +151,7 @@ export default function MyBalances({
             </div>
 
             {/* Label */}
-            <div style={{ color: "#8a8a8a", fontSize: "9px", fontWeight: 400 }}>
+            <div style={{ color: "#8a8a8a", fontSize: "9px", fontWeight: 400 }} >
               {item.label}
             </div>
           </div>
@@ -161,8 +159,7 @@ export default function MyBalances({
       </div>
       {/* Date Plans */}
       <div className='h-20 mt-5'>
-
-        <div className={`dp-card${onDatePlanClick ? " cursor-pointer" : ""}`} onClick={onDatePlanClick}>
+        <div className={`dp-card cursor-pointer`} onClick={handleDatePlanClick}>
           <style>{`
         .dp-card {
           container-type: inline-size;

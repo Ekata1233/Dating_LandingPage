@@ -24,6 +24,7 @@ export type ActiveSection =
   | "edit-profile"
   | "refer-earn"
   | "help"
+  | "plans"
   | "pause-account"
   | "delete-account"
   | "resume-account"
@@ -50,6 +51,7 @@ export const SECTION_PATH: Record<ActiveSection, string> = {
   "resume-account": "/app/profile/resume-account",
   "events": "/events",
   "callback": "/app/profile/help/callbacks",
+  "plans": "/app/home/plans/[id]",
   logout: "/app/profile/logout",
 };
 
@@ -65,6 +67,11 @@ const SECTION_BY_PATH: Record<string, ActiveSection> = Object.fromEntries(
  */
 export function sectionFromPathname(pathname: string): ActiveSection {
   const path = pathname.replace(/\/+$/, "") || APP_ROOT;
+
+  /* Plan detail and checkout are real URLs under a section whose SECTION_PATH
+     entry is the `[id]` template, so they can only match on prefix. */
+  const plansPrefix = SECTION_PATH.plans.replace("[id]", "");
+  if (path.startsWith(plansPrefix)) return "plans";
 
   return SECTION_BY_PATH[path] ?? DEFAULT_SECTION;
 }
@@ -142,6 +149,7 @@ export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
   "resume-account": "you",
   "events": "events",
   "callback": "you",
+  "plans": "home",
   logout: "you",
 };
 
@@ -174,5 +182,6 @@ export const SECTION_META: Record<ActiveSection, SectionMeta> = {
   "callback": { title: "Callback", backTo: "help" },
   "delete-account": { title: "Delete Account", backTo: "profile" },
   "resume-account": { title: "Resume Account", backTo: "profile" },
+  "plans": { title: "Plans", backTo: "home" },
   logout: { title: "Log out", backTo: "profile" },
 };
