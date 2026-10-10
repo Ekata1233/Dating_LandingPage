@@ -280,7 +280,7 @@ function Navbar({ logoSrc }: NavbarProps) {
                 <span className="relative z-10">Log in</span>
                 <span className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-14deg] transition-transform duration-500 group-hover:translate-x-[120%]" />
               </button>
-            )} */}
+            )}
           </div>
         </div>
 
@@ -370,7 +370,7 @@ function Navbar({ logoSrc }: NavbarProps) {
               </li>
             ))}
           </ul>
-          {/* <div className="flex flex-col gap-3 px-4 pb-5 sm:px-6">
+          <div className="flex flex-col gap-3 px-4 pb-5 sm:px-6">
             {loggedIn ? (
               <>
                 {/* Logged in → profile button → /app */}
@@ -434,12 +434,12 @@ function Navbar({ logoSrc }: NavbarProps) {
                 <span className="absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-14deg] transition-transform duration-500 group-hover:translate-x-[120%]" />
               </button>
             )}
-          </div> */}
+          </div>
         </div>
       )}
 
       {/* Login modal */}
-      {/* <LoginModal
+      <LoginModal
         open={loginOpen}
         onClose={() => setLoginOpen(false)}
         onSuccess={handleLoginSuccess}

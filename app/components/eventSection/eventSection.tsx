@@ -38,7 +38,6 @@ const EventsFallback: Event_Type[] = [
         eventDate: "2026-09-17",
         fullAddress: "Kothrud, Pune",
         bookedCount: 25,
-        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/party.jpg?updatedAt=1789705931343",
     },
     {
@@ -48,7 +47,6 @@ const EventsFallback: Event_Type[] = [
         eventDate: "2026-09-19",
         fullAddress: "Koregaon Park, Pune",
         bookedCount: 42,
-        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/concert.jpg?updatedAt=1789705931443",
     },
     {
@@ -58,7 +56,6 @@ const EventsFallback: Event_Type[] = [
         city: "Pune",
         fullAddress: "Baner, Pune",
         bookedCount: 68,
-        city:"Pune",
         heroImage: "https://ik.imagekit.io/aezmcynwbe/welvors/comedy.jpg?updatedAt=1789705931333",
     },
 ];
