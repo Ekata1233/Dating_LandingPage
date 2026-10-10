@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React from "react";
 import { useLegalData  } from "@/app/context/legalContext";
-import  BlockRenderer  from "@/app/lib/htmlRenderHelpers";
+import  BlockRenderer  from "@/lib/htmlRenderHelpers";
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */

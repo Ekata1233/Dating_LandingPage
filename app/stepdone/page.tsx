@@ -24,7 +24,7 @@ const WAITLIST_USER_API =
 
 interface WaitlistUser {
   id: string;
-  userId: string;
+  welvors_token: string;
   waitlistNumber: number;
   plan: "PAID" | "FREE";
   amountPaid: string;
@@ -66,7 +66,7 @@ const readToken = (): string => {
 /* ---- JWT payload (name/phone fallback ke liye) ---- */
 interface TokenPayload {
   id?: string;
-  userId?: string;
+  welvors_token?: string;
   sub?: string;
   full_name?: string;
   fullName?: string;
@@ -193,7 +193,7 @@ export default function StepDonePage() {
             phone={data.phone}
             city={data.city}
             spotNumber={data.spotNumber}
-            userId={wl?.userId || ""}
+            welvors_token={wl?.welvors_token || ""}
             paymentId={wl?.paymentId || ""}
             amountPaid={wl?.amountPaid || ""}
             onClose={goHome}

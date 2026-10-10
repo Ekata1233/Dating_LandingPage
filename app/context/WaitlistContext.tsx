@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation"; // ⬅ NEW
 import { API_BASE_URL } from "@/utils/api";
+import { createSession } from "@/lib/sessions";
 
 // Types matching your existing config
 export type Status = "idle" | "sending" | "success" | "error";
@@ -407,6 +408,9 @@ export function WaitlistProvider({ children }: { children: ReactNode }) {
           const u = extractUser(data);
           if (u) localStorage.setItem("welvors_user", JSON.stringify(u));
         }
+        /* The client contexts read the cookie, not localStorage, so the session
+           has to exist for the feed and onboarding calls to be authorised. */
+        await createSession(data.token);
         setStatus("idle");
         setErrorMsg("");
 

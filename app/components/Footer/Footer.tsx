@@ -8,14 +8,14 @@ import { ChevronRight } from "lucide-react";
 /*  Brand colors inline                                                */
 /* ------------------------------------------------------------------ */
 const C = {
-  bg: "#2B2A28",
-  headingDark: "#FCF8F4",
-  pink: "#E8587A",
-  body: "#BCB5AE",
-  label: "#8A827B",
-  divider: "rgba(252,248,244,0.1)",
-  socialBg: "rgba(252,248,244,0.08)",
-  socialHover: "rgba(232,88,122,0.15)",
+  bg: "#FCF8F4",                          // light cream background
+  headingDark: "#2B2A28",                 // "Wel" in the wordmark (now dark text)
+  pink: "#E8587A",                        // brand accent stays the same
+  body: "#5E5852",                        // paragraph + link text
+  label: "#7A726B",                       // column headings, copyright
+  divider: "rgba(43,42,40,0.12)",         // bottom border line
+  socialBg: "rgba(43,42,40,0.06)",        // social icon background
+  socialHover: "rgba(232,88,122,0.12)",   // social icon hover tint
 };
 
 /* ------------------------------------------------------------------ */
@@ -150,11 +150,11 @@ const COLUMNS = [
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
-  { label: "Facebook", href: "https://www.facebook.com/", icon: <Icon.Facebook /> },
-  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn /> },
-  { label: "X", href: "https://www.x.com/", icon: <Icon.X /> },
-  { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube /> },
+  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram />, color: "#E4405F" },
+  { label: "Facebook", href: "https://www.facebook.com/", icon: <Icon.Facebook />, color: "#1877F2" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn />, color: "#0A66C2" },
+  { label: "X", href: "https://www.x.com/", icon: <Icon.X />, color: "#111111" },
+  { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube />, color: "#FF0000" },
 ];
 
 function Footer() {
@@ -175,7 +175,7 @@ function Footer() {
           {/* ---- Brand column ---- */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <span
+              {/* <span
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
                 style={{
                   background:
@@ -183,6 +183,13 @@ function Footer() {
                 }}
               >
                 <Icon.Heart />
+              </span> */}
+              <span>
+                <img
+                  src={`/logo.png`}
+                  alt="Welvors"
+                  className="h-[30px] object-cover "
+                />
               </span>
               <span
                 className="text-lg font-bold tracking-tight"
@@ -198,13 +205,13 @@ function Footer() {
             >
               A modern platform built for genuine connections, meaningful conversations, and relationships with purpose. Welvors places authenticity, privacy, security, and trust at the heart of every connection.
 
-              </p>
+            </p>
             <p
               className="mt-2 max-w-xs text-[14px] leading-relaxed"
               style={{ color: C.body }}
-            >                              Welvors is owned and operated by Infynod Tech Private Limited (CIN U62020PN2026PTC258333), Pune.            
+            >                              Welvors is owned and operated by Infynod Tech Private Limited (CIN U62020PN2026PTC258333), Pune.
 
-              </p>
+            </p>
             {/* Socials */}
             <div className="mt-5 flex items-center gap-3">
               {SOCIALS.map((s) => (
@@ -214,8 +221,8 @@ function Footer() {
                   aria-label={s.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="wv-card-lift flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:scale-105"
-                  style={{ color: C.body, backgroundColor: C.socialBg }}
+                  className="welvors-social flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:-translate-y-1"
+                  style={{ color: "#FFFFFF", backgroundColor: "#E8587A" }}
                 >
                   {s.icon}
                 </a>

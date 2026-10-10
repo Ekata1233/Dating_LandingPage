@@ -2,7 +2,7 @@
 
 import React, { SVGProps, useEffect, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 /* ------------------------------------------------------------------ */
 /*  Mockup profile photo — apni image /public me daal ke path yahan     */
@@ -302,23 +302,24 @@ const AVATARS = [
 /* ------------------------------------------------------------------ */
 const STAT_PILLS = ["92% Match", "98% Trust", "~5m Reply"];
 
-const handleDownloadApp = () => {
-  if (typeof document === "undefined") return;
-  const downloadSection = document.getElementById("download-app");
-  if (downloadSection) {
-    downloadSection.scrollIntoView({ behavior: "smooth" });
-  }
-};
 function Header() {
   const [waitlistCount, setWaitlistCount] = useState(515);
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
-
+  const router = useRouter();
   const handleDiscover = () => {
-    if (typeof document === "undefined") return;
-    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    loginBtn?.click();
+    // if (typeof document === "undefined") return;
+    // const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
+    // loginBtn?.click();
+    router.push("/app");
   };
 
+  const handleDownloadApp = () => {
+    if (typeof document === "undefined") return;
+    const downloadSection = document.getElementById("download-app");
+    if (downloadSection) {
+      downloadSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     const BASE = 515;

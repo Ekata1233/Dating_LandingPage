@@ -34,6 +34,7 @@ const EventsFallback: Event_Type[] = [
     {
         id: "1",
         title: "New Year Party",
+        city: "Pune",
         eventDate: "2026-09-17",
         fullAddress: "Kothrud, Pune",
         bookedCount: 25,
@@ -43,6 +44,7 @@ const EventsFallback: Event_Type[] = [
     {
         id: "2",
         title: "Live Music Night",
+        city: "Pune",
         eventDate: "2026-09-19",
         fullAddress: "Koregaon Park, Pune",
         bookedCount: 42,
@@ -53,6 +55,7 @@ const EventsFallback: Event_Type[] = [
         id: "3",
         title: "Comedy Night",
         eventDate: "2026-09-20",
+        city: "Pune",
         fullAddress: "Baner, Pune",
         bookedCount: 68,
         city:"Pune",

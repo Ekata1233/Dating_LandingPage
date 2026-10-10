@@ -14,6 +14,9 @@ import {
 } from "./authConfig";
 import LoginPhone from "../endpoints/steps/LoginPhone";
 import LoginOtp from "../endpoints/steps/LoginOtp";
+import { createSession } from "@/lib/sessions";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 const COLORS = {
   // Frosted / translucent backgrounds
   bgTranslucent: "rgba(252, 248, 244, 0.72)", // navbar (see-through + blur)
@@ -33,9 +36,15 @@ interface LoginModalProps {
   onClose: () => void;
   /** verify hone ke baad — e.g. redirect to /launch */
   onSuccess?: () => void;
+  /**
+   * Path the proxy wanted the visitor to reach (e.g. `/app/home`). Used instead
+   * of the default `/app` after a normal login; new registrations still go to
+   * onboarding first.
+   */
+  redirectTo?: string | null;
 }
 
-export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+export default function LoginModal({ open, onClose, onSuccess, redirectTo }: LoginModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
@@ -49,7 +58,7 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
   // Portal ke liye — SSR-safe
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
+  const router = useRouter()
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -150,13 +159,28 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
 
       const data = await res.json().catch(() => ({} as any));
 
-      if (!res.ok)
+      if (!res.ok) {
+        toast.error(data?.error || data?.message || "That code didn't match. Please try again.");
         return fail(data?.error || data?.message || "That code didn't match. Please try again.");
+      }
+      toast.success( data?.message || "Logged in successfully!");
 
       // Backend token top-level me deta hai: { success, message, token }
-      const token = data?.token;
-      if (token) localStorage.setItem("welvors_token", token);
-      if (data?.user) localStorage.setItem("welvors_user", JSON.stringify(data.user));
+      const token = data?.data.token;
+      console.log("verify otp data : ", data)
+      if (token)
+        await createSession(token);
+
+      if (data.data.is_register) {
+        router.push("/onBoarding");
+      }
+      else if (redirectTo && redirectTo.startsWith("/app")) {
+        /* Came from a protected route — land back where they were headed. */
+        router.push(redirectTo);
+      }
+      else {
+        router.push("/app");
+      }
       setStatus("idle");
       onSuccess?.();
       onClose();
@@ -219,15 +243,15 @@ export default function LoginModal({ open, onClose, onSuccess }: LoginModalProps
             </span>
           </div>
           <div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 items-center cursor-pointer justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
-            style={{ borderColor: C.border, color: C.headingDark }}
-          >
-            <Icon.Close />
-          </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center cursor-pointer justify-center rounded-full border transition-colors hover:bg-[#FCF8F4]"
+              style={{ borderColor: C.border, color: C.headingDark }}
+            >
+              <Icon.Close />
+            </button>
           </div>
 
           {MOCK_MODE && (
