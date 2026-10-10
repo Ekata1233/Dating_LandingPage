@@ -63,8 +63,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.welvors.com"),
 
   title: "WELVORS",
-
-  description:
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  }, description:
     "WELVORS - A trust-driven, emotionally intelligent dating ecosystem.",
 
   alternates: {
@@ -101,6 +104,7 @@ export default function RootLayout({
       `}
     >
       <head>
+        <link rel="icon" type="image/png" href="/logo.png" />
         <link
           rel="preload"
           href="/Intro1.mp4"
@@ -126,9 +130,9 @@ export default function RootLayout({
                   <ActiveSectionProvider>
                     <AccountSettingsProvider >
                       <UserProfileDataProvider >
-                    {children}
-                    <Toaster position="bottom-right" richColors />
-                    </UserProfileDataProvider>
+                        {children}
+                        <Toaster position="bottom-right" richColors />
+                      </UserProfileDataProvider>
                     </AccountSettingsProvider>
                   </ActiveSectionProvider>
                 </EventProvider>

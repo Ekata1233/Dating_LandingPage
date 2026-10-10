@@ -20,5 +20,5 @@ export default function ConditionalNavbar() {
     return null;
   }
 
-  return <Navbar />;
+  return <Navbar logoSrc="/public/logo.png" />;
 }

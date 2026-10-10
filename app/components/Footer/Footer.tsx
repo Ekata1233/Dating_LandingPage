@@ -8,14 +8,14 @@ import { ChevronRight } from "lucide-react";
 /*  Brand colors inline                                                */
 /* ------------------------------------------------------------------ */
 const C = {
-  bg: "#2B2A28",
-  headingDark: "#FCF8F4",
-  pink: "#E8587A",
-  body: "#BCB5AE",
-  label: "#8A827B",
-  divider: "rgba(252,248,244,0.1)",
-  socialBg: "rgba(252,248,244,0.08)",
-  socialHover: "rgba(232,88,122,0.15)",
+  bg: "#FCF8F4",                          // light cream background
+  headingDark: "#2B2A28",                 // "Wel" in the wordmark (now dark text)
+  pink: "#E8587A",                        // brand accent stays the same
+  body: "#5E5852",                        // paragraph + link text
+  label: "#7A726B",                       // column headings, copyright
+  divider: "rgba(43,42,40,0.12)",         // bottom border line
+  socialBg: "rgba(43,42,40,0.06)",        // social icon background
+  socialHover: "rgba(232,88,122,0.12)",   // social icon hover tint
 };
 
 /* ------------------------------------------------------------------ */
@@ -38,6 +38,21 @@ const Icon = {
       <rect x="3" y="3" width="18" height="18" rx="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  Facebook: (p: SVGProps<SVGSVGElement>) => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...p}
+    >
+      <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v3H6v4h3v6h4v-6h3l1-4h-4V9c0-.6.4-1 1-1z" />
     </svg>
   ),
   X: (p: SVGProps<SVGSVGElement>) => (
@@ -129,15 +144,17 @@ const COLUMNS = [
       { label: "Refund & Cancellation", href: "/legalSafety/refund" },
       { label: "Grievance Redressal", href: "/legalSafety/grievance" },
       { label: "Age Policy", href: "/legalSafety/agePolicy" },
+      { label: "Child Safety Policy", href: "/legalSafety/childSafetyPolicy" },
     ],
   },
 ];
 
 const SOCIALS = [
-  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram /> },
-  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn /> },
-  { label: "X", href: "https://www.x.com/", icon: <Icon.X /> },
-  { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube /> },
+  { label: "Instagram", href: "https://www.instagram.com/welvors__official?utm_source=qr&igsh=MXN5bzA0Y2g1emoxMg==", icon: <Icon.Instagram />, color: "#E4405F" },
+  { label: "Facebook", href: "https://www.facebook.com/", icon: <Icon.Facebook />, color: "#1877F2" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: <Icon.LinkedIn />, color: "#0A66C2" },
+  { label: "X", href: "https://www.x.com/", icon: <Icon.X />, color: "#111111" },
+  { label: "YouTube", href: "https://www.youtube.com/", icon: <Icon.YouTube />, color: "#FF0000" },
 ];
 
 function Footer() {
@@ -158,7 +175,7 @@ function Footer() {
           {/* ---- Brand column ---- */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <span
+              {/* <span
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-white"
                 style={{
                   background:
@@ -166,6 +183,13 @@ function Footer() {
                 }}
               >
                 <Icon.Heart />
+              </span> */}
+              <span>
+                <img
+                  src={`/logo.png`}
+                  alt="Welvors"
+                  className="h-[30px] object-cover "
+                />
               </span>
               <span
                 className="text-lg font-bold tracking-tight"
@@ -179,10 +203,15 @@ function Footer() {
               className="mt-4 max-w-xs text-[14px] leading-relaxed"
               style={{ color: C.body }}
             >
-              Dating, done right. Real people, verified profiles, and a safer
-              way to meet someone who actually gets you.
-            </p>
+              A modern platform built for genuine connections, meaningful conversations, and relationships with purpose. Welvors places authenticity, privacy, security, and trust at the heart of every connection.
 
+            </p>
+            <p
+              className="mt-2 max-w-xs text-[14px] leading-relaxed"
+              style={{ color: C.body }}
+            >                              Welvors is owned and operated by Infynod Tech Private Limited (CIN U62020PN2026PTC258333), Pune.
+
+            </p>
             {/* Socials */}
             <div className="mt-5 flex items-center gap-3">
               {SOCIALS.map((s) => (
@@ -192,8 +221,8 @@ function Footer() {
                   aria-label={s.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="wv-card-lift flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:scale-105"
-                  style={{ color: C.body, backgroundColor: C.socialBg }}
+                  className="welvors-social flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-300 hover:-translate-y-1"
+                  style={{ color: "#FFFFFF", backgroundColor: "#E8587A" }}
                 >
                   {s.icon}
                 </a>
@@ -236,21 +265,6 @@ function Footer() {
           className="mt-12 flex flex-col items-center gap-4 border-t pt-6"
           style={{ borderColor: C.divider }}
         >
-          <p
-            className="text-center text-[12px] leading-5"
-            style={{ color: C.label }}
-          >
-            Welvors is a product of Infynod Tech Private Limited · CIN:
-            U62020PN2026PTC258333 · Office No. 307, 3rd Floor, Amanora Chamber,
-            Hadapsar–Kharadi Road, Hadapsar, Pune, Maharashtra – 411028 ·{" "}
-            <a
-              href="mailto:support@welvors.com"
-              className="welvors-footer-link"
-              style={{ color: C.headingDark }}
-            >
-              support@welvors.com
-            </a>
-          </p>
 
           <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <p className="text-[13px]" style={{ color: C.label }}>

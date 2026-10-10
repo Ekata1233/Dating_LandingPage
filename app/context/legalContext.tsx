@@ -11,6 +11,7 @@ const SAFETY_AND_TRUST_URL = `${API_BASE_URL}/api/legal/legal-pages/DATING_SAFET
 const REFUND_AND_CANCELLATION_URL = `${API_BASE_URL}/api/legal/legal-pages/REFUND_CANCELLATION_POLICY`;
 const GRIEVANCE_REDRESSAL_URL = `${API_BASE_URL}/api/legal/legal-pages/GRIEVANCE_OFFICER_REDRESSAL`;
 const AGE_POLICY_18_PLUS_URL = `${API_BASE_URL}/api/legal/legal-pages/AGE_POLICY_18_PLUS`;
+const CHILD_SAFETY_STANDARDS_URL = `${API_BASE_URL}/api/legal/legal-pages/CHILD_SAFETY_STANDARDS`;
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -90,6 +91,7 @@ interface LegalData {
     refundAndCancellation: LegalPage | null;
     grievanceRedressal: LegalPage | null;
     agePolicy18Plus: LegalPage | null;
+    childSafetyPolicy: LegalPage | null;
     loading: boolean;
     error: string | null;
 }
@@ -103,6 +105,7 @@ const LegalContext = createContext<LegalData>({
     refundAndCancellation: null,
     grievanceRedressal: null,
     agePolicy18Plus: null,
+    childSafetyPolicy: null,
     loading: true,
     error: null,
 });
@@ -116,6 +119,7 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
     const [refundAndCancellation, setRefundAndCancellation] = useState<LegalPage | null>(null);
     const [grievanceRedressal, setGrievanceRedressal] = useState<LegalPage | null>(null);
     const [agePolicy18Plus, setAgePolicy18Plus] = useState<LegalPage | null>(null);
+    const [childSafetyPolicy, setChildSafetyPolicy] = useState<LegalPage | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -134,7 +138,7 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
 
         (async () => {
             try {
-                const [r1,r2,r3,r4,r5,r6,r7,r8] = await Promise.all(
+                const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(
                     [publicGet(PRIVACY_POLICY_URL), 
                         publicGet(TERMS_OF_SERVICE_URL), 
                         publicGet(COOKIE_POLICY_URL), 
@@ -142,7 +146,8 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
                         publicGet(SAFETY_AND_TRUST_URL), 
                         publicGet(REFUND_AND_CANCELLATION_URL), 
                         publicGet(GRIEVANCE_REDRESSAL_URL), 
-                        publicGet(AGE_POLICY_18_PLUS_URL)
+                        publicGet(AGE_POLICY_18_PLUS_URL), 
+                        publicGet(CHILD_SAFETY_STANDARDS_URL)
                     ]);
 
                 if (!alive) return;
@@ -194,6 +199,11 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     setError("Couldn't load age policy information.");
                 }
+                if (r9?.success && r9.data) {
+                    setChildSafetyPolicy(r9.data as LegalPage);
+                } else {
+                    setError("Couldn't load child safety policy information.");
+                }
             } catch (err) {
                 console.error("LegalProvider ERROR:", err);
                 if (alive) {
@@ -216,7 +226,7 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
             safetyAndTrust,
             refundAndCancellation,
             grievanceRedressal,
-            agePolicy18Plus, loading, error
+            agePolicy18Plus, childSafetyPolicy, loading, error
         }}>
             {children}
         </LegalContext.Provider>
