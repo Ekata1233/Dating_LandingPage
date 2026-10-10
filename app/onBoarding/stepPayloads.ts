@@ -53,6 +53,18 @@ function num(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * The gender / interested-in enums are SCREAMING-KEBAB on the wire
+ * ("NON-BINARY"). Normalise whatever the stored payload carries — a lone value
+ * or a list, snake-cased or not — to that spelling before it is matched against
+ * an option value. Without this the preference radio hydrates with nothing
+ * selected (the raw `["NON_BINARY"]` matches no option), which is the "who are
+ * you interested in" field rendering blank.
+ */
+function genderEnum(value: unknown): string {
+  return str(value).trim().toUpperCase().replace(/_/g, "-");
+}
+
 /** An unanswered free-text field goes as `null` rather than an empty string. */
 function text(value: unknown): string | null {
   const trimmed = str(value).trim();
@@ -332,10 +344,10 @@ export function stepDataFromDetails(
     };
   }
 
-  const interestedIn = flows.INTERESTED_IN?.interestedIn;
+  const interestedIn = genderEnum(flows.INTERESTED_IN?.interestedIn);
   if (interestedIn) {
     seed.preference = {
-      genders: [interestedIn],
+      genders: interestedIn,
       sexualOrientation: basic?.genderOption,
     };
   }

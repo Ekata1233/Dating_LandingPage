@@ -159,7 +159,7 @@ export const STEP_SCHEMAS: Record<string, StepSchema> = {
         options: [
           { value: "WOMEN", label: "Women", description: "Show me women" },
           { value: "MEN", label: "Men", description: "Show me men" },
-          { value: "NON_BINARY", label: "Non-binary", description: "Show me non-binary people" },
+          { value: "NON-BINARY", label: "Non-binary", description: "Show me non-binary people" },
         ],
         message: "Choose at least one option.",
       },

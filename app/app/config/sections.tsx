@@ -25,9 +25,8 @@ export type ActiveSection =
   | "refer-earn"
   | "help"
   | "plans"
-  | "pause-account"
   | "delete-account"
-  | "resume-account"
+  | "account-status"
   | "events"
   | "callback"
   | "logout";
@@ -46,9 +45,8 @@ export const SECTION_PATH: Record<ActiveSection, string> = {
   "edit-profile": "/app/profile/edit",
   "refer-earn": "/app/profile/refer-earn",
   "help": "/app/profile/help",
-  "pause-account": "/app/profile/pause-account",
+  "account-status":"/app/profile/account-status",
   "delete-account": "/app/profile/delete-account",
-  "resume-account": "/app/profile/resume-account",
   "events": "/events",
   "callback": "/app/profile/help/callbacks",
   "plans": "/app/home/plans/[id]",
@@ -144,9 +142,8 @@ export const NAV_SLOT_BY_SECTION: Record<ActiveSection, NavSlot> = {
   "edit-profile": "you",
   "refer-earn": "you",
   "help": "you",
-  "pause-account": "you",
   "delete-account": "you",
-  "resume-account": "you",
+  "account-status": "you",
   "events": "events",
   "callback": "you",
   "plans": "home",
@@ -177,11 +174,10 @@ export const SECTION_META: Record<ActiveSection, SectionMeta> = {
   "edit-profile": { title: "Edit Profile", backTo: "profile" },
   "refer-earn": { title: "Refer & Earn", backTo: "profile" },
   help: { title: "Help & Support", backTo: "profile" },
-  "pause-account": { title: "Pause Account", backTo: "profile" },
+  "account-status": { title: "Account Status", backTo: "profile" },
   "events": { title: "Events", backTo: "profile" },
   "callback": { title: "Callback", backTo: "help" },
   "delete-account": { title: "Delete Account", backTo: "profile" },
-  "resume-account": { title: "Resume Account", backTo: "profile" },
   "plans": { title: "Plans", backTo: "home" },
   logout: { title: "Log out", backTo: "profile" },
 };

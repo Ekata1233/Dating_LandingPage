@@ -1862,10 +1862,10 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   );
 
   /**
-   * A radio is single-select, so its value is a plain string — but the onboarding
-   * hydration for `genders` seeds a one-element array. `asString` returns "" for an
-   * array, which would render the group with nothing selected. Take the first
-   * entry so both shapes read the same.
+   * A radio is single-select, so its value is a plain string — but hydration can
+   * still hand back a one-element array (older payloads stored `genders` as a
+   * list). `asString` returns "" for an array, which would render the group with
+   * nothing selected. Take the first entry so both shapes read the same.
    */
   const readRadio = (name: string) => {
     const stored = fields[name];
@@ -2939,7 +2939,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
                     kind: "select",
                     /* Sisters are optional — the badge says so, and an unanswered
                        select simply opens no rows below. */
-                    required: false,
+                    required: true,
                     skippable: false,
                     options: countOptionsFor(sisterCount),
                     placeholder: "Select how many",

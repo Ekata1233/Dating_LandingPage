@@ -1,15 +1,22 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
 import { authHeader, getClientToken } from "@/utils/token";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
-const USERS_URL = `${API_BASE_URL}/api/user/feed`;
+const USERS_URL = `${API_BASE_URL}/api/user/feed?limit=30`;
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
-
 
 /* ------------------------------------------------------------------ */
 /*  Types (derived from the sample API response)                      */
@@ -71,9 +78,19 @@ interface UsersApiResponse {
     locationFallbackUsed: boolean;
 }
 
+/**
+ * - idle:    no fetch has been made yet (e.g. no session token available).
+ * - loading: a fetch is in flight.
+ * - success: a fetch finished; `users` may legitimately be empty.
+ * - error:   the last fetch failed.
+ */
+export type UsersStatus = "idle" | "loading" | "success" | "error";
+
 interface UsersData {
     users: UserProfile[];
+    /** True until the first fetch has settled (idle counts as loading). */
     loading: boolean;
+    status: UsersStatus;
     error: string | null;
     refetch: () => void;
 }
@@ -189,9 +206,14 @@ interface UserDetailsApi {
     load: (userId: string, options?: { force?: boolean }) => void;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Contexts                                                          */
+/* ------------------------------------------------------------------ */
+
 const UsersContext = createContext<UsersData>({
     users: [],
     loading: true,
+    status: "idle",
     error: null,
     refetch: () => { },
 });
@@ -208,60 +230,97 @@ const UserDetailsContext = createContext<UserDetailsApi>({
     load: () => { },
 });
 
+/* ------------------------------------------------------------------ */
+/*  Provider                                                          */
+/* ------------------------------------------------------------------ */
+
 export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers] = useState<UserProfile[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<UsersStatus>("idle");
     const [error, setError] = useState<string | null>(null);
+
+    /* Guards against out-of-order responses and updates after unmount. */
+    const requestId = useRef(0);
+    const mounted = useRef(true);
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+
+    /* ------------------------------------------------------------------ */
+    /*  Feed                                                              */
+    /* ------------------------------------------------------------------ */
+
+    const fetchUsers = useCallback(async () => {
+        /* The provider is mounted in the root layout, so it also runs on the
+           public marketing pages. Without a session there is nothing to ask
+           for. That is "not loaded", not "empty": stay idle so consumers keep
+           showing a loader and can call `refetch` once a session exists. */
+        if (!getClientToken()) {
+            setUsers([]);
+            setError(null);
+            setStatus("idle");
+            return;
+        }
+
+        const id = ++requestId.current; // newest request wins
+        setStatus("loading");
+        setError(null);
+
+        try {
+            const response = await axios.get<UsersApiResponse>(USERS_URL, {
+                headers: authHeader(),
+            });
+            if (id !== requestId.current || !mounted.current) return;
+
+            const data = response.data;
+            if (data?.success && Array.isArray(data.users)) {
+                setUsers(data.users);
+                setStatus("success");
+            } else {
+                setError("Couldn't load users.");
+                setStatus("error");
+            }
+        } catch (err) {
+            if (id !== requestId.current || !mounted.current) return;
+            console.error("UsersProvider fetch error:", err);
+            setError("Couldn't load users.");
+            setStatus("error");
+        }
+    }, []);
+
+    useEffect(() => {
+        void fetchUsers();
+    }, [fetchUsers]);
 
     /* ------------------------------------------------------------------ */
     /*  Per-user details cache                                            */
-    /*                                                                   */
-    /*  Cards ask for the profile they are about to show. Results are kept  */
-    /*  per user id so swiping back and forth costs nothing, and concurrent */
-    /*  asks for the same id share one request.                            */
+    /*                                                                    */
+    /*  Cards ask for the profile they are about to show. Results are kept */
+    /*  per user id so swiping back and forth costs nothing, and           */
+    /*  concurrent asks for the same id share one request.                 */
     /* ------------------------------------------------------------------ */
+
     const [detailsById, setDetailsById] = useState<Record<string, UserFeedDetails>>({});
     const [pendingIds, setPendingIds] = useState<Record<string, true>>({});
     const [failedIds, setFailedIds] = useState<Record<string, true>>({});
     const inflight = useRef<Set<string>>(new Set());
-    const isMounted = useRef(false);
-    const fetchUsers = useCallback(async () => {
-        /* The provider is mounted in the root layout, so it also runs on the
-           public marketing pages. Without a session there is nothing to ask
-           for, and the request would only come back 401. */
-        if (!getClientToken()) {
-            setUsers([]);
-            setError(null);
-            setLoading(false);
-            return;
-        }
 
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await axios.get<UsersApiResponse>(USERS_URL, {
-                headers: authHeader()
-            });
-            const data = response.data;
-
-            if (data?.success && Array.isArray(data.users)) {
-                setUsers(data.users);
-            } else {
-                setError("Couldn't load users.");
-            }
-        } catch (err) {
-            console.error("UsersProvider fetch error:", err);
-            setError("Couldn't load users.");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    /* Mirror the cache in refs so `loadDetails` can read the latest values
+       without listing them as dependencies. That keeps its identity (and the
+       `ensure` that wraps it) stable across details fetches. */
+    const detailsRef = useRef(detailsById);
+    const failedRef = useRef(failedIds);
+    detailsRef.current = detailsById;
+    failedRef.current = failedIds;
 
     const loadDetails = useCallback((userId: string, options?: { force?: boolean }) => {
         if (!userId) return;
         if (!getClientToken()) return;
         if (inflight.current.has(userId)) return;
-        if (!options?.force && (detailsById[userId] || failedIds[userId])) return;
+        if (!options?.force && (detailsRef.current[userId] || failedRef.current[userId])) return;
 
         inflight.current.add(userId);
         setPendingIds((prev) => (prev[userId] ? prev : { ...prev, [userId]: true }));
@@ -270,10 +329,9 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             try {
                 const response = await axios.get<UserDetailsApiResponse>(
                     USER_DETAILS_URL(userId),
-                    {
-                        headers: authHeader()
-                    }
+                    { headers: authHeader() }
                 );
+                if (!mounted.current) return;
                 const payload = response.data;
 
                 if (payload?.success && payload.data?.userId) {
@@ -290,60 +348,50 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
                 }
             } catch (err) {
                 console.error(`UsersProvider details error (${userId}):`, err);
+                if (!mounted.current) return;
                 setFailedIds((prev) => (prev[userId] ? prev : { ...prev, [userId]: true }));
             } finally {
                 inflight.current.delete(userId);
-                setPendingIds((prev) => {
-                    if (!prev[userId]) return prev;
-                    const next = { ...prev };
-                    delete next[userId];
-                    return next;
-                });
+                if (mounted.current) {
+                    setPendingIds((prev) => {
+                        if (!prev[userId]) return prev;
+                        const next = { ...prev };
+                        delete next[userId];
+                        return next;
+                    });
+                }
             }
         })();
-    }, [detailsById, failedIds]);
+    }, []);
 
     const detailsApi = useMemo<UserDetailsApi>(
         () => ({ detailsById, pendingIds, failedIds, load: loadDetails }),
         [detailsById, pendingIds, failedIds, loadDetails]
     );
 
-    useEffect(() => {
-        if (!getClientToken()) {
-            setUsers([]);
-            setError(null);
-            setLoading(false);
-            return;
-        }
-        else {
-            let alive = true;
-
-            (async () => {
-                if (!alive) return;
-                await fetchUsers();
-            })();
-
-            return () => {
-                alive = false;
-            };
-        }
-    }, [fetchUsers]);
+    const usersValue = useMemo<UsersData>(
+        () => ({
+            users,
+            status,
+            error,
+            loading: status === "idle" || status === "loading",
+            refetch: fetchUsers,
+        }),
+        [users, status, error, fetchUsers]
+    );
 
     return (
-        <UsersContext.Provider
-            value={{
-                users,
-                loading,
-                error,
-                refetch: fetchUsers,
-            }}
-        >
+        <UsersContext.Provider value={usersValue}>
             <UserDetailsContext.Provider value={detailsApi}>
                 {children}
             </UserDetailsContext.Provider>
         </UsersContext.Provider>
     );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Hooks                                                             */
+/* ------------------------------------------------------------------ */
 
 export function useUsersData() {
     return useContext(UsersContext);

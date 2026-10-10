@@ -1,6 +1,7 @@
 "use client";
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -274,10 +275,8 @@ const COMPLIMENTS_THEME: StoreTheme = {
     accentDeep: "#5a24a8",
     accentSoft: "#efe5fb",
     accentTint: "#f4ebfc",
-    heroGradient: "linear-gradient(160deg, rgba(130,80,200,.55) 0%, rgba(90,40,170,.88) 100%)",
-    // heroImage: "/images/compliments-hero.jpg",
-
-    eyebrowIcon: "mail",
+heroGradient: "linear-gradient(to top, rgba(90,40,170,.88) 0%, rgba(130,80,200,.55) 35%, rgba(130,80,200,.12) 80%, rgba(130,80,200,.08) 100%)",    
+eyebrowIcon: "mail",
     eyebrow: "Say more with words",
     headline: "Send a compliment.\nGet 4× more matches.",
     subline: "Stand out by adding a thoughtful note with your like — on a photo or prompt.",
@@ -323,7 +322,7 @@ export default function ComplimentsStore({
     style,
 }: ComplimentsStoreProps) {
     const theme = COMPLIMENTS_THEME;
-    const { data, loading, error, reload: onRetry } = useStoreData("COMPLIMENT");
+    const { compliments: data, complimentsLoading: loading, complimentsError: error, refetchCompliments: onRetry } = useUserProfileData();
     const { setActiveSection } = useActiveSection();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [buying, setBuying] = useState(false);
@@ -346,8 +345,8 @@ export default function ComplimentsStore({
     const note = availableNote ?? theme.availableNote;
     const pageTitle = title ?? theme.plural;
     const router = useRouter()
-    const handleBack = ()=>{
-      router.push("/app/home")
+    const handleBack = () => {
+        router.push("/app/home")
     };
 
     const handlePurchase = async () => {
@@ -482,9 +481,8 @@ export default function ComplimentsStore({
                                         padding: `${U(5.4)} ${U(4.6)} ${U(5.2)}`,
                                         borderRadius: U(6),
                                         color: C.white,
-                                        background: theme.heroImage
-                                            ? `${theme.heroGradient}, url(${theme.heroImage}) center / cover`
-                                            : theme.heroGradient,
+                                        background:
+                                            `${theme.heroGradient}, url(${`https://ik.imagekit.io/aezmcynwbe/welvors/ComplementsBg.jpeg`}) center / cover`,
                                         boxShadow: `0 ${U(2)} ${U(5)} ${theme.accent}40`,
                                         overflow: "hidden",
                                     }}
@@ -633,104 +631,104 @@ export default function ComplimentsStore({
                                     >
                                         {loading && !packs.length
                                             ? [0, 1, 2].map((i) => (
-                                                  <div key={i} className="wst-skel" style={{ height: U(36), borderRadius: U(5) }} />
-                                              ))
+                                                <div key={i} className="wst-skel" style={{ height: U(36), borderRadius: U(5) }} />
+                                            ))
                                             : packs.map((p) => {
-                                                  const active = p.id === selected?.id;
-                                                  const badge = BADGE_LABEL[p.badge];
-                                                  const dark = p.badge === "BEST_VALUE";
-                                                  return (
-                                                      <button
-                                                          key={p.id}
-                                                          type="button"
-                                                          role="radio"
-                                                          aria-checked={active}
-                                                          className="wst-btn"
-                                                          onClick={() => setSelectedId(p.id)}
-                                                          style={{
-                                                              position: "relative",
-                                                              display: "flex",
-                                                              flexDirection: "column",
-                                                              alignItems: "center",
-                                                              padding: `${U(6.4)} ${U(1.4)} ${U(4.4)}`,
-                                                              minWidth: 0,
-                                                              textAlign: "center",
-                                                              borderRadius: U(5),
-                                                              background: active ? theme.accentTint : C.white,
-                                                              border: `${U(0.5)} solid ${active ? theme.accent : "transparent"}`,
-                                                              boxShadow: `0 ${U(0.8)} ${U(3)} rgba(0,0,0,.06)`,
-                                                              color: C.ink,
-                                                          }}
-                                                      >
-                                                          {badge && (
-                                                              <span
-                                                                  style={{
-                                                                      position: "absolute",
-                                                                      top: U(-2.4),
-                                                                      left: "50%",
-                                                                      transform: "translateX(-50%)",
-                                                                      padding: `${U(1.2)} ${U(3.2)}`,
-                                                                      borderRadius: U(3),
-                                                                      background: dark
-                                                                          ? "#1f1f24"
-                                                                          : `linear-gradient(135deg, ${theme.accent}, ${theme.accentDeep})`,
-                                                                      color: C.white,
-                                                                      fontSize: U(2.5),
-                                                                      fontWeight: 500,
-                                                                      whiteSpace: "nowrap",
-                                                                      boxShadow: `0 ${U(0.6)} ${U(1.8)} rgba(0,0,0,.18)`,
-                                                                  }}
-                                                              >
-                                                                  {badge}
-                                                              </span>
-                                                          )}
-                                                          <span
-                                                              style={{
-                                                                  fontSize: U(6.4),
-                                                                  fontWeight: 500,
-                                                                  lineHeight: 1,
-                                                                  color: active ? theme.accent : C.ink,
-                                                              }}
-                                                          >
-                                                              {p.quantity}
-                                                          </span>
-                                                          <span style={{ marginTop: U(2.2), fontSize: U(2.6), color: C.grey }}>
-                                                              {theme.plural}
-                                                          </span>
-                                                          <span style={{ marginTop: U(2.6), fontSize: U(3.1), fontWeight: 600 }}>
-                                                              {money(currencySymbol, p.pricePerUnit)}/each
-                                                          </span>
-                                                          <span style={{ marginTop: U(1.4), fontSize: U(2.4), color: C.greyLight }}>
-                                                              {money(currencySymbol, p.totalPrice)} total
-                                                          </span>
-                                                          <span
-                                                              aria-hidden
-                                                              style={{
-                                                                  marginTop: U(3.4),
-                                                                  width: U(5.2),
-                                                                  height: U(5.2),
-                                                                  borderRadius: "50%",
-                                                                  boxSizing: "border-box",
-                                                                  border: `${U(0.4)} solid ${active ? theme.accent : "#dcdce0"}`,
-                                                                  display: "flex",
-                                                                  alignItems: "center",
-                                                                  justifyContent: "center",
-                                                              }}
-                                                          >
-                                                              {active && (
-                                                                  <span
-                                                                      style={{
-                                                                          width: U(2.8),
-                                                                          height: U(2.8),
-                                                                          borderRadius: "50%",
-                                                                          background: theme.accent,
-                                                                      }}
-                                                                  />
-                                                              )}
-                                                          </span>
-                                                      </button>
-                                                  );
-                                              })}
+                                                const active = p.id === selected?.id;
+                                                const badge = BADGE_LABEL[p.badge];
+                                                const dark = p.badge === "BEST_VALUE";
+                                                return (
+                                                    <button
+                                                        key={p.id}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={active}
+                                                        className="wst-btn"
+                                                        onClick={() => setSelectedId(p.id)}
+                                                        style={{
+                                                            position: "relative",
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            alignItems: "center",
+                                                            padding: `${U(6.4)} ${U(1.4)} ${U(4.4)}`,
+                                                            minWidth: 0,
+                                                            textAlign: "center",
+                                                            borderRadius: U(5),
+                                                            background: active ? theme.accentTint : C.white,
+                                                            border: `${U(0.5)} solid ${active ? theme.accent : "transparent"}`,
+                                                            boxShadow: `0 ${U(0.8)} ${U(3)} rgba(0,0,0,.06)`,
+                                                            color: C.ink,
+                                                        }}
+                                                    >
+                                                        {badge && (
+                                                            <span
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: U(-2.4),
+                                                                    left: "50%",
+                                                                    transform: "translateX(-50%)",
+                                                                    padding: `${U(1.2)} ${U(3.2)}`,
+                                                                    borderRadius: U(3),
+                                                                    background: dark
+                                                                        ? "#1f1f24"
+                                                                        : `linear-gradient(135deg, ${theme.accent}, ${theme.accentDeep})`,
+                                                                    color: C.white,
+                                                                    fontSize: U(2.5),
+                                                                    fontWeight: 500,
+                                                                    whiteSpace: "nowrap",
+                                                                    boxShadow: `0 ${U(0.6)} ${U(1.8)} rgba(0,0,0,.18)`,
+                                                                }}
+                                                            >
+                                                                {badge}
+                                                            </span>
+                                                        )}
+                                                        <span
+                                                            style={{
+                                                                fontSize: U(6.4),
+                                                                fontWeight: 500,
+                                                                lineHeight: 1,
+                                                                color: active ? theme.accent : C.ink,
+                                                            }}
+                                                        >
+                                                            {p.quantity}
+                                                        </span>
+                                                        <span style={{ marginTop: U(2.2), fontSize: U(2.6), color: C.grey }}>
+                                                            {theme.plural}
+                                                        </span>
+                                                        <span style={{ marginTop: U(2.6), fontSize: U(3.1), fontWeight: 600 }}>
+                                                            {money(currencySymbol, p.pricePerUnit)}/each
+                                                        </span>
+                                                        <span style={{ marginTop: U(1.4), fontSize: U(2.4), color: C.greyLight }}>
+                                                            {money(currencySymbol, p.totalPrice)} total
+                                                        </span>
+                                                        <span
+                                                            aria-hidden
+                                                            style={{
+                                                                marginTop: U(3.4),
+                                                                width: U(5.2),
+                                                                height: U(5.2),
+                                                                borderRadius: "50%",
+                                                                boxSizing: "border-box",
+                                                                border: `${U(0.4)} solid ${active ? theme.accent : "#dcdce0"}`,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            {active && (
+                                                                <span
+                                                                    style={{
+                                                                        width: U(2.8),
+                                                                        height: U(2.8),
+                                                                        borderRadius: "50%",
+                                                                        background: theme.accent,
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                     </div>
                                 )}
 
@@ -747,85 +745,85 @@ export default function ComplimentsStore({
                                 >
                                     {loading && !info.length
                                         ? [0, 1, 2, 3].map((i) => (
-                                              <div
-                                                  key={i}
-                                                  className="wst-skel"
-                                                  style={{ height: U(10), borderRadius: U(2), margin: `${U(4)} 0` }}
-                                              />
-                                          ))
+                                            <div
+                                                key={i}
+                                                className="wst-skel"
+                                                style={{ height: U(10), borderRadius: U(2), margin: `${U(4)} 0` }}
+                                            />
+                                        ))
                                         : info.length === 0 ? (
-                                              <p style={{ margin: `${U(6)} 0`, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
-                                                  Nothing to show yet
-                                              </p>
-                                          ) : (
-                                              info.map((row, i) => {
-                                                  const s = theme.infoStyles[i % theme.infoStyles.length];
-                                                  const tag = row.tag
-                                                      ? TAG_STYLE[row.tag] ?? { fg: theme.accentDeep, bg: theme.accentSoft }
-                                                      : null;
-                                                  return (
-                                                      <div
-                                                          key={row.id}
-                                                          style={{
-                                                              display: "flex",
-                                                              alignItems: "flex-start",
-                                                              gap: U(4),
-                                                              padding: `${U(3.6)} 0`,
-                                                              borderTop: i === 0 ? "none" : `${HAIR} solid ${C.border}`,
-                                                          }}
-                                                      >
-                                                          <span
-                                                              style={{
-                                                                  width: U(9.2),
-                                                                  height: U(9.2),
-                                                                  borderRadius: "50%",
-                                                                  flexShrink: 0,
-                                                                  background: s.bg,
-                                                                  color: s.fg,
-                                                                  fontSize: U(4),
-                                                                  display: "flex",
-                                                                  alignItems: "center",
-                                                                  justifyContent: "center",
-                                                              }}
-                                                          >
-                                                              <Icon name={s.icon} />
-                                                          </span>
-                                                          <div style={{ flex: 1, minWidth: 0 }}>
-                                                              <div
-                                                                  style={{
-                                                                      display: "flex",
-                                                                      alignItems: "center",
-                                                                      flexWrap: "wrap",
-                                                                      gap: U(2),
-                                                                  }}
-                                                              >
-                                                                  <h3 style={{ margin: 0, fontSize: U(3.7), fontWeight: 500, lineHeight: 1.25 }}>
-                                                                      {row.title}
-                                                                  </h3>
-                                                                  {tag && row.tag && (
-                                                                      <span
-                                                                          style={{
-                                                                              padding: `${U(0.6)} ${U(2)}`,
-                                                                              borderRadius: U(1.2),
-                                                                              background: tag.bg,
-                                                                              color: tag.fg,
-                                                                              fontSize: U(2.4),
-                                                                              fontWeight: 500,
-                                                                              letterSpacing: "0.04em",
-                                                                          }}
-                                                                      >
-                                                                          {row.tag}
-                                                                      </span>
-                                                                  )}
-                                                              </div>
-                                                              <p style={{ margin: `${U(1.2)} 0 0`, fontSize: U(3.1), lineHeight: 1.45, color: C.grey }}>
-                                                                  {row.description}
-                                                              </p>
-                                                          </div>
-                                                      </div>
-                                                  );
-                                              })
-                                          )}
+                                            <p style={{ margin: `${U(6)} 0`, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
+                                                Nothing to show yet
+                                            </p>
+                                        ) : (
+                                            info.map((row, i) => {
+                                                const s = theme.infoStyles[i % theme.infoStyles.length];
+                                                const tag = row.tag
+                                                    ? TAG_STYLE[row.tag] ?? { fg: theme.accentDeep, bg: theme.accentSoft }
+                                                    : null;
+                                                return (
+                                                    <div
+                                                        key={row.id}
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "flex-start",
+                                                            gap: U(4),
+                                                            padding: `${U(3.6)} 0`,
+                                                            borderTop: i === 0 ? "none" : `${HAIR} solid ${C.border}`,
+                                                        }}
+                                                    >
+                                                        <span
+                                                            style={{
+                                                                width: U(9.2),
+                                                                height: U(9.2),
+                                                                borderRadius: "50%",
+                                                                flexShrink: 0,
+                                                                background: s.bg,
+                                                                color: s.fg,
+                                                                fontSize: U(4),
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            <Icon name={s.icon} />
+                                                        </span>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div
+                                                                style={{
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    flexWrap: "wrap",
+                                                                    gap: U(2),
+                                                                }}
+                                                            >
+                                                                <h3 style={{ margin: 0, fontSize: U(3.7), fontWeight: 500, lineHeight: 1.25 }}>
+                                                                    {row.title}
+                                                                </h3>
+                                                                {tag && row.tag && (
+                                                                    <span
+                                                                        style={{
+                                                                            padding: `${U(0.6)} ${U(2)}`,
+                                                                            borderRadius: U(1.2),
+                                                                            background: tag.bg,
+                                                                            color: tag.fg,
+                                                                            fontSize: U(2.4),
+                                                                            fontWeight: 500,
+                                                                            letterSpacing: "0.04em",
+                                                                        }}
+                                                                    >
+                                                                        {row.tag}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p style={{ margin: `${U(1.2)} 0 0`, fontSize: U(3.1), lineHeight: 1.45, color: C.grey }}>
+                                                                {row.description}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
                                 </section>
 
                                 {/* pro tip */}
@@ -901,9 +899,8 @@ export default function ComplimentsStore({
                                     }}
                                 >
                                     {selected
-                                        ? `${selected.quantity} ${theme.plural.toUpperCase()}${
-                                              BADGE_LABEL[selected.badge] ? ` · ${BADGE_LABEL[selected.badge]}` : ""
-                                          }`
+                                        ? `${selected.quantity} ${theme.plural.toUpperCase()}${BADGE_LABEL[selected.badge] ? ` · ${BADGE_LABEL[selected.badge]}` : ""
+                                        }`
                                         : "SELECT A PACK"}
                                 </span>
                                 <span style={{ fontSize: U(4.6), fontWeight: 600, whiteSpace: "nowrap" }}>
@@ -933,10 +930,9 @@ export default function ComplimentsStore({
                                 {buying
                                     ? "Processing…"
                                     : selected
-                                    ? `Get ${selected.quantity} ${
-                                          selected.quantity === 1 ? theme.singular : theme.plural
-                                      } for ${money(currencySymbol, selected.totalPrice)}`
-                                    : "Select a pack"}
+                                        ? `Get ${selected.quantity} ${selected.quantity === 1 ? theme.singular : theme.plural
+                                        } for ${money(currencySymbol, selected.totalPrice)}`
+                                        : "Select a pack"}
                             </button>
 
                             <p style={{ margin: `${U(3)} 0 0`, textAlign: "center", fontSize: U(2.9), color: C.greyLight }}>

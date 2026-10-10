@@ -336,14 +336,13 @@ export default function ChatSideBar({
 
     return (
         <div
-            className={`msg-scroll ${className ?? ""}`}
+            className={`msg-scroll bg-slate-50 ${className ?? ""}`}
             style={{
                 width: "100%",
                 height: "100%",
                 containerType: "inline-size",
                 overflowY: "auto",
                 overflowX: "hidden",
-                background: C.white,
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
                 boxSizing: "border-box",
@@ -469,7 +468,7 @@ export default function ChatSideBar({
                 {/* list */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                     {conversations.length === 0 ? (
-                        <div
+                        <div 
                             style={{
                                 flex: 1,
                                 display: "flex",
@@ -486,7 +485,7 @@ export default function ChatSideBar({
                         conversations.map((c, i) => (
                             <div
                                 key={c.id}
-                                className="msg-row"
+                                className="msg-row bg-white"
                                 onClick={() => onSelectConversation?.(c.id)}
                                 style={{
                                     display: "flex",

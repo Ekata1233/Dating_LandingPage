@@ -67,12 +67,15 @@ function HomeMain({
   const [roseOpen, setRoseOpen] = useState(false);
   const [swipeDir, setSwipeDir] = useState<SwipeDir | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
-  const { users, loading, error, refetch } = useUsersData();
-  const cardScrollRef = useRef<HTMLDivElement>(null);
+  const { users, loading, error, status, refetch } = useUsersData();
+
   const swipeTimer = useRef<number | null>(null);
   function sendCompliment(text: string, gift: GiftOption) {
 
   }
+  useEffect(() => {
+    if (!profilesProp && status === "idle") refetch();
+  }, [profilesProp, status, refetch]); const cardScrollRef = useRef<HTMLDivElement>(null);
   /* Pointer bookkeeping. `engaged` only flips once the gesture is clearly
      horizontal, so vertical scrolling of the card body keeps working. */
   const gesture = useRef({ startX: 0, startY: 0, engaged: false, pointerId: null as number | null });
@@ -507,17 +510,17 @@ function HomeMain({
                 state={detailsState}
                 onRetry={detailsRetry}
               />
-          {gallery.slice(4).map((image, index) => (
-            <div key={index}>
-              <img
-                className="rounded-2xl w-full"
-                src={image}
-                alt={`${profile.name} photo ${index + 3}`}
-                loading="lazy"
-                draggable={false}
-              />
-            </div>
-          ))}
+              {gallery.slice(4).map((image, index) => (
+                <div key={index}>
+                  <img
+                    className="rounded-2xl w-full"
+                    src={image}
+                    alt={`${profile.name} photo ${index + 3}`}
+                    loading="lazy"
+                    draggable={false}
+                  />
+                </div>
+              ))}
             </div>
           </div>
           {/* Swipe labels */}

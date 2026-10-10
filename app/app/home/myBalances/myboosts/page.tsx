@@ -1,6 +1,7 @@
 "use client";
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -282,8 +283,9 @@ const BOOST_THEME: TabTheme = {
     selectedBg: "#fff0f4",
     popularBg: "#2a2a2e",
     bestBg: "linear-gradient(135deg, #f0518f, #e23a6a)",
-    heroGradient: "linear-gradient(160deg, rgba(70,10,30,.35) 0%, rgba(150,25,70,.85) 100%)",
-    // heroImage: "/images/boost-hero.jpg",
+    heroImage:"https://ik.imagekit.io/aezmcynwbe/welvors/BoostsBg.jpeg",
+    heroGradient:
+        "linear-gradient(to top, rgba(150,25,70,.85) 0%, rgba(120,20,50,.55) 35%, rgba(120,20,50,.12) 80%, rgba(120,20,50,.08) 100%)",    // heroImage: "/images/boost-hero.jpg",
     chipIcon: "bolt",
     chip: "30 min • Nearby",
     headline: "Boost Package",
@@ -317,8 +319,9 @@ const SUPER_THEME: TabTheme = {
     selectedBg: "#fffaf0",
     popularBg: "linear-gradient(135deg, #f0518f, #e23a6a)",
     bestBg: "#111111",
-    heroGradient: "linear-gradient(160deg, rgba(10,10,12,.78) 0%, rgba(20,16,14,.92) 100%)",
-    // heroImage: "/images/super-boost-hero.jpg",
+    heroImage:"https://ik.imagekit.io/aezmcynwbe/welvors/SuperBoostBg.jpeg",
+    heroGradient:
+        "linear-gradient(to top, rgba(20,16,14,.92) 0%, rgba(15,13,13,.65) 35%, rgba(15,13,13,.18) 80%, rgba(15,13,13,.10) 100%)",    // heroImage: "/images/super-boost-hero.jpg",
     chipIcon: "spark",
     chip: "3 hours • Citywide",
     headline: "Super Boost Package",
@@ -372,8 +375,20 @@ export default function BoostStore({
     const [buying, setBuying] = useState(false);
 
     /* both tabs are fetched up-front so switching is instant */
-    const boost = useBoostData("BOOST");
-    const superBoost = useBoostData("SUPER_BOOST");
+    const {
+        boosts: boostData,
+        boostsLoading: boostLoading,
+        boostsError: boostError,
+        refetchBoosts: boostReload,
+    } = useUserProfileData();
+    const {
+        superBoosts: superBoostData,
+        superBoostsLoading: superBoostLoading,
+        superBoostsError: superBoostError,
+        refetchSuperBoosts: superBoostReload,
+    } = useUserProfileData();
+    const boost = { data: boostData, loading: boostLoading, error: boostError, reload: boostReload };
+    const superBoost = { data: superBoostData, loading: superBoostLoading, error: superBoostError, reload: superBoostReload };
     const current = tab === "BOOST" ? boost : superBoost;
     const { data, loading, error, reload } = current;
     const theme = THEMES[tab];
@@ -409,8 +424,8 @@ export default function BoostStore({
         : theme.each;
 
     const router = useRouter()
-    const handleBack = ()=>{
-      router.push("/app/home")
+    const handleBack = () => {
+        router.push("/app/home")
     };
     const handlePurchase = async () => {
         if (!selected || buying) return;
@@ -623,9 +638,8 @@ export default function BoostStore({
                                         padding: `${U(4.4)} ${U(4.6)} ${U(4.4)}`,
                                         borderRadius: U(6),
                                         color: C.white,
-                                        background: theme.heroImage
-                                            ? `${theme.heroGradient}, url(${theme.heroImage}) center / cover`
-                                            : theme.heroGradient,
+                                        background: `${theme.heroGradient}, url(${theme.heroImage}) center / cover`
+                                            ,
                                         boxShadow: `0 ${U(2)} ${U(5)} rgba(0,0,0,.18)`,
                                         overflow: "hidden",
                                     }}
@@ -763,129 +777,129 @@ export default function BoostStore({
                                     >
                                         {loading && !packs.length
                                             ? [0, 1, 2].map((i) => (
-                                                  <div key={i} className="wbs-skel" style={{ height: U(36), borderRadius: U(5) }} />
-                                              ))
+                                                <div key={i} className="wbs-skel" style={{ height: U(36), borderRadius: U(5) }} />
+                                            ))
                                             : packs.map((p) => {
-                                                  const active = p.id === selected?.id;
-                                                  const badge = BADGE_LABEL[p.badge];
-                                                  const badgeBg = p.badge === "BEST_VALUE" ? theme.bestBg : theme.popularBg;
-                                                  const price = priceInfo(p);
-                                                  return (
-                                                      <button
-                                                          key={p.id}
-                                                          type="button"
-                                                          role="radio"
-                                                          aria-checked={active}
-                                                          className="wbs-btn"
-                                                          onClick={() => setPicked((m) => ({ ...m, [tab]: p.id }))}
-                                                          style={{
-                                                              position: "relative",
-                                                              display: "flex",
-                                                              flexDirection: "column",
-                                                              alignItems: "center",
-                                                              padding: `${U(6.4)} ${U(1)} ${U(4.4)}`,
-                                                              minWidth: 0,
-                                                              textAlign: "center",
-                                                              borderRadius: U(5),
-                                                              background: active ? theme.selectedBg : C.white,
-                                                              border: `${U(0.5)} solid ${active ? theme.accent : "transparent"}`,
-                                                              boxShadow: `0 ${U(0.8)} ${U(3)} rgba(0,0,0,.06)`,
-                                                              color: C.ink,
-                                                          }}
-                                                      >
-                                                          {badge && (
-                                                              <span
-                                                                  style={{
-                                                                      position: "absolute",
-                                                                      top: U(-2.4),
-                                                                      left: "50%",
-                                                                      transform: "translateX(-50%)",
-                                                                      padding: `${U(1.2)} ${U(3.2)}`,
-                                                                      borderRadius: U(3),
-                                                                      background: badgeBg,
-                                                                      color: C.white,
-                                                                      fontSize: U(2.5),
-                                                                      fontWeight: 500,
-                                                                      letterSpacing: "0.04em",
-                                                                      textTransform: "uppercase",
-                                                                      whiteSpace: "nowrap",
-                                                                      boxShadow: `0 ${U(0.6)} ${U(1.8)} rgba(0,0,0,.18)`,
-                                                                  }}
-                                                              >
-                                                                  {badge}
-                                                              </span>
-                                                          )}
-                                                          <span
-                                                              style={{
-                                                                  fontSize: U(6.4),
-                                                                  fontWeight: 500,
-                                                                  lineHeight: 1,
-                                                                  color: active && tab === "BOOST" ? theme.accent : C.ink,
-                                                              }}
-                                                          >
-                                                              {p.quantity}
-                                                          </span>
-                                                          <span style={{ marginTop: U(2.2), fontSize: U(2.6), color: C.grey }}>
-                                                              {theme.plural}
-                                                          </span>
-                                                          <span style={{ marginTop: U(2.6), fontSize: U(3.1), fontWeight: 600 }}>
-                                                              {money(currencySymbol, p.pricePerUnit)}/each
-                                                          </span>
+                                                const active = p.id === selected?.id;
+                                                const badge = BADGE_LABEL[p.badge];
+                                                const badgeBg = p.badge === "BEST_VALUE" ? theme.bestBg : theme.popularBg;
+                                                const price = priceInfo(p);
+                                                return (
+                                                    <button
+                                                        key={p.id}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={active}
+                                                        className="wbs-btn"
+                                                        onClick={() => setPicked((m) => ({ ...m, [tab]: p.id }))}
+                                                        style={{
+                                                            position: "relative",
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            alignItems: "center",
+                                                            padding: `${U(6.4)} ${U(1)} ${U(4.4)}`,
+                                                            minWidth: 0,
+                                                            textAlign: "center",
+                                                            borderRadius: U(5),
+                                                            background: active ? theme.selectedBg : C.white,
+                                                            border: `${U(0.5)} solid ${active ? theme.accent : "transparent"}`,
+                                                            boxShadow: `0 ${U(0.8)} ${U(3)} rgba(0,0,0,.06)`,
+                                                            color: C.ink,
+                                                        }}
+                                                    >
+                                                        {badge && (
+                                                            <span
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: U(-2.4),
+                                                                    left: "50%",
+                                                                    transform: "translateX(-50%)",
+                                                                    padding: `${U(1.2)} ${U(3.2)}`,
+                                                                    borderRadius: U(3),
+                                                                    background: badgeBg,
+                                                                    color: C.white,
+                                                                    fontSize: U(2.5),
+                                                                    fontWeight: 500,
+                                                                    letterSpacing: "0.04em",
+                                                                    textTransform: "uppercase",
+                                                                    whiteSpace: "nowrap",
+                                                                    boxShadow: `0 ${U(0.6)} ${U(1.8)} rgba(0,0,0,.18)`,
+                                                                }}
+                                                            >
+                                                                {badge}
+                                                            </span>
+                                                        )}
+                                                        <span
+                                                            style={{
+                                                                fontSize: U(6.4),
+                                                                fontWeight: 500,
+                                                                lineHeight: 1,
+                                                                color: active && tab === "BOOST" ? theme.accent : C.ink,
+                                                            }}
+                                                        >
+                                                            {p.quantity}
+                                                        </span>
+                                                        <span style={{ marginTop: U(2.2), fontSize: U(2.6), color: C.grey }}>
+                                                            {theme.plural}
+                                                        </span>
+                                                        <span style={{ marginTop: U(2.6), fontSize: U(3.1), fontWeight: 600 }}>
+                                                            {money(currencySymbol, p.pricePerUnit)}/each
+                                                        </span>
 
-                                                          {price.discounted ? (
-                                                              <span
-                                                                  style={{
-                                                                      marginTop: U(1.4),
-                                                                      display: "flex",
-                                                                      flexWrap: "wrap",
-                                                                      justifyContent: "center",
-                                                                      alignItems: "baseline",
-                                                                      gap: `0 ${U(1)}`,
-                                                                      fontSize: U(2.4),
-                                                                  }}
-                                                              >
-                                                                  <s style={{ color: C.greyLight }}>
-                                                                      {money(currencySymbol, price.list)}
-                                                                  </s>
-                                                                  <b style={{ fontSize: U(3), fontWeight: 600, color: C.ink }}>
-                                                                      {money(currencySymbol, price.total)}
-                                                                  </b>
-                                                                  <b style={{ fontWeight: 600, color: "#e23a6a" }}>-{price.percent}%</b>
-                                                              </span>
-                                                          ) : (
-                                                              <span style={{ marginTop: U(1.4), fontSize: U(2.4), color: C.greyLight }}>
-                                                                  {money(currencySymbol, p.totalPrice)}
-                                                              </span>
-                                                          )}
+                                                        {price.discounted ? (
+                                                            <span
+                                                                style={{
+                                                                    marginTop: U(1.4),
+                                                                    display: "flex",
+                                                                    flexWrap: "wrap",
+                                                                    justifyContent: "center",
+                                                                    alignItems: "baseline",
+                                                                    gap: `0 ${U(1)}`,
+                                                                    fontSize: U(2.4),
+                                                                }}
+                                                            >
+                                                                <s style={{ color: C.greyLight }}>
+                                                                    {money(currencySymbol, price.list)}
+                                                                </s>
+                                                                <b style={{ fontSize: U(3), fontWeight: 600, color: C.ink }}>
+                                                                    {money(currencySymbol, price.total)}
+                                                                </b>
+                                                                <b style={{ fontWeight: 600, color: "#e23a6a" }}>-{price.percent}%</b>
+                                                            </span>
+                                                        ) : (
+                                                            <span style={{ marginTop: U(1.4), fontSize: U(2.4), color: C.greyLight }}>
+                                                                {money(currencySymbol, p.totalPrice)}
+                                                            </span>
+                                                        )}
 
-                                                          <span
-                                                              aria-hidden
-                                                              style={{
-                                                                  marginTop: U(3.4),
-                                                                  width: U(5.2),
-                                                                  height: U(5.2),
-                                                                  borderRadius: "50%",
-                                                                  boxSizing: "border-box",
-                                                                  border: `${U(0.4)} solid ${active ? theme.accent : "#dcdce0"}`,
-                                                                  display: "flex",
-                                                                  alignItems: "center",
-                                                                  justifyContent: "center",
-                                                              }}
-                                                          >
-                                                              {active && (
-                                                                  <span
-                                                                      style={{
-                                                                          width: U(2.8),
-                                                                          height: U(2.8),
-                                                                          borderRadius: "50%",
-                                                                          background: theme.accent,
-                                                                      }}
-                                                                  />
-                                                              )}
-                                                          </span>
-                                                      </button>
-                                                  );
-                                              })}
+                                                        <span
+                                                            aria-hidden
+                                                            style={{
+                                                                marginTop: U(3.4),
+                                                                width: U(5.2),
+                                                                height: U(5.2),
+                                                                borderRadius: "50%",
+                                                                boxSizing: "border-box",
+                                                                border: `${U(0.4)} solid ${active ? theme.accent : "#dcdce0"}`,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            {active && (
+                                                                <span
+                                                                    style={{
+                                                                        width: U(2.8),
+                                                                        height: U(2.8),
+                                                                        borderRadius: "50%",
+                                                                        background: theme.accent,
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                     </div>
                                 )}
 

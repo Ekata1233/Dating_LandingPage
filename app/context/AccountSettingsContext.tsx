@@ -32,6 +32,7 @@ const planDetailUrl = (id: string) =>
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+
 export type BillingCycle =
     | "YEARLY"
     | "QUARTERLY"
@@ -39,6 +40,18 @@ export type BillingCycle =
     | "HALF_YEARLY";
 
 export type ResetPeriod = "NONE" | "WEEKLY" | "DAILY";
+
+/**
+ * - idle:    no request has been made yet (e.g. no session token at mount).
+ * - loading: a request is in flight.
+ * - success: a request finished; the list may legitimately be empty.
+ * - error:   the last request failed.
+ *
+ * "Not fetched yet" and "fetched, nothing there" are different states, so a
+ * single `loading` boolean isn't enough. The `*Loading` flags exposed below
+ * are derived from this and are true for both idle and loading.
+ */
+export type LoadStatus = "idle" | "loading" | "success" | "error";
 
 export interface PremiumPrice {
     id: string;
@@ -234,9 +247,13 @@ interface AccountSettingsContextData {
 
     /* Plans */
     plans: Plan[];
+    plansStatus: LoadStatus;
+    /** True until the first request settles (idle counts as loading). */
     plansLoading: boolean;
     plansError: string | null;
     refetchPlans: () => Promise<void>;
+    /** Fetches plans only if nothing has been requested yet. */
+    ensurePlans: () => void;
 
     /* Plan details — cached per plan id, fetched on demand */
     planDetails: Record<string, PremiumPlan>;
@@ -250,15 +267,19 @@ interface AccountSettingsContextData {
 
     /* FAQs */
     faqs: Faq[];
+    faqsStatus: LoadStatus;
     faqsLoading: boolean;
     faqsError: string | null;
     refetchFaqs: () => Promise<void>;
+    ensureFaqs: () => void;
 
     /* Callback history */
     callbackHistory: Callback[];
+    callbackHistoryStatus: LoadStatus;
     callbackHistoryLoading: boolean;
     callbackHistoryError: string | null;
     refetchCallbackHistory: () => Promise<void>;
+    ensureCallbackHistory: () => void;
 
     /* Request a callback */
     requestCallback: (
@@ -288,9 +309,11 @@ const AccountSettingsContext = createContext<AccountSettingsContextData>({
     paused: null,
 
     plans: [],
+    plansStatus: "idle",
     plansLoading: true,
     plansError: null,
     refetchPlans: async () => { },
+    ensurePlans: () => { },
 
     planDetails: {},
     planDetailsLoading: {},
@@ -298,19 +321,37 @@ const AccountSettingsContext = createContext<AccountSettingsContextData>({
     fetchPlanDetail: async () => null,
 
     faqs: [],
+    faqsStatus: "idle",
     faqsLoading: true,
     faqsError: null,
     refetchFaqs: async () => { },
+    ensureFaqs: () => { },
 
     callbackHistory: [],
+    callbackHistoryStatus: "idle",
     callbackHistoryLoading: true,
     callbackHistoryError: null,
     refetchCallbackHistory: async () => { },
+    ensureCallbackHistory: () => { },
 
     requestCallback: async () => null,
     requestCallbackLoading: false,
     requestCallbackError: null,
 });
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+type GetResult<T> = { data: T | null; error: string | null };
+
+/** Pulls a readable message out of an unknown thrown value. */
+function errorMessage(err: unknown, fallback: string): string {
+    if (axios.isAxiosError(err)) {
+        return err.response?.data?.message || fallback;
+    }
+    return fallback;
+}
 
 /* ------------------------------------------------------------------ */
 /* Provider                                                           */
@@ -321,6 +362,33 @@ export function AccountSettingsProvider({
 }: {
     children: React.ReactNode;
 }) {
+    /* Guards against state updates after unmount. */
+    const mounted = useRef(true);
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+
+    /* One in-flight promise per resource key. Concurrent callers (StrictMode
+       double effects, several components asking at once) share one request. */
+    const inflight = useRef<Record<string, Promise<void> | undefined>>({});
+    const dedupe = useCallback((key: string, task: () => Promise<void>) => {
+        const existing = inflight.current[key];
+        if (existing) return existing;
+
+        const promise = task().finally(() => {
+            delete inflight.current[key];
+        });
+        inflight.current[key] = promise;
+        return promise;
+    }, []);
+
+    /* ---------------------------------------------------------------- */
+    /* Account actions state                                            */
+    /* ---------------------------------------------------------------- */
+
     const [pauseLoading, setPauseLoading] = useState(false);
     const [resumeLoading, setResumeLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
@@ -333,15 +401,15 @@ export function AccountSettingsProvider({
     const [paused, setPaused] = useState<boolean | null>(null);
 
     /* ---------------------------------------------------------------- */
-    /* Plans State                                                      */
+    /* Plans state                                                      */
     /* ---------------------------------------------------------------- */
 
     const [plans, setPlans] = useState<Plan[]>([]);
-    const [plansLoading, setPlansLoading] = useState(true);
+    const [plansStatus, setPlansStatus] = useState<LoadStatus>("idle");
     const [plansError, setPlansError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
-    /* Plan Details State (keyed by plan id)                            */
+    /* Plan details state (keyed by plan id)                            */
     /* ---------------------------------------------------------------- */
 
     const [planDetails, setPlanDetails] = useState<Record<string, PremiumPlan>>({});
@@ -350,219 +418,220 @@ export function AccountSettingsProvider({
     const [planDetailsError, setPlanDetailsError] =
         useState<Record<string, string | null>>({});
 
-    /* Ids already requested or in flight, so StrictMode double-effects and
-       repeated mounts don't fire the same GET twice. */
+    /* Ids already requested or in flight, so repeated mounts don't fire the
+       same GET twice. Cleared on failure so a retry is possible. */
     const planDetailRequestedRef = useRef<Set<string>>(new Set());
+    const planDetailsRef = useRef(planDetails);
+    planDetailsRef.current = planDetails;
 
     /* ---------------------------------------------------------------- */
-    /* FAQ State                                                        */
+    /* FAQ state                                                        */
     /* ---------------------------------------------------------------- */
 
     const [faqs, setFaqs] = useState<Faq[]>([]);
-    const [faqsLoading, setFaqsLoading] = useState(true);
+    const [faqsStatus, setFaqsStatus] = useState<LoadStatus>("idle");
     const [faqsError, setFaqsError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
-    /* Callback History State                                           */
+    /* Callback history state                                           */
     /* ---------------------------------------------------------------- */
 
     const [callbackHistory, setCallbackHistory] = useState<Callback[]>([]);
-    const [callbackHistoryLoading, setCallbackHistoryLoading] = useState(true);
+    const [callbackHistoryStatus, setCallbackHistoryStatus] =
+        useState<LoadStatus>("idle");
     const [callbackHistoryError, setCallbackHistoryError] =
         useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
-    /* Request Callback State                                           */
+    /* Request callback state                                           */
     /* ---------------------------------------------------------------- */
 
     const [requestCallbackLoading, setRequestCallbackLoading] = useState(false);
     const [requestCallbackError, setRequestCallbackError] =
         useState<string | null>(null);
 
+    /* Mirror the statuses so the `ensure*` functions can read the latest
+       value without depending on it, which keeps their identity stable. */
+    const plansStatusRef = useRef(plansStatus);
+    const faqsStatusRef = useRef(faqsStatus);
+    const callbackHistoryStatusRef = useRef(callbackHistoryStatus);
+    plansStatusRef.current = plansStatus;
+    faqsStatusRef.current = faqsStatus;
+    callbackHistoryStatusRef.current = callbackHistoryStatus;
+
     /* ---------------------------------------------------------------- */
-    /* Generic Auth GET                                                 */
+    /* Generic auth GET                                                 */
     /* ---------------------------------------------------------------- */
 
-    const authGet = useCallback(async (url: string) => {
+    /** Never throws. Returns the body, or the server's error message. */
+    const authGet = useCallback(async <T,>(url: string): Promise<GetResult<T>> => {
         try {
-            const response = await axios.get(url, {
+            const response = await axios.get<T>(url, {
                 headers: authHeader(),
             });
-
-            return response.data;
+            return { data: response.data, error: null };
         } catch (err) {
-            console.error("Support API GET Error:", url, err);
-            return null;
+            console.error("AccountSettings GET error:", url, err);
+            return { data: null, error: errorMessage(err, "") || null };
         }
     }, []);
 
     /* ---------------------------------------------------------------- */
-    /* PAUSE ACCOUNT                                                    */
+    /* PAUSE / RESUME / DELETE ACCOUNT                                  */
     /* ---------------------------------------------------------------- */
 
-    const pauseAccount = async (
-        data: PauseAccountRequest
-    ): Promise<AccountSettingsResponse | null> => {
-        try {
-            setPauseLoading(true);
-            setPauseError(null);
+    const pauseAccount = useCallback(
+        async (data: PauseAccountRequest): Promise<AccountSettingsResponse | null> => {
+            try {
+                setPauseLoading(true);
+                setPauseError(null);
 
-            const response = await axios.patch(PAUSE_ACCOUNT_URL, data, {
-                headers: authHeader(),
-            });
+                const response = await axios.patch(PAUSE_ACCOUNT_URL, data, {
+                    headers: authHeader(),
+                });
 
-            if (response.data?.success) {
-                setPaused(true);
+                if (response.data?.success) {
+                    setPaused(true);
+                    return response.data as AccountSettingsResponse;
+                }
 
-                return response.data as AccountSettingsResponse;
-            }
-
-            setPauseError(
-                response.data?.message || "Couldn't pause your account."
-            );
-
-            return null;
-        } catch (err) {
-            if (axios.isAxiosError(err)) {
+                setPauseError(response.data?.message || "Couldn't pause your account.");
+                return null;
+            } catch (err) {
                 setPauseError(
-                    err.response?.data?.message ||
-                    "Something went wrong while pausing your account."
+                    errorMessage(err, "Something went wrong while pausing your account.")
                 );
-            } else {
-                setPauseError(
-                    "Something went wrong while pausing your account."
-                );
+                return null;
+            } finally {
+                setPauseLoading(false);
             }
+        },
+        []
+    );
 
-            return null;
-        } finally {
-            setPauseLoading(false);
-        }
-    };
+    const resumeAccount = useCallback(
+        async (): Promise<AccountSettingsResponse | null> => {
+            try {
+                setResumeLoading(true);
+                setResumeError(null);
 
-    /* ---------------------------------------------------------------- */
-    /* RESUME ACCOUNT                                                   */
-    /* ---------------------------------------------------------------- */
+                const response = await axios.patch(RESUME_ACCOUNT_URL, undefined, {
+                    headers: authHeader(),
+                });
 
-    const resumeAccount = async (): Promise<AccountSettingsResponse | null> => {
-        try {
-            setResumeLoading(true);
-            setResumeError(null);
+                if (response.data?.success) {
+                    setPaused(false);
+                    return response.data as AccountSettingsResponse;
+                }
 
-            const response = await axios.patch(RESUME_ACCOUNT_URL, undefined, {
-                headers: authHeader(),
-            });
-
-            if (response.data?.success) {
-                setPaused(false);
-
-                return response.data as AccountSettingsResponse;
-            }
-
-            setResumeError(
-                response.data?.message || "Couldn't resume your account."
-            );
-
-            return null;
-        } catch (err) {
-            if (axios.isAxiosError(err)) {
+                setResumeError(response.data?.message || "Couldn't resume your account.");
+                return null;
+            } catch (err) {
                 setResumeError(
-                    err.response?.data?.message ||
-                    "Something went wrong while resuming your account."
+                    errorMessage(err, "Something went wrong while resuming your account.")
                 );
-            } else {
-                setResumeError(
-                    "Something went wrong while resuming your account."
-                );
+                return null;
+            } finally {
+                setResumeLoading(false);
             }
+        },
+        []
+    );
 
-            return null;
-        } finally {
-            setResumeLoading(false);
-        }
-    };
+    const deleteAccount = useCallback(
+        async (): Promise<AccountSettingsResponse | null> => {
+            try {
+                setDeleteLoading(true);
+                setDeleteError(null);
 
-    /* ---------------------------------------------------------------- */
-    /* DELETE ACCOUNT                                                   */
-    /* ---------------------------------------------------------------- */
+                const response = await axios.delete(DELETE_ACCOUNT_URL, {
+                    headers: authHeader(),
+                });
 
-    const deleteAccount = async (): Promise<AccountSettingsResponse | null> => {
-        try {
-            setDeleteLoading(true);
-            setDeleteError(null);
+                if (response.data?.success) {
+                    return response.data as AccountSettingsResponse;
+                }
 
-            const response = await axios.delete(DELETE_ACCOUNT_URL, {
-                headers: authHeader(),
-            });
-
-            if (response.data?.success) {
-                return response.data as AccountSettingsResponse;
-            }
-
-            setDeleteError(
-                response.data?.message || "Couldn't delete your account."
-            );
-
-            return null;
-        } catch (err) {
-            console.error("Delete Account Error:", err);
-
-            if (axios.isAxiosError(err)) {
+                setDeleteError(response.data?.message || "Couldn't delete your account.");
+                return null;
+            } catch (err) {
+                console.error("Delete Account Error:", err);
                 setDeleteError(
-                    err.response?.data?.message ||
-                    "Something went wrong while deleting your account."
+                    errorMessage(err, "Something went wrong while deleting your account.")
                 );
-            } else {
-                setDeleteError(
-                    "Something went wrong while deleting your account."
-                );
+                return null;
+            } finally {
+                setDeleteLoading(false);
             }
-
-            return null;
-        } finally {
-            setDeleteLoading(false);
-        }
-    };
+        },
+        []
+    );
 
     /* ---------------------------------------------------------------- */
     /* PLANS                                                            */
     /* ---------------------------------------------------------------- */
 
-    const applyPlans = useCallback((response: PlansResponse | null) => {
-        if (response?.success && Array.isArray(response.data)) {
-            /* Active plans only, in the order the API sends them. */
-            setPlans(response.data.filter((plan) => plan.active));
-            setPlansError(null);
-        } else {
-            setPlans([]);
-            setPlansError(response?.message || "Couldn't load plans.");
-        }
+    const refetchPlans = useCallback(
+        () =>
+            dedupe("plans", async () => {
+                /* No session: this is "not loaded", not "empty". Stay idle so
+                   a later `ensurePlans` can try again. */
+                if (!getClientToken()) {
+                    setPlansStatus("idle");
+                    return;
+                }
 
-        setPlansLoading(false);
-    }, []);
+                setPlansStatus("loading");
+                setPlansError(null);
 
-    const refetchPlans = useCallback(async () => {
-        setPlansLoading(true);
-        setPlansError(null);
+                const { data, error } = await authGet<PlansResponse>(PLAN_CARDS_URL);
+                if (!mounted.current) return;
 
-        const response = await authGet(PLAN_CARDS_URL);
+                if (data?.success && Array.isArray(data.data)) {
+                    /* Active plans only, in the order the API sends them. */
+                    setPlans(data.data.filter((plan) => plan.active));
+                    setPlansStatus("success");
+                } else {
+                    setPlans([]);
+                    setPlansError(data?.message || error || "Couldn't load plans.");
+                    setPlansStatus("error");
+                }
+            }),
+        [authGet, dedupe]
+    );
 
-        applyPlans(response);
-    }, [authGet, applyPlans]);
+    const ensurePlans = useCallback(() => {
+        if (plansStatusRef.current === "idle") void refetchPlans();
+    }, [refetchPlans]);
 
     /* ---------------------------------------------------------------- */
     /* PLAN DETAILS                                                     */
     /* ---------------------------------------------------------------- */
 
-    const applyPlanDetail = useCallback(
-        (id: string, response: PlanDetailResponse | null): PremiumPlan | null => {
-            if (response?.success && response.data) {
-                const detail = response.data;
+    const fetchPlanDetail = useCallback(
+        async (id: string, force = false): Promise<PremiumPlan | null> => {
+            if (!id) return null;
+            /* Not added to the requested set, so a later call can still run
+               once a session exists. */
+            if (!getClientToken()) return null;
+
+            /* Already cached or in flight — return what we have. */
+            if (!force && planDetailRequestedRef.current.has(id)) {
+                return planDetailsRef.current[id] ?? null;
+            }
+            planDetailRequestedRef.current.add(id);
+
+            setPlanDetailsLoading((prev) => ({ ...prev, [id]: true }));
+            setPlanDetailsError((prev) => ({ ...prev, [id]: null }));
+
+            const { data, error } = await authGet<PlanDetailResponse>(planDetailUrl(id));
+            if (!mounted.current) return null;
+
+            if (data?.success && data.data) {
+                const detail = data.data;
 
                 setPlanDetails((prev) => ({ ...prev, [id]: detail }));
-                setPlanDetailsError((prev) => ({ ...prev, [id]: null }));
                 setPlanDetailsLoading((prev) => ({ ...prev, [id]: false }));
-
                 return detail;
             }
 
@@ -571,108 +640,102 @@ export function AccountSettingsProvider({
 
             setPlanDetailsError((prev) => ({
                 ...prev,
-                [id]: response?.message || "Couldn't load plan details.",
+                [id]: data?.message || error || "Couldn't load plan details.",
             }));
             setPlanDetailsLoading((prev) => ({ ...prev, [id]: false }));
-
             return null;
         },
-        []
-    );
-
-    const fetchPlanDetail = useCallback(
-        async (id: string, force = false): Promise<PremiumPlan | null> => {
-            if (!id) return null;
-            if (!getClientToken()) return null;
-
-            /* Already cached or in flight — skip unless forced. */
-            if (!force && planDetailRequestedRef.current.has(id)) return null;
-            planDetailRequestedRef.current.add(id);
-
-            setPlanDetailsLoading((prev) => ({ ...prev, [id]: true }));
-            setPlanDetailsError((prev) => ({ ...prev, [id]: null }));
-
-            const response = await authGet(planDetailUrl(id));
-
-            return applyPlanDetail(id, response);
-        },
-        [authGet, applyPlanDetail]
+        [authGet]
     );
 
     /* ---------------------------------------------------------------- */
     /* FAQS                                                             */
     /* ---------------------------------------------------------------- */
 
-    const applyFaqs = useCallback((response: FaqResponse | null) => {
-        if (response?.success && Array.isArray(response.data)) {
-            setFaqs(
-                response.data
-                    .filter((faq) => faq.isActive)
-                    .sort((a, b) => a.sortOrder - b.sortOrder)
-            );
-            setFaqsError(null);
-        } else {
-            setFaqs([]);
-            setFaqsError(response?.message || "Couldn't load FAQs.");
-        }
+    const refetchFaqs = useCallback(
+        () =>
+            dedupe("faqs", async () => {
+                if (!getClientToken()) {
+                    setFaqsStatus("idle");
+                    return;
+                }
 
-        setFaqsLoading(false);
-    }, []);
+                setFaqsStatus("loading");
+                setFaqsError(null);
 
-    const refetchFaqs = useCallback(async () => {
-        setFaqsLoading(true);
-        setFaqsError(null);
+                const { data, error } = await authGet<FaqResponse>(SUPPORT_FAQ_URL);
+                if (!mounted.current) return;
 
-        const response = await authGet(SUPPORT_FAQ_URL);
+                if (data?.success && Array.isArray(data.data)) {
+                    setFaqs(
+                        data.data
+                            .filter((faq) => faq.isActive)
+                            .sort((a, b) => a.sortOrder - b.sortOrder)
+                    );
+                    setFaqsStatus("success");
+                } else {
+                    setFaqs([]);
+                    setFaqsError(data?.message || error || "Couldn't load FAQs.");
+                    setFaqsStatus("error");
+                }
+            }),
+        [authGet, dedupe]
+    );
 
-        applyFaqs(response);
-    }, [authGet, applyFaqs]);
+    const ensureFaqs = useCallback(() => {
+        if (faqsStatusRef.current === "idle") void refetchFaqs();
+    }, [refetchFaqs]);
 
     /* ---------------------------------------------------------------- */
     /* CALLBACK HISTORY                                                 */
     /* ---------------------------------------------------------------- */
 
-    const applyCallbackHistory = useCallback(
-        (response: CallbackHistoryResponse | null) => {
-            if (response?.success && Array.isArray(response.data)) {
-                /* Newest first. */
-                setCallbackHistory(
-                    [...response.data].sort(
-                        (a, b) =>
-                            new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime()
-                    )
-                );
-                setCallbackHistoryError(null);
-            } else {
-                setCallbackHistory([]);
-                setCallbackHistoryError(
-                    response?.message || "Couldn't load callback history."
-                );
-            }
+    const refetchCallbackHistory = useCallback(
+        () =>
+            dedupe("callbackHistory", async () => {
+                if (!getClientToken()) {
+                    setCallbackHistoryStatus("idle");
+                    return;
+                }
 
-            setCallbackHistoryLoading(false);
-        },
-        []
+                setCallbackHistoryStatus("loading");
+                setCallbackHistoryError(null);
+
+                const { data, error } =
+                    await authGet<CallbackHistoryResponse>(CALLBACK_HISTORY_URL);
+                if (!mounted.current) return;
+
+                if (data?.success && Array.isArray(data.data)) {
+                    /* Newest first. */
+                    setCallbackHistory(
+                        [...data.data].sort(
+                            (a, b) =>
+                                new Date(b.createdAt).getTime() -
+                                new Date(a.createdAt).getTime()
+                        )
+                    );
+                    setCallbackHistoryStatus("success");
+                } else {
+                    setCallbackHistory([]);
+                    setCallbackHistoryError(
+                        data?.message || error || "Couldn't load callback history."
+                    );
+                    setCallbackHistoryStatus("error");
+                }
+            }),
+        [authGet, dedupe]
     );
 
-    const refetchCallbackHistory = useCallback(async () => {
-        setCallbackHistoryLoading(true);
-        setCallbackHistoryError(null);
-
-        const response = await authGet(CALLBACK_HISTORY_URL);
-
-        applyCallbackHistory(response);
-    }, [authGet, applyCallbackHistory]);
+    const ensureCallbackHistory = useCallback(() => {
+        if (callbackHistoryStatusRef.current === "idle") void refetchCallbackHistory();
+    }, [refetchCallbackHistory]);
 
     /* ---------------------------------------------------------------- */
     /* REQUEST CALLBACK                                                 */
     /* ---------------------------------------------------------------- */
 
     const requestCallback = useCallback(
-        async (
-            data: CallBackPayLoad
-        ): Promise<CallbackActionResponse | null> => {
+        async (data: CallBackPayLoad): Promise<CallbackActionResponse | null> => {
             try {
                 setRequestCallbackLoading(true);
                 setRequestCallbackError(null);
@@ -684,28 +747,17 @@ export function AccountSettingsProvider({
                 if (response.data?.success) {
                     /* Refresh the history so the new request shows up. */
                     await refetchCallbackHistory();
-
                     return response.data as CallbackActionResponse;
                 }
 
                 setRequestCallbackError(
-                    response.data?.message ||
-                    "Couldn't request a callback."
+                    response.data?.message || "Couldn't request a callback."
                 );
-
                 return null;
             } catch (err) {
-                if (axios.isAxiosError(err)) {
-                    setRequestCallbackError(
-                        err.response?.data?.message ||
-                        "Something went wrong while requesting a callback."
-                    );
-                } else {
-                    setRequestCallbackError(
-                        "Something went wrong while requesting a callback."
-                    );
-                }
-
+                setRequestCallbackError(
+                    errorMessage(err, "Something went wrong while requesting a callback.")
+                );
                 return null;
             } finally {
                 setRequestCallbackLoading(false);
@@ -715,35 +767,19 @@ export function AccountSettingsProvider({
     );
 
     /* ---------------------------------------------------------------- */
-    /* INITIAL GET APIs (single Promise.all)                            */
+    /* INITIAL LOAD                                                     */
+    /*                                                                  */
+    /* The provider lives in the root layout, so it can mount before    */
+    /* a session exists. If there is no token here, the requests stay   */
+    /* "idle" and the screens that need the data call `ensure*` (or the */
+    /* hooks below) once they mount, by which time the token is there.  */
     /* ---------------------------------------------------------------- */
 
     useEffect(() => {
-        if (!getClientToken()) {
-            return;
-        }
+        if (!getClientToken()) return;
 
-        let alive = true;
-
-        (async () => {
-            const [faqResponse, historyResponse, plansResponse] =
-                await Promise.all([
-                    authGet(SUPPORT_FAQ_URL),
-                    authGet(CALLBACK_HISTORY_URL),
-                    authGet(PLAN_CARDS_URL),
-                ]);
-
-            if (!alive) return;
-
-            applyFaqs(faqResponse);
-            applyCallbackHistory(historyResponse);
-            applyPlans(plansResponse);
-        })();
-
-        return () => {
-            alive = false;
-        };
-    }, [authGet, applyFaqs, applyCallbackHistory, applyPlans]);
+        void Promise.all([refetchFaqs(), refetchCallbackHistory(), refetchPlans()]);
+    }, [refetchFaqs, refetchCallbackHistory, refetchPlans]);
 
     /* ---------------------------------------------------------------- */
     /* CONTEXT VALUE                                                    */
@@ -766,9 +802,11 @@ export function AccountSettingsProvider({
             paused,
 
             plans,
-            plansLoading,
+            plansStatus,
+            plansLoading: plansStatus === "idle" || plansStatus === "loading",
             plansError,
             refetchPlans,
+            ensurePlans,
 
             planDetails,
             planDetailsLoading,
@@ -776,21 +814,29 @@ export function AccountSettingsProvider({
             fetchPlanDetail,
 
             faqs,
-            faqsLoading,
+            faqsStatus,
+            faqsLoading: faqsStatus === "idle" || faqsStatus === "loading",
             faqsError,
             refetchFaqs,
+            ensureFaqs,
 
             callbackHistory,
-            callbackHistoryLoading,
+            callbackHistoryStatus,
+            callbackHistoryLoading:
+                callbackHistoryStatus === "idle" ||
+                callbackHistoryStatus === "loading",
             callbackHistoryError,
             refetchCallbackHistory,
+            ensureCallbackHistory,
 
             requestCallback,
             requestCallbackLoading,
             requestCallbackError,
         }),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         [
+            pauseAccount,
+            resumeAccount,
+            deleteAccount,
             pauseLoading,
             resumeLoading,
             deleteLoading,
@@ -800,9 +846,10 @@ export function AccountSettingsProvider({
             paused,
 
             plans,
-            plansLoading,
+            plansStatus,
             plansError,
             refetchPlans,
+            ensurePlans,
 
             planDetails,
             planDetailsLoading,
@@ -810,14 +857,16 @@ export function AccountSettingsProvider({
             fetchPlanDetail,
 
             faqs,
-            faqsLoading,
+            faqsStatus,
             faqsError,
             refetchFaqs,
+            ensureFaqs,
 
             callbackHistory,
-            callbackHistoryLoading,
+            callbackHistoryStatus,
             callbackHistoryError,
             refetchCallbackHistory,
+            ensureCallbackHistory,
 
             requestCallback,
             requestCallbackLoading,
@@ -841,16 +890,62 @@ export function useAccountSettings() {
 }
 
 /**
+ * Plans list. Triggers the first request if the provider couldn't make it at
+ * mount (no session yet), so the page never sits on an empty state.
+ */
+export function usePlans() {
+    const { plans, plansLoading, plansError, plansStatus, refetchPlans, ensurePlans } =
+        useAccountSettings();
+
+    useEffect(() => {
+        ensurePlans();
+    }, [ensurePlans]);
+
+    return { plans, loading: plansLoading, error: plansError, status: plansStatus, refetch: refetchPlans };
+}
+
+/** FAQ list, with the same "ensure on mount" behaviour as `usePlans`. */
+export function useFaqs() {
+    const { faqs, faqsLoading, faqsError, faqsStatus, refetchFaqs, ensureFaqs } =
+        useAccountSettings();
+
+    useEffect(() => {
+        ensureFaqs();
+    }, [ensureFaqs]);
+
+    return { faqs, loading: faqsLoading, error: faqsError, status: faqsStatus, refetch: refetchFaqs };
+}
+
+/** Callback history, with the same "ensure on mount" behaviour. */
+export function useCallbackHistory() {
+    const {
+        callbackHistory,
+        callbackHistoryLoading,
+        callbackHistoryError,
+        callbackHistoryStatus,
+        refetchCallbackHistory,
+        ensureCallbackHistory,
+    } = useAccountSettings();
+
+    useEffect(() => {
+        ensureCallbackHistory();
+    }, [ensureCallbackHistory]);
+
+    return {
+        history: callbackHistory,
+        loading: callbackHistoryLoading,
+        error: callbackHistoryError,
+        status: callbackHistoryStatus,
+        refetch: refetchCallbackHistory,
+    };
+}
+
+/**
  * Loads and returns one plan's detail. Pass the id from your page; the GET
  * runs in a useEffect and is cached, so revisiting the page won't refetch.
  */
 export function usePlanDetail(id?: string) {
-    const {
-        planDetails,
-        planDetailsLoading,
-        planDetailsError,
-        fetchPlanDetail,
-    } = useAccountSettings();
+    const { planDetails, planDetailsError, fetchPlanDetail } = useAccountSettings();
 
     useEffect(() => {
         if (id) void fetchPlanDetail(id);
@@ -858,13 +953,14 @@ export function usePlanDetail(id?: string) {
 
     const plan = id ? planDetails[id] ?? null : null;
     const error = id ? planDetailsError[id] ?? null : null;
-    /* True from the first render until data or an error arrives, so the page
-       never flashes an empty state before the effect has run. */
+
+    /* Loading from the first render until data or an error arrives, so the
+       page never flashes an empty state before the effect has run. */
     const loading = !!id && !plan && !error;
 
     return {
         plan,
-        loading: loading || (id ? !!planDetailsLoading[id] && !plan : false),
+        loading,
         error,
         refetch: () => (id ? fetchPlanDetail(id, true) : Promise.resolve(null)),
     };

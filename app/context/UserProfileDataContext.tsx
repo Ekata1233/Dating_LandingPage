@@ -40,10 +40,15 @@ const FAMILY_SAVE_URL = `${API_BASE_URL}/api/user/profile/family`;
 
 const MY_BALANCES_URL = `${API_BASE_URL}/api/user/my-balances`;
 const ROSES_URL = `${API_BASE_URL}/api/admin/purchase-store/data/ROSE`;
-const COMPLIMENTS_URL = `${API_BASE_URL}/admin/purchase-store/data/COMPLIMENT`;
-const BOOSTS_URL = `${API_BASE_URL}/api/user/my-balances`;
-const WALLET_URL = `${API_BASE_URL}/api/user/my-balances`;
-const DATEPLANS_URL = `${API_BASE_URL}/user/date-now/date-plan-packages/get-all`;
+const COMPLIMENTS_URL = `${API_BASE_URL}/api/admin/purchase-store/data/COMPLIMENT`;
+const BOOSTS_URL = `${API_BASE_URL}/api/admin/boost/get-all?type=BOOST`;
+const SUPER_BOOSTS_URL = `${API_BASE_URL}/api/admin/boost/get-all?type=SUPER`;
+const WALLET_URL = `${API_BASE_URL}/api/user/my-wallet`;
+const WALLET_FILTER_IN_URL = `${API_BASE_URL}/api/user/my-wallet?filter=IN`;
+const WALLET_FILTER_OUT_URL = `${API_BASE_URL}/api/user/my-wallet?filter=OUT`;
+const ADD_MONEY_URL = `${API_BASE_URL}/api/user/wallet/add-money`;
+const DATEPLANS_URL = `${API_BASE_URL}/api/user/date-now/date-plan-packages/get-all`;
+//TYPES FOR DATEPLANS
 export interface DatePlanPackage {
   id: string;
   title: string;
@@ -83,6 +88,8 @@ export interface DatePlansApiResponse {
   success: boolean;
   data: DatePlansData;
 }
+export type PackBadge = "NONE" | "MOST_POPULAR" | "BEST_VALUE";
+
 export interface StorePack {
   id: string;
   itemType: string;
@@ -90,7 +97,7 @@ export interface StorePack {
   quantity: number;
   pricePerUnit: string;
   totalPrice: string;
-  badge: string | null;
+  badge: PackBadge;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -114,6 +121,8 @@ export interface StoreData {
   availableRoses: number;
   packs: StorePack[];
   info: StoreInfo[];
+  /** e.g. availableCompliments / availableRoses */
+  [key: string]: unknown;
 }
 
 export interface StoreApiResponse {
@@ -121,6 +130,122 @@ export interface StoreApiResponse {
   message: string;
   data: StoreData;
 }
+
+/* --------------------------------- Boosts --------------------------------- */
+
+export interface BoostPack {
+    id: string;
+    itemType: string;
+    title: string;
+    quantity: number;
+    pricePerUnit: string;
+    totalPrice: string;
+    badge: PackBadge;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface BoostInfo {
+    id: string;
+    itemType: string;
+    title: string;
+    description: string;
+    tag: string | null;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface BoostComparisonRow {
+    id?: string;
+    feature: string;
+    boost?: string | null;
+    boostValue?: string | null;
+    superBoost?: string | null;
+    superBoostValue?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+}
+
+export interface BoostData {
+    itemType: string;
+    packs: BoostPack[];
+    info: BoostInfo[];
+    comparison?: BoostComparisonRow[];
+    durationMinutes?: number;
+    [key: string]: unknown;
+}
+
+export interface BoostApiResponse {
+    success: boolean;
+    message: string;
+    data: BoostData;
+}
+
+/* --------------------------------- Wallet --------------------------------- */
+
+export type WalletFilter = "ALL" | "IN" | "OUT";
+
+export interface WalletTransaction {
+    id: string;
+    type: string;
+    source?: string;
+    status: string;
+    direction: "IN" | "OUT";
+    title: string;
+    description?: string;
+    amount: number;
+    formattedAmount: string;
+    balanceBefore?: number;
+    balanceAfter?: number;
+    referenceId?: string | null;
+    createdAt: string;
+}
+
+export interface WalletData {
+    wallet: { balance: number; currency: string; formattedBalance?: string };
+    datePlans?: {
+        balance: number;
+        totalDatePlan: number;
+        purchasedDatePlan: number;
+        label: string;
+    };
+    filter: WalletFilter;
+    transactions: WalletTransaction[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
+}
+
+export interface WalletApiResponse {
+    success: boolean;
+    message?: string;
+    data?: WalletData;
+}
+
+export interface WalletQuery {
+    filter: WalletFilter;
+    page: number;
+    limit: number;
+}
+
+/* ------------------------------- Add money -------------------------------- */
+
+export interface AddMoneyRequest {
+    amount: number;
+    method: string;
+}
+
+export interface AddMoneyResponse {
+    success: boolean;
+    message?: string;
+    data?: unknown;
+}
+
 const FAMILY_OPTION_URLS: Record<FamilyOptionKey, string> = {
     familyStatus: FAMILY_STATUS_URL,
     familyType: FAMILY_TYPE_URL,
@@ -391,6 +516,58 @@ interface UserProfileDataContextData {
     ) => Promise<ReferralActionResponse | null>;
     saveFamilyLoading: boolean;
     saveFamilyError: string | null;
+
+    /* Purchase stores (Roses / Compliments) */
+    roses: StoreData | null;
+    rosesLoading: boolean;
+    rosesError: string | null;
+    refetchRoses: () => Promise<void>;
+
+    compliments: StoreData | null;
+    complimentsLoading: boolean;
+    complimentsError: string | null;
+    refetchCompliments: () => Promise<void>;
+
+    /* Boosts + Super Boosts */
+    boosts: BoostData | null;
+    boostsLoading: boolean;
+    boostsError: string | null;
+    refetchBoosts: () => Promise<void>;
+
+    superBoosts: BoostData | null;
+    superBoostsLoading: boolean;
+    superBoostsError: string | null;
+    refetchSuperBoosts: () => Promise<void>;
+
+    /* Wallet (pre-fetched ALL / IN / OUT) */
+    wallet: WalletData | null;
+    walletLoading: boolean;
+    walletError: string | null;
+    refetchWallet: () => Promise<void>;
+
+    walletIn: WalletData | null;
+    walletInLoading: boolean;
+    walletInError: string | null;
+    refetchWalletIn: () => Promise<void>;
+
+    walletOut: WalletData | null;
+    walletOutLoading: boolean;
+    walletOutError: string | null;
+    refetchWalletOut: () => Promise<void>;
+
+    /* Paginated wallet fetch used by the My Wallet screen. */
+    fetchWallet: (query: WalletQuery) => Promise<WalletData>;
+
+    /* Add money — POST /api/user/wallet/add-money */
+    addMoney: (payload: AddMoneyRequest) => Promise<AddMoneyResponse | null>;
+    addMoneyLoading: boolean;
+    addMoneyError: string | null;
+
+    /* Date plan packages */
+    datePlans: DatePlansData | null;
+    datePlansLoading: boolean;
+    datePlansError: string | null;
+    refetchDatePlans: () => Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -442,6 +619,54 @@ const UserProfileDataContext =
         saveFamily: async () => null,
         saveFamilyLoading: false,
         saveFamilyError: null,
+
+        roses: null,
+        rosesLoading: true,
+        rosesError: null,
+        refetchRoses: async () => { },
+
+        compliments: null,
+        complimentsLoading: true,
+        complimentsError: null,
+        refetchCompliments: async () => { },
+
+        boosts: null,
+        boostsLoading: true,
+        boostsError: null,
+        refetchBoosts: async () => { },
+
+        superBoosts: null,
+        superBoostsLoading: true,
+        superBoostsError: null,
+        refetchSuperBoosts: async () => { },
+
+        wallet: null,
+        walletLoading: true,
+        walletError: null,
+        refetchWallet: async () => { },
+
+        walletIn: null,
+        walletInLoading: true,
+        walletInError: null,
+        refetchWalletIn: async () => { },
+
+        walletOut: null,
+        walletOutLoading: true,
+        walletOutError: null,
+        refetchWalletOut: async () => { },
+
+        fetchWallet: async () => {
+            throw new Error("fetchWallet not implemented");
+        },
+
+        addMoney: async () => null,
+        addMoneyLoading: false,
+        addMoneyError: null,
+
+        datePlans: null,
+        datePlansLoading: true,
+        datePlansError: null,
+        refetchDatePlans: async () => { },
     });
 
 /* ------------------------------------------------------------------ */
@@ -559,6 +784,63 @@ export function UserProfileDataProvider({
     const [saveFamilyError, setSaveFamilyError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
+    /* Purchased Stores (Roses / Compliments) State                     */
+    /* ---------------------------------------------------------------- */
+
+    const [roses, setRoses] = useState<StoreData | null>(null);
+    const [rosesLoading, setRosesLoading] = useState(true);
+    const [rosesError, setRosesError] = useState<string | null>(null);
+
+    const [compliments, setCompliments] = useState<StoreData | null>(null);
+    const [complimentsLoading, setComplimentsLoading] = useState(true);
+    const [complimentsError, setComplimentsError] =
+        useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Boosts + Super Boosts State                                      */
+    /* ---------------------------------------------------------------- */
+
+    const [boosts, setBoosts] = useState<BoostData | null>(null);
+    const [boostsLoading, setBoostsLoading] = useState(true);
+    const [boostsError, setBoostsError] = useState<string | null>(null);
+
+    const [superBoosts, setSuperBoosts] = useState<BoostData | null>(null);
+    const [superBoostsLoading, setSuperBoostsLoading] = useState(true);
+    const [superBoostsError, setSuperBoostsError] =
+        useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Wallet State (ALL / IN / OUT)                                    */
+    /* ---------------------------------------------------------------- */
+
+    const [wallet, setWallet] = useState<WalletData | null>(null);
+    const [walletLoading, setWalletLoading] = useState(true);
+    const [walletError, setWalletError] = useState<string | null>(null);
+
+    const [walletIn, setWalletIn] = useState<WalletData | null>(null);
+    const [walletInLoading, setWalletInLoading] = useState(true);
+    const [walletInError, setWalletInError] = useState<string | null>(null);
+
+    const [walletOut, setWalletOut] = useState<WalletData | null>(null);
+    const [walletOutLoading, setWalletOutLoading] = useState(true);
+    const [walletOutError, setWalletOutError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Add Money State (POST)                                           */
+    /* ---------------------------------------------------------------- */
+
+    const [addMoneyLoading, setAddMoneyLoading] = useState(false);
+    const [addMoneyError, setAddMoneyError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Date Plan Packages State                                         */
+    /* ---------------------------------------------------------------- */
+
+    const [datePlans, setDatePlans] = useState<DatePlansData | null>(null);
+    const [datePlansLoading, setDatePlansLoading] = useState(true);
+    const [datePlansError, setDatePlansError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
     /* Generic Auth GET                                                 */
     /* ---------------------------------------------------------------- */
 
@@ -606,6 +888,321 @@ export function UserProfileDataProvider({
 
         applyBalances(response);
     }, [authGet, applyBalances]);
+
+    /* ---------------------------------------------------------------- */
+    /* ROSES STORE                                                      */
+    /* ---------------------------------------------------------------- */
+
+    const applyRoses = useCallback(
+        (response: StoreApiResponse | null) => {
+            if (response?.success && response.data) {
+                setRoses(response.data);
+                setRosesError(null);
+            } else {
+                setRoses(null);
+
+                setRosesError(
+                    response?.message || "Couldn't load roses."
+                );
+            }
+
+            setRosesLoading(false);
+        },
+        []
+    );
+
+    const refetchRoses = useCallback(async () => {
+        setRosesLoading(true);
+        setRosesError(null);
+
+        const response = await authGet(ROSES_URL);
+
+        applyRoses(response);
+    }, [authGet, applyRoses]);
+
+    /* ---------------------------------------------------------------- */
+    /* COMPLIMENTS STORE                                                */
+    /* ---------------------------------------------------------------- */
+
+    const applyCompliments = useCallback(
+        (response: StoreApiResponse | null) => {
+            if (response?.success && response.data) {
+                setCompliments(response.data);
+                setComplimentsError(null);
+            } else {
+                setCompliments(null);
+
+                setComplimentsError(
+                    response?.message || "Couldn't load compliments."
+                );
+            }
+
+            setComplimentsLoading(false);
+        },
+        []
+    );
+
+    const refetchCompliments = useCallback(async () => {
+        setComplimentsLoading(true);
+        setComplimentsError(null);
+
+        const response = await authGet(COMPLIMENTS_URL);
+
+        applyCompliments(response);
+    }, [authGet, applyCompliments]);
+
+    /* ---------------------------------------------------------------- */
+    /* BOOSTS                                                           */
+    /* ---------------------------------------------------------------- */
+
+    const applyBoosts = useCallback(
+        (response: BoostApiResponse | null) => {
+            if (response?.success && response.data) {
+                setBoosts(response.data);
+                setBoostsError(null);
+            } else {
+                setBoosts(null);
+
+                setBoostsError(
+                    response?.message || "Couldn't load boosts."
+                );
+            }
+
+            setBoostsLoading(false);
+        },
+        []
+    );
+
+    const refetchBoosts = useCallback(async () => {
+        setBoostsLoading(true);
+        setBoostsError(null);
+
+        const response = await authGet(BOOSTS_URL);
+
+        applyBoosts(response);
+    }, [authGet, applyBoosts]);
+
+    /* ---------------------------------------------------------------- */
+    /* SUPER BOOSTS                                                     */
+    /* ---------------------------------------------------------------- */
+
+    const applySuperBoosts = useCallback(
+        (response: BoostApiResponse | null) => {
+            if (response?.success && response.data) {
+                setSuperBoosts(response.data);
+                setSuperBoostsError(null);
+            } else {
+                setSuperBoosts(null);
+
+                setSuperBoostsError(
+                    response?.message || "Couldn't load super boosts."
+                );
+            }
+
+            setSuperBoostsLoading(false);
+        },
+        []
+    );
+
+    const refetchSuperBoosts = useCallback(async () => {
+        setSuperBoostsLoading(true);
+        setSuperBoostsError(null);
+
+        const response = await authGet(SUPER_BOOSTS_URL);
+
+        applySuperBoosts(response);
+    }, [authGet, applySuperBoosts]);
+
+    /* ---------------------------------------------------------------- */
+    /* WALLET — ALL                                                     */
+    /* ---------------------------------------------------------------- */
+
+    const applyWallet = useCallback(
+        (response: WalletApiResponse | null) => {
+            if (response?.success && response.data) {
+                setWallet(response.data);
+                setWalletError(null);
+            } else {
+                setWallet(null);
+
+                setWalletError(
+                    response?.message || "Couldn't load your wallet."
+                );
+            }
+
+            setWalletLoading(false);
+        },
+        []
+    );
+
+    const refetchWallet = useCallback(async () => {
+        setWalletLoading(true);
+        setWalletError(null);
+
+        const response = await authGet(WALLET_URL);
+
+        applyWallet(response);
+    }, [authGet, applyWallet]);
+
+    /* ---------------------------------------------------------------- */
+    /* WALLET — IN                                                      */
+    /* ---------------------------------------------------------------- */
+
+    const applyWalletIn = useCallback(
+        (response: WalletApiResponse | null) => {
+            if (response?.success && response.data) {
+                setWalletIn(response.data);
+                setWalletInError(null);
+            } else {
+                setWalletIn(null);
+
+                setWalletInError(
+                    response?.message || "Couldn't load wallet credits."
+                );
+            }
+
+            setWalletInLoading(false);
+        },
+        []
+    );
+
+    const refetchWalletIn = useCallback(async () => {
+        setWalletInLoading(true);
+        setWalletInError(null);
+
+        const response = await authGet(WALLET_FILTER_IN_URL);
+
+        applyWalletIn(response);
+    }, [authGet, applyWalletIn]);
+
+    /* ---------------------------------------------------------------- */
+    /* WALLET — OUT                                                     */
+    /* ---------------------------------------------------------------- */
+
+    const applyWalletOut = useCallback(
+        (response: WalletApiResponse | null) => {
+            if (response?.success && response.data) {
+                setWalletOut(response.data);
+                setWalletOutError(null);
+            } else {
+                setWalletOut(null);
+
+                setWalletOutError(
+                    response?.message || "Couldn't load wallet debits."
+                );
+            }
+
+            setWalletOutLoading(false);
+        },
+        []
+    );
+
+    const refetchWalletOut = useCallback(async () => {
+        setWalletOutLoading(true);
+        setWalletOutError(null);
+
+        const response = await authGet(WALLET_FILTER_OUT_URL);
+
+        applyWalletOut(response);
+    }, [authGet, applyWalletOut]);
+
+    /* Paginated wallet fetch used by the My Wallet screen: the screen owns
+       its filter/page state, so this returns the per-query payload instead
+       of mutating shared state. */
+    const fetchWallet = useCallback(
+        async (query: WalletQuery): Promise<WalletData> => {
+            const base =
+                query.filter === "IN"
+                    ? WALLET_FILTER_IN_URL
+                    : query.filter === "OUT"
+                        ? WALLET_FILTER_OUT_URL
+                        : WALLET_URL;
+
+            const separator = base.includes("?") ? "&" : "?";
+            const response = await authGet(
+                `${base}${separator}page=${query.page}&limit=${query.limit}`
+            );
+
+            if (response?.success && response.data) {
+                return response.data as WalletData;
+            }
+
+            throw new Error(response?.message || "Could not load wallet");
+        },
+        [authGet]
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* ADD MONEY — POST /api/user/wallet/add-money                     */
+    /* ---------------------------------------------------------------- */
+
+    const addMoney = useCallback(
+        async (payload: AddMoneyRequest): Promise<AddMoneyResponse | null> => {
+            try {
+                setAddMoneyLoading(true);
+                setAddMoneyError(null);
+
+                const response = await axios.post(ADD_MONEY_URL, payload, {
+                    headers: authHeader(),
+                });
+
+                if (response.data?.success) {
+                    await Promise.all([
+                        refetchBalances(),
+                        refetchWallet(),
+                    ]);
+
+                    return response.data as AddMoneyResponse;
+                }
+
+                const message =
+                    response.data?.message || "Couldn't add money.";
+                setAddMoneyError(message);
+
+                return { success: false, message };
+            } catch (err) {
+                const message = axios.isAxiosError(err)
+                    ? err.response?.data?.message ||
+                    "Something went wrong while adding money."
+                    : "Something went wrong while adding money.";
+                setAddMoneyError(message);
+
+                return { success: false, message };
+            } finally {
+                setAddMoneyLoading(false);
+            }
+        },
+        [refetchBalances, refetchWallet]
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* DATE PLAN PACKAGES                                               */
+    /* ---------------------------------------------------------------- */
+
+    const applyDatePlans = useCallback(
+        (response: DatePlansApiResponse | null) => {
+            if (response?.success && response.data) {
+                setDatePlans(response.data);
+                setDatePlansError(null);
+            } else {
+                setDatePlans(null);
+
+                setDatePlansError("Couldn't load date plan packages.");
+            }
+
+            setDatePlansLoading(false);
+        },
+        []
+    );
+
+    const refetchDatePlans = useCallback(async () => {
+        setDatePlansLoading(true);
+        setDatePlansError(null);
+
+        const response = await authGet(DATEPLANS_URL);
+
+        applyDatePlans(response);
+    }, [authGet, applyDatePlans]);
 
     /* ---------------------------------------------------------------- */
     /* REFERRAL DASHBOARD                                               */
@@ -972,12 +1569,28 @@ export function UserProfileDataProvider({
                     religionResponse,
                     languagesResponse,
                     balancesResponse,
+                    rosesResponse,
+                    complimentsResponse,
+                    boostsResponse,
+                    superBoostsResponse,
+                    walletResponse,
+                    walletInResponse,
+                    walletOutResponse,
+                    datePlansResponse,
                 ] = await Promise.all([
                     authGet(REFERRAL_DASHBOARD_URL),
                     authGet(REFERRAL_HISTORY_URL),
                     authGet(RELIGION_URL),
                     authGet(LANGUAGES_URL),
                     authGet(MY_BALANCES_URL),
+                    authGet(ROSES_URL),
+                    authGet(COMPLIMENTS_URL),
+                    authGet(BOOSTS_URL),
+                    authGet(SUPER_BOOSTS_URL),
+                    authGet(WALLET_URL),
+                    authGet(WALLET_FILTER_IN_URL),
+                    authGet(WALLET_FILTER_OUT_URL),
+                    authGet(DATEPLANS_URL),
                 ]);
 
                 if (!alive) return;
@@ -987,6 +1600,14 @@ export function UserProfileDataProvider({
                 applyReligions(religionResponse);
                 applyLanguages(languagesResponse);
                 applyBalances(balancesResponse);
+                applyRoses(rosesResponse);
+                applyCompliments(complimentsResponse);
+                applyBoosts(boostsResponse);
+                applySuperBoosts(superBoostsResponse);
+                applyWallet(walletResponse);
+                applyWalletIn(walletInResponse);
+                applyWalletOut(walletOutResponse);
+                applyDatePlans(datePlansResponse);
             })();
 
             return () => {
@@ -1000,6 +1621,14 @@ export function UserProfileDataProvider({
         applyReligions,
         applyLanguages,
         applyBalances,
+        applyRoses,
+        applyCompliments,
+        applyBoosts,
+        applySuperBoosts,
+        applyWallet,
+        applyWalletIn,
+        applyWalletOut,
+        applyDatePlans,
     ]);
 
     /* ---------------------------------------------------------------- */
@@ -1058,6 +1687,57 @@ export function UserProfileDataProvider({
             saveFamily: SaveFamily,
             saveFamilyLoading,
             saveFamilyError,
+
+            /* Purchase stores */
+            roses,
+            rosesLoading,
+            rosesError,
+            refetchRoses,
+
+            compliments,
+            complimentsLoading,
+            complimentsError,
+            refetchCompliments,
+
+            /* Boosts + Super boosts */
+            boosts,
+            boostsLoading,
+            boostsError,
+            refetchBoosts,
+
+            superBoosts,
+            superBoostsLoading,
+            superBoostsError,
+            refetchSuperBoosts,
+
+            /* Wallet */
+            wallet,
+            walletLoading,
+            walletError,
+            refetchWallet,
+
+            walletIn,
+            walletInLoading,
+            walletInError,
+            refetchWalletIn,
+
+            walletOut,
+            walletOutLoading,
+            walletOutError,
+            refetchWalletOut,
+
+            fetchWallet,
+
+            /* Add money */
+            addMoney,
+            addMoneyLoading,
+            addMoneyError,
+
+            /* Date plans */
+            datePlans,
+            datePlansLoading,
+            datePlansError,
+            refetchDatePlans,
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [
@@ -1101,6 +1781,52 @@ export function UserProfileDataProvider({
             SaveFamily,
             saveFamilyLoading,
             saveFamilyError,
+
+            roses,
+            rosesLoading,
+            rosesError,
+            refetchRoses,
+
+            compliments,
+            complimentsLoading,
+            complimentsError,
+            refetchCompliments,
+
+            boosts,
+            boostsLoading,
+            boostsError,
+            refetchBoosts,
+
+            superBoosts,
+            superBoostsLoading,
+            superBoostsError,
+            refetchSuperBoosts,
+
+            wallet,
+            walletLoading,
+            walletError,
+            refetchWallet,
+
+            walletIn,
+            walletInLoading,
+            walletInError,
+            refetchWalletIn,
+
+            walletOut,
+            walletOutLoading,
+            walletOutError,
+            refetchWalletOut,
+
+            fetchWallet,
+
+            addMoney,
+            addMoneyLoading,
+            addMoneyError,
+
+            datePlans,
+            datePlansLoading,
+            datePlansError,
+            refetchDatePlans,
         ]
     );
 

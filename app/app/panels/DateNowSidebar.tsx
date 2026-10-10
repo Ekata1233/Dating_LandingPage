@@ -101,7 +101,7 @@ function DateNowSidebar({
             {/* Fixed header */}
             {showHeader && (
                 <header
-                    className={`shrink-0 bg-white ${
+                    className={`shrink-0 bg-slate-50 ${
                         isInline
                             ? 'px-5 pt-3 pb-1 md:py-3 md:pr-2'
                             : 'px-4 py-4 border-b border-gray-100'

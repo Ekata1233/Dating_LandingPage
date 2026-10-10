@@ -1,9 +1,10 @@
 import type { UserDetailsState } from "@/app/context/UsersContext";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { FactIcon } from "../shared/factIcons";
 import type { Profile, ProfileFact } from "../shared/types";
-import { Astroid } from "lucide-react";
+import { Astroid, CircleStar } from "lucide-react";
+import { useOnBoardingData } from "@/app/context/OnBoardingDataContext";
 
 /* -------------------------------------------------------------------------- */
 /*  Deep-profile sections.                                                     */
@@ -235,9 +236,12 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
                 <span
                   key={`${fact.label}-${index}`}
                   title={fact.value}
-                  className="px-3 py-1 rounded-full border border-gray-300 text-[12px] text-purple-800 bg-purple-100"
+                  className="px-3 py-1 rounded-full border  text-[12px] text-purple-800 bg-purple-100"
                 >
+                  <div className="flex justify-center items-center gap-1">
+                    <CircleStar size={15} color="#8200db" fill="#FFFFFF"/>
                   {fact.value}
+                  </div>
                 </span>
               ))}
             </div>

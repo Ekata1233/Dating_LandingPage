@@ -1,6 +1,7 @@
 "use client";
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -274,8 +275,8 @@ const ROSES_THEME: StoreTheme = {
     accentDeep: "#c8101f",
     accentSoft: "#fde4e7",
     accentTint: "#fff0f1",
-    heroGradient: "linear-gradient(160deg, rgba(120,20,30,.55) 0%, rgba(150,25,35,.82) 100%)",
-    // heroImage: "/images/roses-hero.jpg",
+heroGradient:
+    "linear-gradient(to top, rgba(150,25,35,.82) 0%, rgba(120,20,30,.55) 35%, rgba(120,20,30,.12) 80%, rgba(120,20,30,.08) 100%)",    // heroImage: "/images/roses-hero.jpg",
 
     eyebrowIcon: "star",
     eyebrow: "Stand out",
@@ -322,7 +323,7 @@ export default function RosesStore({
     style,
 }: RosesStoreProps) {
     const theme = ROSES_THEME;
-    const { data, loading, error, reload: onRetry } = useStoreData("ROSE");
+    const { roses: data, rosesLoading: loading, rosesError: error, refetchRoses: onRetry } = useUserProfileData();
     const { setActiveSection } = useActiveSection();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [buying, setBuying] = useState(false);
@@ -481,10 +482,8 @@ export default function RosesStore({
                                         padding: `${U(5.4)} ${U(4.6)} ${U(5.2)}`,
                                         borderRadius: U(6),
                                         color: C.white,
-                                        background: theme.heroImage
-                                            ? `${theme.heroGradient}, url(${theme.heroImage}) center / cover`
-                                            : theme.heroGradient,
-                                        boxShadow: `0 ${U(2)} ${U(5)} ${theme.accent}40`,
+                                        background:
+                                            `${theme.heroGradient}, url(${`https://ik.imagekit.io/aezmcynwbe/welvors/RosesBg.jpeg`}) center / cover`,                                        boxShadow: `0 ${U(2)} ${U(5)} ${theme.accent}40`,
                                         overflow: "hidden",
                                     }}
                                 >

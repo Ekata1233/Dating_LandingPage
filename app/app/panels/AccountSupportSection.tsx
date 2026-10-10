@@ -4,6 +4,7 @@ import React, { memo } from "react";
 import {
   Gift,
   HelpCircle,
+  Info,
   LogOut,
   PauseCircle,
   PlayCircle,
@@ -98,24 +99,14 @@ const DEFAULT_ITEMS: AccountSupportItem[] = [
     section: "help",
   },
   {
-    id: "pause-account",
-    icon: PauseCircle,
+    id: "account-status",
+    icon: Info,
     iconBg: "#FEF3C7", // amber-100
     color: "#D97706", // amber-600
-    title: "Pause Account",
+    title: "Account Status",
     titleColor: "#D97706",
-    subtitle: "Temporarily pause your account",
-    section: "pause-account",
-  },
-  {
-    id: "resume-account",
-    icon: PlayCircle,
-    iconBg: "#DCFCE7", // green-100
-    color: "#16A34A", // green-600
-    title: "Resume Account",
-    titleColor: "#16A34A",
-    subtitle: "resume your paused account",
-    section: "resume-account",
+    subtitle: "Pause or Resume your account",
+    section: "account-status",
   },
   {
     id: "delete-account",

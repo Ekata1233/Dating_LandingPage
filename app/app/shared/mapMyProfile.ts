@@ -265,7 +265,7 @@ export function mapMyProfile(details: OnboardingDetailsApi | null): Profile {
 
     gender: humanizeEnum(str(basic?.gender)),
     community: str(basic?.genderOption),
-    interestedIn: str(flows.INTERESTED_IN?.interestedIn),
+    interestedIn: humanizeEnum(str(flows.INTERESTED_IN?.interestedIn)),
     /* True because this mapping only ever runs on a resolved payload. */
     detailsLoaded: true,
   };
