@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { useAccountSettings } from "@/app/context/AccountSettingsContext";
 import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { AdmirersTabProvider } from "@/app/context/AdmirersTabContext";
 
 import { NAV_ITEMS, SECTION_META, navSlotFor } from "./config/sections";
 import { useSectionBack } from "./config/useSectionBack";
@@ -76,19 +77,24 @@ export default function AppLayout({ children }: AppLayoutProps) {
       /> */}
 
       <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden md:overflow-visible md:text-white">
-        <div className="hidden md:flex flex-col w-[20.6%] bg-slate-50">
-          <SidebarHeaderStrip
-            variant="top"
-            items={NAV_ITEMS}
-            activeNav={navSlotFor(activeSection)}
-            onSelect={selectSection}
-            profileAvatar={profileAvatar}
-          />
+        <AdmirersTabProvider>
+          <div
+            className="hidden md:flex flex-col w-[20.6%] bg-slate-50"
+            style={{ containerType: "size" }}
+          >
+            <SidebarHeaderStrip
+              variant="top"
+              items={NAV_ITEMS}
+              activeNav={navSlotFor(activeSection)}
+              onSelect={selectSection}
+              profileAvatar={profileAvatar}
+            />
 
-          <AppRail section={activeSection} />
-        </div>
+            <AppRail section={activeSection} />
+          </div>
 
-        {children}
+          {children}
+        </AdmirersTabProvider>
       </div>
 
       {/* The desktop sidebar header, relocated to the bottom of the screen. */}

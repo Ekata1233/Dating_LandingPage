@@ -4,6 +4,7 @@ import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
 import type { BalanceItem, DatePlansSummary } from "../shared/types";
 import { UserBalances, useUserProfileData } from "@/app/context/UserProfileDataContext";
 import { useRouter } from "next/navigation";
+import { rw, rh } from "../shared/railScale";
 
 export interface BalanceItemProps {
   label: string;
@@ -55,7 +56,7 @@ export default function MyBalances({
     <div
       className={className}
       style={{
-        padding: "12px 14px",
+        padding: `${rh(12)} ${rw(14)}`,
         fontFamily:
           "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         boxSizing: "border-box",
@@ -64,10 +65,10 @@ export default function MyBalances({
       <div
         style={{
           color: "#6b6b6b",
-          fontSize: "10px",
+          fontSize: rw(10),
           fontWeight: 600,
-          letterSpacing: "1.5px",
-          marginBottom: "10px",
+          letterSpacing: rw(1.5),
+          marginBottom: rh(10),
         }}
       >
         MY BALANCES
@@ -77,7 +78,7 @@ export default function MyBalances({
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: "8px",
+          gap: rw(8),
         }}
       >
         {cards?.map((item) => (
@@ -91,8 +92,8 @@ export default function MyBalances({
               position: "relative",
               background: "#ffffff",
               border: "1px solid #ececec",
-              borderRadius: "12px",
-              padding: "12px 8px 10px",
+              borderRadius: rw(12),
+              padding: `${rh(12)} ${rw(8)} ${rh(10)}`,
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
               textAlign: "center",
               boxSizing: "border-box",
@@ -102,14 +103,14 @@ export default function MyBalances({
             <div
               style={{
                 position: "absolute",
-                top: "-6px",
-                right: "-6px",
-                width: "18px",
-                height: "18px",
+                top: rh(-6),
+                right: rw(-6),
+                width: rw(18),
+                height: rw(18),
                 borderRadius: "50%",
                 background: "#d94f70",
                 color: "#ffffff",
-                fontSize: "10px",
+                fontSize: rw(10),
                 fontWeight: 700,
                 display: "flex",
                 alignItems: "center",
@@ -123,15 +124,15 @@ export default function MyBalances({
             {/* Icon circle */}
             <div
               style={{
-                width: "36px",
-                height: "36px",
+                width: rw(36),
+                height: rw(36),
                 borderRadius: "50%",
                 background: item.bg,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                margin: "0 auto 6px",
-                fontSize: "16px",
+                margin: `0 auto ${rh(6)}`,
+                fontSize: rw(16),
                 lineHeight: 1,
               }}
             >
@@ -142,23 +143,23 @@ export default function MyBalances({
             <div
               style={{
                 color: "#1a1a1a",
-                fontSize: "14px",
+                fontSize: rw(14),
                 fontWeight: 700,
-                marginBottom: "2px",
+                marginBottom: rh(2),
               }}
             >
               {item.value}
             </div>
 
             {/* Label */}
-            <div style={{ color: "#8a8a8a", fontSize: "9px", fontWeight: 400 }} >
+            <div style={{ color: "#8a8a8a", fontSize: rw(9), fontWeight: 400 }} >
               {item.label}
             </div>
           </div>
         ))}
       </div>
       {/* Date Plans */}
-      <div className='h-20 mt-5'>
+      <div className='h-[8.889cqh] mt-[2.222cqh]'>
         <div className={`dp-card cursor-pointer`} onClick={handleDatePlanClick}>
           <style>{`
         .dp-card {

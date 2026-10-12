@@ -48,88 +48,142 @@ const WALLET_FILTER_IN_URL = `${API_BASE_URL}/api/user/my-wallet?filter=IN`;
 const WALLET_FILTER_OUT_URL = `${API_BASE_URL}/api/user/my-wallet?filter=OUT`;
 const ADD_MONEY_URL = `${API_BASE_URL}/api/user/wallet/add-money`;
 const DATEPLANS_URL = `${API_BASE_URL}/api/user/date-now/date-plan-packages/get-all`;
-//TYPES FOR DATEPLANS
+
+const ADMIRER_RECEIVED = `${API_BASE_URL}/api/user/admirers?type=LIKE&direction=RECEIVED`;
+const ADMIRER_SENT = `${API_BASE_URL}/api/user/admirers?type=LIKE&direction=SENT`;
+
+/* ------------------------------------------------------------------ */
+/* Types — Date plans                                                 */
+/* ------------------------------------------------------------------ */
+
 export interface DatePlanPackage {
-  id: string;
-  title: string;
-  description: string;
-  planCount: number;
-  price: string;
-  pricePerPlan: string;
-  discount: number;
-  isPopular: boolean;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    title: string;
+    description: string;
+    planCount: number;
+    price: string;
+    pricePerPlan: string;
+    discount: number;
+    isPopular: boolean;
+    isActive: boolean;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface DatePlanInfoItem {
-  title: string;
-  description: string;
+    title: string;
+    description: string;
 }
 
 export interface DatePlanInfo {
-  id: string;
-  howOnePlanWorks: DatePlanInfoItem[];
-  whyPeopleBuyPlans: DatePlanInfoItem[];
-  goodToKnow: DatePlanInfoItem[];
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    howOnePlanWorks: DatePlanInfoItem[];
+    whyPeopleBuyPlans: DatePlanInfoItem[];
+    goodToKnow: DatePlanInfoItem[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface DatePlansData {
-  availableDatePlan: number;
-  packages: DatePlanPackage[];
-  info: DatePlanInfo;
+    availableDatePlan: number;
+    packages: DatePlanPackage[];
+    info: DatePlanInfo;
 }
 
 export interface DatePlansApiResponse {
-  success: boolean;
-  data: DatePlansData;
+    success: boolean;
+    data: DatePlansData;
 }
+
+/* ------------------------------------------------------------------ */
+/* Types — Purchase stores                                            */
+/* ------------------------------------------------------------------ */
+
 export type PackBadge = "NONE" | "MOST_POPULAR" | "BEST_VALUE";
 
 export interface StorePack {
-  id: string;
-  itemType: string;
-  title: string;
-  quantity: number;
-  pricePerUnit: string;
-  totalPrice: string;
-  badge: PackBadge;
-  sortOrder: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    itemType: string;
+    title: string;
+    quantity: number;
+    pricePerUnit: string;
+    totalPrice: string;
+    badge: PackBadge;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StoreInfo {
-  id: string;
-  itemType: string;
-  title: string;
-  description: string;
-  tag: string | null;
-  sortOrder: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    itemType: string;
+    title: string;
+    description: string;
+    tag: string | null;
+    sortOrder: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StoreData {
-  itemType: string;
-  availableRoses: number;
-  packs: StorePack[];
-  info: StoreInfo[];
-  /** e.g. availableCompliments / availableRoses */
-  [key: string]: unknown;
+    itemType: string;
+    availableRoses: number;
+    packs: StorePack[];
+    info: StoreInfo[];
+    /** e.g. availableCompliments / availableRoses */
+    [key: string]: unknown;
 }
 
 export interface StoreApiResponse {
-  success: boolean;
-  message: string;
-  data: StoreData;
+    success: boolean;
+    message: string;
+    data: StoreData;
 }
+
+/* ------------------------------------------------------------------ */
+/* Types — Admirers                                                   */
+/* ------------------------------------------------------------------ */
+
+export type Admirer = {
+    interactionId: string;
+    type: "LIKE";
+    user: {
+        id: string;
+        name: string;
+        age: number;
+        profileImage: string;
+        gender:string;
+        distanceKm: number;
+        matchScore: number;
+    };
+    createdAt: string;
+    timeAgo: string;
+    isMatch: boolean;
+    matchedAt: string | null;
+    likeStatus: {
+        sent: boolean;
+        seen: boolean;
+        matched: boolean;
+    };
+};
+
+export type AdmirersResponse = {
+    success: boolean;
+    message: string;
+    receivedLikesCount: number;
+    isPackageActive: boolean;
+    isLocked: boolean;
+    data: Admirer[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        hasNext: boolean;
+    };
+};
 
 /* --------------------------------- Boosts --------------------------------- */
 
@@ -179,6 +233,136 @@ export interface BoostApiResponse {
     success: boolean;
     message: string;
     data: BoostData;
+}
+
+/* ----------------- /api/admin/boost/get-all raw payload ------------------ */
+
+export interface RawBoostOption {
+    id: string;
+    label: string;
+    boostCount: number;
+    timePerBoost: number;
+    pricePerBoost: string;
+    discounted_price: string;
+    discount_percent: number;
+    totalPrice: string;
+    is_best_value: boolean;
+    is_popular: boolean;
+    is_active: boolean;
+}
+
+export interface RawBoostReason {
+    tag?: string | null;
+    icon?: string;
+    title: string;
+    description: string;
+}
+
+export interface RawBoostComparisonTable {
+    title?: string;
+    features?: { feature: string; boost: string; super: string }[];
+}
+
+export interface RawBoostGroup {
+    id: string;
+    type: string;
+    name: string;
+    title: string;
+    description?: string;
+    is_active: boolean;
+    options: RawBoostOption[];
+    whyBoostWorks?: RawBoostReason[];
+    /* the API ships this as a single object; tolerate an array too */
+    boostVsSuperBoost?: RawBoostComparisonTable | RawBoostComparisonTable[];
+}
+
+export interface RawBoostData {
+    availableBoost?: number;
+    boosts: RawBoostGroup[];
+}
+
+export interface RawBoostApiResponse {
+    success: boolean;
+    message?: string;
+    data?: RawBoostData;
+}
+
+/**
+ * `/api/admin/boost/get-all?type=BOOST|SUPER` returns one group per item type
+ * whose `options[]` are the packs, `whyBoostWorks[]` the info rows and
+ * `boostVsSuperBoost[].features[]` the comparison table. The store screens read
+ * a flat `{ packs, info, comparison }`, so flatten it here — the one place the
+ * backend naming scheme meets the UI's.
+ */
+export function normalizeBoostData(
+    raw: RawBoostData | null | undefined
+): BoostData {
+    const groups = Array.isArray(raw?.boosts) ? raw.boosts : [];
+
+    const packs: BoostPack[] = [];
+    const info: BoostInfo[] = [];
+    const comparison: BoostComparisonRow[] = [];
+
+    groups.forEach((group) => {
+        (group.options ?? []).forEach((option, index) => {
+            packs.push({
+                id: option.id,
+                itemType: group.type,
+                /* the pack card prints `quantity` + `title`; keep the API
+                   label (e.g. "10 Boosts") as the title. */
+                title: option.label,
+                quantity: option.boostCount,
+                pricePerUnit: option.pricePerBoost,
+                /* discounted_price is the payable; totalPrice is the list. */
+                totalPrice: option.discounted_price || option.totalPrice,
+                badge: option.is_best_value
+                    ? "BEST_VALUE"
+                    : option.is_popular
+                        ? "MOST_POPULAR"
+                        : "NONE",
+                sortOrder: index,
+                isActive: option.is_active !== false,
+            });
+        });
+
+        (group.whyBoostWorks ?? []).forEach((row, index) => {
+            info.push({
+                id: `${group.id}-why-${index}`,
+                itemType: group.type,
+                title: row.title,
+                description: row.description,
+                tag: row.tag ?? null,
+                sortOrder: index,
+                isActive: true,
+            });
+        });
+
+        const tables = group.boostVsSuperBoost
+            ? Array.isArray(group.boostVsSuperBoost)
+                ? group.boostVsSuperBoost
+                : [group.boostVsSuperBoost]
+            : [];
+
+        tables.forEach((table) => {
+            (table.features ?? []).forEach((f, index) => {
+                comparison.push({
+                    feature: f.feature,
+                    boost: f.boost,
+                    superBoost: f.super,
+                    sortOrder: index,
+                    isActive: true,
+                });
+            });
+        });
+    });
+
+    return {
+        itemType: groups[0]?.type ?? "",
+        packs,
+        info,
+        comparison,
+        availableBoost: raw?.availableBoost,
+    };
 }
 
 /* --------------------------------- Wallet --------------------------------- */
@@ -263,10 +447,10 @@ const FAMILY_OPTION_URLS: Record<FamilyOptionKey, string> = {
 
 const FAMILY_OPTION_KEYS = Object.keys(FAMILY_OPTION_URLS) as FamilyOptionKey[];
 
-
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+
 export interface BalanceItem {
     balance: number;
     hasBalance: boolean;
@@ -291,12 +475,14 @@ export interface UserBalancesResponse {
     message?: string;
     data?: UserBalances;
 }
+
 export interface ReferralStats {
     totalEarned: number;
     joined: number;
     rewarded: number;
     pending: number;
 }
+
 export interface FamilyOptions {
     id: number;
     value: string;
@@ -346,6 +532,7 @@ export interface ReferralDashboardResponse {
     message?: string;
     data?: ReferralDashboardData;
 }
+
 export interface FamilyOptionsResponse {
     success: boolean;
     message?: string;
@@ -371,6 +558,7 @@ export interface ReferralActionResponse {
     message?: string;
     data?: unknown;
 }
+
 export interface Sibling {
     /** The `siblingtype` option naming this row's side of the family. */
     siblingTypeId?: number;
@@ -391,6 +579,7 @@ export interface FamilyProfilePayload {
     /** The `siblingtype` option for the sister/brother counts the user picked. */
     siblings: Sibling[];
 }
+
 /* ---------------------------- Religion ---------------------------- */
 
 export interface Community {
@@ -575,6 +764,19 @@ interface UserProfileDataContextData {
     datePlansLoading: boolean;
     datePlansError: string | null;
     refetchDatePlans: () => Promise<void>;
+
+    /* Admirers (likes received / sent). The whole response is kept so screens
+       can read `isLocked`, `isPackageActive`, `receivedLikesCount` and
+       `pagination` alongside `data`. */
+    admirersReceived: AdmirersResponse | null;
+    admirersReceivedLoading: boolean;
+    admirersReceivedError: string | null;
+    refetchAdmirersReceived: () => Promise<void>;
+
+    admirersSent: AdmirersResponse | null;
+    admirersSentLoading: boolean;
+    admirersSentError: string | null;
+    refetchAdmirersSent: () => Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -603,7 +805,6 @@ const UserProfileDataContext =
         religionsLoading: true,
         religionsError: null,
         refetchReligions: async () => { },
-
 
         languages: [],
         languagesLoading: true,
@@ -675,6 +876,16 @@ const UserProfileDataContext =
         datePlansLoading: true,
         datePlansError: null,
         refetchDatePlans: async () => { },
+
+        admirersReceived: null,
+        admirersReceivedLoading: true,
+        admirersReceivedError: null,
+        refetchAdmirersReceived: async () => { },
+
+        admirersSent: null,
+        admirersSentLoading: true,
+        admirersSentError: null,
+        refetchAdmirersSent: async () => { },
     });
 
 /* ------------------------------------------------------------------ */
@@ -849,6 +1060,23 @@ export function UserProfileDataProvider({
     const [datePlansError, setDatePlansError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
+    /* Admirers State (Received / Sent)                                 */
+    /* ---------------------------------------------------------------- */
+
+    const [admirersReceived, setAdmirersReceived] =
+        useState<AdmirersResponse | null>(null);
+    const [admirersReceivedLoading, setAdmirersReceivedLoading] =
+        useState(true);
+    const [admirersReceivedError, setAdmirersReceivedError] =
+        useState<string | null>(null);
+
+    const [admirersSent, setAdmirersSent] =
+        useState<AdmirersResponse | null>(null);
+    const [admirersSentLoading, setAdmirersSentLoading] = useState(true);
+    const [admirersSentError, setAdmirersSentError] =
+        useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
     /* Generic Auth GET                                                 */
     /* ---------------------------------------------------------------- */
 
@@ -964,9 +1192,9 @@ export function UserProfileDataProvider({
     /* ---------------------------------------------------------------- */
 
     const applyBoosts = useCallback(
-        (response: BoostApiResponse | null) => {
+        (response: RawBoostApiResponse | null) => {
             if (response?.success && response.data) {
-                setBoosts(response.data);
+                setBoosts(normalizeBoostData(response.data));
                 setBoostsError(null);
             } else {
                 setBoosts(null);
@@ -995,9 +1223,9 @@ export function UserProfileDataProvider({
     /* ---------------------------------------------------------------- */
 
     const applySuperBoosts = useCallback(
-        (response: BoostApiResponse | null) => {
+        (response: RawBoostApiResponse | null) => {
             if (response?.success && response.data) {
-                setSuperBoosts(response.data);
+                setSuperBoosts(normalizeBoostData(response.data));
                 setSuperBoostsError(null);
             } else {
                 setSuperBoosts(null);
@@ -1213,6 +1441,69 @@ export function UserProfileDataProvider({
     }, [authGet, applyDatePlans]);
 
     /* ---------------------------------------------------------------- */
+    /* ADMIRERS — RECEIVED                                              */
+    /* ---------------------------------------------------------------- */
+
+    const applyAdmirerReceived = useCallback(
+        (response: AdmirersResponse | null) => {
+            if (response?.success && Array.isArray(response.data)) {
+                setAdmirersReceived(response);
+                setAdmirersReceivedError(null);
+            } else {
+                setAdmirersReceived(null);
+
+                setAdmirersReceivedError(
+                    response?.message ||
+                    "Couldn't load admirers who liked you."
+                );
+            }
+
+            setAdmirersReceivedLoading(false);
+        },
+        []
+    );
+
+    const refetchAdmirersReceived = useCallback(async () => {
+        setAdmirersReceivedLoading(true);
+        setAdmirersReceivedError(null);
+
+        const response = await authGet(ADMIRER_RECEIVED);
+
+        applyAdmirerReceived(response);
+    }, [authGet, applyAdmirerReceived]);
+
+    /* ---------------------------------------------------------------- */
+    /* ADMIRERS — SENT                                                  */
+    /* ---------------------------------------------------------------- */
+
+    const applyAdmirerSent = useCallback(
+        (response: AdmirersResponse | null) => {
+            if (response?.success && Array.isArray(response.data)) {
+                setAdmirersSent(response);
+                setAdmirersSentError(null);
+            } else {
+                setAdmirersSent(null);
+
+                setAdmirersSentError(
+                    response?.message || "Couldn't load likes you sent."
+                );
+            }
+
+            setAdmirersSentLoading(false);
+        },
+        []
+    );
+
+    const refetchAdmirersSent = useCallback(async () => {
+        setAdmirersSentLoading(true);
+        setAdmirersSentError(null);
+
+        const response = await authGet(ADMIRER_SENT);
+
+        applyAdmirerSent(response);
+    }, [authGet, applyAdmirerSent]);
+
+    /* ---------------------------------------------------------------- */
     /* REFERRAL DASHBOARD                                               */
     /* ---------------------------------------------------------------- */
 
@@ -1401,7 +1692,6 @@ export function UserProfileDataProvider({
         void refetchFamilyOptions();
     }, [refetchFamilyOptions]);
 
-
     /* ---------------------------------------------------------------- */
     /* APPLY REFERRAL                                                   */
     /* ---------------------------------------------------------------- */
@@ -1466,6 +1756,7 @@ export function UserProfileDataProvider({
             setApplyReferralLoading(false);
         }
     };
+
     /**
      * PATCH the family save endpoint: the nine family selects, the two sibling
      * counts as one `siblingTypeId`, and one row per sibling. Unsuccessful
@@ -1478,7 +1769,7 @@ export function UserProfileDataProvider({
         try {
             setSaveFamilyLoading(true);
             setSaveFamilyError(null);
-            console.log("Sending Data : ",data)
+            console.log("Sending Data : ", data)
             const response = await axios.patch(
                 FAMILY_SAVE_URL,
                 data,
@@ -1486,7 +1777,7 @@ export function UserProfileDataProvider({
                     headers: authHeader(),
                 }
             );
-            console.log("Response Data : ",response)
+            console.log("Response Data : ", response)
             if (response.data?.success) {
                 return response.data as ReferralActionResponse;
             }
@@ -1601,6 +1892,8 @@ export function UserProfileDataProvider({
                 walletInResponse,
                 walletOutResponse,
                 datePlansResponse,
+                admirersReceivedResponse,
+                admirersSentResponse,
             ] = await Promise.all([
                 authGet(REFERRAL_DASHBOARD_URL),
                 authGet(REFERRAL_HISTORY_URL),
@@ -1615,6 +1908,8 @@ export function UserProfileDataProvider({
                 authGet(WALLET_FILTER_IN_URL),
                 authGet(WALLET_FILTER_OUT_URL),
                 authGet(DATEPLANS_URL),
+                authGet(ADMIRER_RECEIVED),
+                authGet(ADMIRER_SENT),
             ]);
 
             if (!alive.current) return;
@@ -1632,6 +1927,8 @@ export function UserProfileDataProvider({
             applyWalletIn(walletInResponse);
             applyWalletOut(walletOutResponse);
             applyDatePlans(datePlansResponse);
+            applyAdmirerReceived(admirersReceivedResponse);
+            applyAdmirerSent(admirersSentResponse);
         })();
     }, [
         authGet,
@@ -1648,6 +1945,8 @@ export function UserProfileDataProvider({
         applyWalletIn,
         applyWalletOut,
         applyDatePlans,
+        applyAdmirerReceived,
+        applyAdmirerSent,
     ]);
 
     useEffect(() => {
@@ -1766,6 +2065,17 @@ export function UserProfileDataProvider({
             datePlansLoading,
             datePlansError,
             refetchDatePlans,
+
+            /* Admirers */
+            admirersReceived,
+            admirersReceivedLoading,
+            admirersReceivedError,
+            refetchAdmirersReceived,
+
+            admirersSent,
+            admirersSentLoading,
+            admirersSentError,
+            refetchAdmirersSent,
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [
@@ -1856,6 +2166,16 @@ export function UserProfileDataProvider({
             datePlansLoading,
             datePlansError,
             refetchDatePlans,
+
+            admirersReceived,
+            admirersReceivedLoading,
+            admirersReceivedError,
+            refetchAdmirersReceived,
+
+            admirersSent,
+            admirersSentLoading,
+            admirersSentError,
+            refetchAdmirersSent,
         ]
     );
 

@@ -53,7 +53,10 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
     const iconItems = items.filter((item) => item.kind === "icon");
 
     return (
-      <div className={`flex flex-row items-center justify-between px-2 min-h-[60px] bg-[#E7477D] ${className}`}>
+      <div
+        className={`flex flex-row items-center justify-between px-2 shrink-0 h-[9vh] bg-[#E7477D] ${className}`}
+        style={{ containerType: "size" }}
+      >
         {avatarItem && (
           <button
             onClick={() => onSelect(avatarItem.section)}
@@ -71,10 +74,10 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
             <img
               src={profileAvatar}
               alt="Profile"
-              className="object-cover w-7 h-7 rounded-full"
+              className="object-cover w-[47cqh] h-[47cqh] rounded-full"
             />
 
-            <span className="text-[12px]">You</span>
+            <span className="text-[20cqh]">You</span>
           </button>
         )}
 
@@ -96,6 +99,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
                   hover:bg-white
                   hover:text-gray-600
                   transition
+                  [&_svg]:w-[33cqh] [&_svg]:h-[33cqh]
                   ${isItemActive(item) ? "bg-white text-gray-600" : ""}
                 `}
               >

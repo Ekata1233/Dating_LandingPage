@@ -9,9 +9,10 @@ import {
 import { useRouter } from "next/navigation";
 import { Plan } from "@/app/context/AccountSettingsContext";
 import { PlanCardProps } from "./PremiumPlusCard";
+import { rw, rh } from "../shared/railScale";
 
 const CheckIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+  <svg viewBox="0 0 24 24" fill="none" style={{ width: rw(10), height: rw(10) }}>
     <path
       d="M20 6L9 17L4 12"
       stroke="#ffffff"
@@ -23,7 +24,7 @@ const CheckIcon = () => (
 );
 
 const CrownIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+  <svg viewBox="0 0 48 48" fill="none" style={{ width: rw(24), height: rw(24) }}>
     <defs>
       <linearGradient id="crownGrad" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#ffd15c" />
@@ -46,7 +47,7 @@ const CrownIcon = () => (
 
 export default function VipExclusiveCard({
   plan,
-  width = "250px",
+  width = "84.459cqw",
   onSelect,
   busy = false,
   className = "",
@@ -65,8 +66,8 @@ function handlePlanCardClick(plan: Plan) {
         minWidth: width,
         maxWidth: width,
         background: "#ffffff",
-        borderRadius: "16px",
-        padding: "16px",
+        borderRadius: rw(16),
+        padding: `${rh(16)} ${rw(16)}`,
         boxSizing: "border-box",
         border: "1px solid #f2e2c0",
         boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
@@ -76,12 +77,12 @@ function handlePlanCardClick(plan: Plan) {
       }}
     >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: rw(10) }}>
         <div
           style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
+            width: rw(40),
+            height: rw(40),
+            borderRadius: rw(10),
             background: "#fdf0dc",
             display: "flex",
             alignItems: "center",
@@ -92,8 +93,8 @@ function handlePlanCardClick(plan: Plan) {
           <CrownIcon />
         </div>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ color: "#1a1a1a", fontSize: "14px", fontWeight: 700 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: rw(6) }}>
+            <span style={{ color: "#1a1a1a", fontSize: rw(14), fontWeight: 700 }}>
               {name}
             </span>
             {plan.badgeLabel && (
@@ -101,26 +102,26 @@ function handlePlanCardClick(plan: Plan) {
                 style={{
                   background: "#c1892f",
                   color: "#ffffff",
-                  fontSize: "8px",
+                  fontSize: rw(8),
                   fontWeight: 700,
-                  padding: "2px 6px",
-                  borderRadius: "4px",
+                  padding: `${rh(2)} ${rw(6)}`,
+                  borderRadius: rw(4),
                 }}
               >
                 {plan.badgeLabel}
               </span>
             )}
           </div>
-          <div style={{ marginTop: "2px" }}>
-            <span style={{ color: "#1a1a1a", fontSize: "14px", fontWeight: 700 }}>
+          <div style={{ marginTop: rh(2) }}>
+            <span style={{ color: "#1a1a1a", fontSize: rw(14), fontWeight: 700 }}>
               {formatPrice(plan.price)}
             </span>
             {hasDiscount && (
               <span
                 style={{
                   color: "#9a9a9a",
-                  fontSize: "10px",
-                  marginLeft: "4px",
+                  fontSize: rw(10),
+                  marginLeft: rw(4),
                   textDecoration: "line-through",
                 }}
               >
@@ -132,13 +133,13 @@ function handlePlanCardClick(plan: Plan) {
       </div>
 
       {/* Features */}
-      <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ marginTop: rh(14), display: "flex", flexDirection: "column", gap: rw(8) }}>
         {features.map((feature) => (
-          <div key={feature.title} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div key={feature.title} style={{ display: "flex", alignItems: "center", gap: rw(8) }}>
             <div
               style={{
-                width: "18px",
-                height: "18px",
+                width: rw(18),
+                height: rw(18),
                 borderRadius: "50%",
                 background: "#c1892f",
                 display: "flex",
@@ -149,7 +150,7 @@ function handlePlanCardClick(plan: Plan) {
             >
               <CheckIcon />
             </div>
-            <span style={{ color: "#1a1a1a", fontSize: "11px", fontWeight: 400, lineHeight: 1.3 }}>
+            <span style={{ color: "#1a1a1a", fontSize: rw(11), fontWeight: 400, lineHeight: 1.3 }}>
               {featureLabel(feature)}
             </span>
           </div>
@@ -163,13 +164,13 @@ function handlePlanCardClick(plan: Plan) {
         disabled={busy}
         style={{
           width: "100%",
-          marginTop: "14px",
-          padding: "10px",
+          marginTop: rh(14),
+          padding: `${rh(10)} ${rw(10)}`,
           background: "#c1892f",
           border: "none",
-          borderRadius: "10px",
+          borderRadius: rw(10),
           color: "#ffffff",
-          fontSize: "12px",
+          fontSize: rw(12),
           fontWeight: 700,
           cursor: busy ? "default" : "pointer",
           opacity: busy ? 0.6 : 1,

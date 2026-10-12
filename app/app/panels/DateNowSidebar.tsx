@@ -14,7 +14,7 @@ const C = {
 }
 
 const chip = (isActive: boolean) =>
-    `text-[12px] font-semibold px-3 py-1 rounded-full cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+    `text-[4.054cqw] font-semibold px-[4.054cqw] py-[0.444cqh] rounded-full cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
         isActive
             ? 'bg-pink-400 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-pink-400 hover:text-white'
@@ -103,12 +103,12 @@ function DateNowSidebar({
                 <header
                     className={`shrink-0 bg-slate-50 ${
                         isInline
-                            ? 'px-5 pt-3 pb-1 md:py-3 md:pr-2'
-                            : 'px-4 py-4 border-b border-gray-100'
+                            ? 'px-[6.757cqw] pt-[1.333cqh] pb-[0.444cqh] md:py-[1.333cqh] md:pr-[2.703cqw]'
+                            : 'px-[5.405cqw] py-[1.778cqh] border-b border-gray-100'
                     }`}
                 >
                     <h1
-                        className="m-0 text-[30px] md:text-[22px] font-extrabold leading-tight"
+                        className="m-0 text-[7.432cqw] font-extrabold leading-tight"
                         style={{ letterSpacing: '-0.01em' }}
                     >
                         <span style={{ color: C.ink }}>Date </span>
@@ -120,34 +120,34 @@ function DateNowSidebar({
             {/* Scrollable filters */}
             {isInline ? (
                 <div
-                    className={`flex min-w-0 flex-1 flex-col gap-2 py-2 md:flex-row md:items-center md:gap-5 md:overflow-x-auto ${hideScrollbar}`}
+                    className={`flex min-w-0 flex-1 flex-col gap-[2.703cqw] py-[0.889cqh] md:flex-row md:items-center md:gap-[6.757cqw] md:overflow-x-auto ${hideScrollbar}`}
                 >
                     {/* Mobile: each row scrolls horizontally on its own, stacked one below the other */}
                     <div
-                        className={`flex items-center gap-2 overflow-x-auto px-5 md:shrink-0 md:overflow-visible md:px-0 ${hideScrollbar}`}
+                        className={`flex items-center gap-[2.703cqw] overflow-x-auto px-[6.757cqw] md:shrink-0 md:overflow-visible md:px-0 ${hideScrollbar}`}
                     >
                         {availabilityChips}
                     </div>
                     <div
-                        className={`flex items-center gap-2 overflow-x-auto px-5 md:shrink-0 md:overflow-visible md:px-0 ${hideScrollbar}`}
+                        className={`flex items-center gap-[2.703cqw] overflow-x-auto px-[6.757cqw] md:shrink-0 md:overflow-visible md:px-0 ${hideScrollbar}`}
                     >
                         {dateTypeChips}
                     </div>
                 </div>
             ) : (
                 <div
-                    className={`min-h-0 flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5 ${hideScrollbar}`}
+                    className={`min-h-0 flex-1 overflow-y-auto px-[5.405cqw] py-[1.778cqh] flex flex-col gap-[6.757cqw] ${hideScrollbar}`}
                 >
-                    <section className="flex flex-col gap-2 text-black">
+                    <section className="flex flex-col gap-[2.703cqw] text-black">
                         <div className="font-bold">Availability</div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-[2.703cqw]">
                             {availabilityChips}
                         </div>
                     </section>
 
-                    <section className="flex flex-col gap-2 text-black">
+                    <section className="flex flex-col gap-[2.703cqw] text-black">
                         <div className="font-bold">Date Type</div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-[2.703cqw]">
                             {dateTypeChips}
                         </div>
                     </section>

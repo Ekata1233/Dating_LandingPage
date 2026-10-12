@@ -90,7 +90,7 @@ const C = {
 };
 
 // const FONT =
-    // "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+// "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
 const stroke = {
@@ -360,7 +360,7 @@ export default function ChatSideBar({
         .msg-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
       `}</style>
 
-            <div
+            <div className="px-[4.054cqw] py-[1.778cqh]"
                 style={{
                     // fontFamily: FONT,
                     color: C.ink,
@@ -371,18 +371,16 @@ export default function ChatSideBar({
                 }}
             >
                 {/* header */}
-                <header className="px-5 py-3"
+                <header className='px-[2.703cqw] '
                     style={{
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        // padding: `${U(5)} ${U(5)} ${U(2.5)}`,
                     }}
                 >
-                    <h1
+                    <h1 className='text-[7.432cqw]'
                         style={{
                             margin: 0,
-                            fontSize: U(7.4),
                             fontWeight: 800,
                             letterSpacing: "-0.01em",
                         }}
@@ -390,26 +388,6 @@ export default function ChatSideBar({
                         <span style={{ color: C.ink }}>Mess</span>
                         <span style={{ color: C.pinkText }}>ages</span>
                     </h1>
-                    {/* <button
-                        type="button"
-                        className="msg-btn"
-                        aria-label="Search"
-                        onClick={onSearch}
-                        style={{
-                            width: U(10.4),
-                            height: U(10.4),
-                            borderRadius: "50%",
-                            background: "#f4f3f5",
-                            color: C.ink,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: U(4.6),
-                            flexShrink: 0,
-                        }}
-                    >
-                        <SearchIcon />
-                    </button> */}
                 </header>
 
                 {/* tabs */}
@@ -468,7 +446,7 @@ export default function ChatSideBar({
                 {/* list */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                     {conversations.length === 0 ? (
-                        <div 
+                        <div
                             style={{
                                 flex: 1,
                                 display: "flex",

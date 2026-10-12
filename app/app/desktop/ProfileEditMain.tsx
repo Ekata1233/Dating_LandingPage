@@ -68,7 +68,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import * as React from "react";
-
+import {
+  formatLocation,
+  getPosition,
+  reverseGeocode,
+} from "@/lib/googleGeocode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,6 +132,7 @@ import {
 
 import { Loader, Notice } from "../shared/Loader";
 import { useRouter } from "next/navigation";
+import { GeocodeError } from "@/app/onBoarding/steps/Location";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -157,16 +162,16 @@ const C = {
 };
 const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
 const stroke = {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
 };
 const BackIcon = () => (
-    <svg viewBox="0 0 24 24" style={svgBase} {...stroke} strokeWidth={2.4}>
-        <path d="M15 5l-7 7 7 7" />
-    </svg>
+  <svg viewBox="0 0 24 24" style={svgBase} {...stroke} strokeWidth={2.4}>
+    <path d="M15 5l-7 7 7 7" />
+  </svg>
 );
 export const ZODIAC: readonly FieldOption[] = [
   { value: "ARIES", label: "Aries" },
@@ -263,7 +268,7 @@ export interface ProfileEditMainProps {
   fluid?: boolean;
   /** Caller-owned busy state, for when a caller wants to show its own spinner. */
   saving?: boolean;
-  showBack:boolean;
+  showBack: boolean;
   /**
    * Values applied underneath the API payload. Useful for a preview or a draft,
    * never used to stand in for a missing payload.
@@ -329,82 +334,8 @@ type PlaceParts = Pick<ResolvedLocation, "country" | "state" | "city" | "area">;
  * light use only). For production traffic, proxy this through your own API
  * route with Google / Mapbox / LocationIQ.
  */
-async function reverseGeocode(
-  latitude: number,
-  longitude: number,
-  signal?: AbortSignal
-): Promise<ResolvedLocation> {
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    lat: String(latitude),
-    lon: String(longitude),
-    zoom: "14",
-    addressdetails: "1",
-    "accept-language": "en",
-  });
-
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?${params}`,
-    {
-      signal,
-      headers: {
-        Accept: "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Reverse geocoding failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const address: NominatimAddress = data.address ?? {};
-  const country = address.country ?? "";
-  const state = address.state ?? "";
-  const city =
-    address.city ??
-    address.town ??
-    address.municipality ??
-    address.village ??
-    "";
-
-  // Prefer broader locality/suburb over small neighbourhoods.
-  // This is more likely to return "Hadapsar" instead of "Fatima Nagar".
-  const area =
-    address.suburb ??
-    address.city_district ??
-    address.neighbourhood ??
-    address.quarter ??
-    "";
-
-  return {
-    country,
-    state,
-    city,
-    // Some places have no sub-locality in OSM; fall back to the city so the
-    // required `area` field is never empty.
-    area: area || city,
-    latitude: Number(latitude.toFixed(4)),
-    longitude: Number(longitude.toFixed(4)),
-  };
-}
-
-function getPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10_000,
-      maximumAge: 5 * 60 * 1000,
-    });
-  });
-}
 
 /** "Kothrud, Pune, Maharashtra, India" (drops empty/duplicate parts). */
-function formatLocation(l: PlaceParts) {
-  return [l.area, l.city, l.state, l.country]
-    .filter((part, i, arr) => Boolean(part) && arr.indexOf(part) === i)
-    .join(", ");
-}
 
 /* -------------------------------------------------------------------------- */
 /*  Payload -> form values                                                     */
@@ -1342,7 +1273,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   saving = false,
   initialData,
   photos: photosProp,
-  showBack=true,
+  showBack = true,
   onRemovePhoto,
   onRecordVideo,
   onSaved,
@@ -1372,7 +1303,9 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     usePromptCategories();
 
   const router = useRouter();
-
+  function onBack() {
+    router.push("/app/profile")
+  }
   const { details, loading, error, refetch } = profileDetails;
 
   const {
@@ -2004,6 +1937,11 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       const loc = await reverseGeocode(coords.latitude, coords.longitude, controller.signal);
       if (controller.signal.aborted) return;
 
+      if (!loc.city) {
+        setLocateError("We got your position but couldn't work out your city. Please try again.");
+        return;
+      }
+
       setField("country", loc.country);
       setField("state", loc.state);
       setField("city", loc.city);
@@ -2013,6 +1951,21 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       setField("max_distance_km", DEFAULT_MAX_DISTANCE_KM);
     } catch (err) {
       if (controller.signal.aborted) return;
+
+      if (err instanceof GeocodeError) {
+        if (err.kind === "no_results") {
+          setLocateError("We couldn't find an address for your position. Please try again.");
+        } else {
+          // missing_key or request_failed: details go to the console, not the user.
+          console.error(err.message);
+          setLocateError(
+            err.kind === "missing_key"
+              ? "Location lookup isn't configured right now. Please try again later."
+              : "We got your position but couldn't work out your city. Please try again."
+          );
+        }
+        return;
+      }
 
       const code = (err as Partial<GeolocationPositionError> | null)?.code;
       if (code === 1) {
@@ -3449,13 +3402,13 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
 
   return shell(
     <>
-      <header className="pec-head">
+      {/* <header className="pec-head">
         <div className="min-w-0 min-h-5 flex items-center gap-1">
           <button
             type="button"
             className="lc-btn cursor-pointer"
             aria-label="Go back"
-            onClick={onBack ?? handleCLick()}
+            onClick={onBack}
             style={{
               position: "absolute",
               left: U(-1.9),
@@ -3469,7 +3422,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
               boxShadow: `0 ${U(0.5)} ${U(2)} rgba(0,0,0,.06)`,
               color: C.ink,
               fontSize: U(4),
-              display: showBack ? "flex" : "none",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               padding: 0,
@@ -3486,7 +3439,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
             <Check className="size-3" aria-hidden="true" /> Saved
           </span>
         )}
-      </header>
+      </header> */}
 
       {body}
 
@@ -3527,6 +3480,12 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
             >
               {busy || saving ? "Saving…" : dirty ? "Save changes" : "No changes yet"}
             </Button>
+            <button
+              className="h-5 w-full text-xs font-semibold bg-white text-slate-500 underline cursor-pointer"
+              onClick={() => void onBack()}
+            >
+              Discard Changes
+            </button>
 
             {saveError ? (
               <p role="alert" className="pec-foot-note pec-foot-note--error">

@@ -2,10 +2,9 @@
 
 import React from "react";
 
-import ProfileMain from "../desktop/ProfileMain";
+import AdmirersMain from "../desktop/AdmirersMain";
 import MobileAdmirerSection from "../mobile/MobileAdmirerSection";
 import Screen from "../shell/Screen";
-import NoLikesBoost from "../desktop/AdmiersNoLikes";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -14,8 +13,9 @@ export default function Page() {
     router.push("/app/home/myBalances/myboosts")
   }
   return (
-    <Screen 
-    desktop={<NoLikesBoost onBoost={handleOnBoost} />} 
-    mobile={<MobileAdmirerSection fluid onBoost={handleOnBoost} />} />
+    <Screen
+      desktop={<AdmirersMain onBoost={handleOnBoost} />}
+      mobile={<MobileAdmirerSection fluid onBoost={handleOnBoost} />}
+    />
   );
 }

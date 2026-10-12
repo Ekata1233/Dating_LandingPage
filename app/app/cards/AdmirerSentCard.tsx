@@ -1,24 +1,43 @@
 import React from "react";
 
 export interface AdmirerSentCardProps {
-    /** Matched person's photo URL */
-    avatarUrl: string;
-    /** Matched person's name */
-    name: string;
-    /** Matched person's age */
-    age: number;
-    /** Match percentage, e.g. 95 */
-    matchPercent: number;
-    /** Location label, e.g. "Mumbai" */
-    location: string;
-    /** Relative time since match, e.g. "3h ago" */
-    matchedAgo: string;
-    /** Current status step */
-    status?: "sent" | "seen" | "matched";
-    /** Called when "Send a rose" is tapped */
-    onSendRose?: () => void;
-    /** Optional extra className for the outer wrapper */
-    className?: string;
+  /** Matched person's photo URL */
+  avatarUrl: string;
+  /** Matched person's name */
+  name: string;
+  /** Matched person's age */
+  age: number;
+  /** Match percentage, e.g. 95 */
+  matchPercent: number;
+  /** Location label, e.g. "Mumbai" */
+  location: string;
+  /** Relative time since match, e.g. "3h ago" */
+  matchedAgo: string;
+  gender: string;
+  /** Current status step. Superseded by `likeStatus` when that is given. */
+  status?: "sent" | "seen" | "matched";
+  /**
+   * Per-step completion straight from the API. When set, each pill colours
+   * from its own flag instead of filling up to `status`.
+   */
+  likeStatus?: { sent: boolean; seen: boolean; matched: boolean };
+  /** Called when "Send a rose" is tapped */
+  onSendRose?: () => void;
+  /** Called when the card body is tapped */
+  onOpenProfile?: () => void;
+  /** Optional extra className for the outer wrapper */
+  className?: string;
+}
+
+/**
+ * "her" / "him" from the admirer's gender. Female is checked first because
+ * "female" and "woman" both contain the substring "male"/"man".
+ */
+function likedPronoun(gender?: string): "her" | "him" | "them" {
+  const g = (gender ?? "").toLowerCase();
+  if (g.includes("female") || g.includes("woman") || g === "f") return "her";
+  if (g.includes("male") || g.includes("man") || g === "m") return "him";
+  return "them";
 }
 
 /**
@@ -28,22 +47,41 @@ export interface AdmirerSentCardProps {
  * just resize the parent, no props needed to control scale.
  */
 const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
-    avatarUrl,
-    name,
-    age,
-    matchPercent,
-    location,
-    matchedAgo,
-    status = "matched",
-    onSendRose,
-    className = "",
+  avatarUrl,
+  name,
+  age,
+  matchPercent,
+  location,
+  matchedAgo,
+  gender,
+  status = "matched",
+  likeStatus,
+  onSendRose,
+  onOpenProfile,
+  className = "",
 }) => {
-    const steps: Array<"sent" | "seen" | "matched"> = ["sent", "seen", "matched"];
-    const stepIndex = steps.indexOf(status);
+  const steps: Array<"sent" | "seen" | "matched"> = ["sent", "seen", "matched"];
+  const stepIndex = steps.indexOf(status);
 
-    return (
-        <div className={` matched-card ${className}`}>
-            <style>{`
+  return (
+    <div
+      className={` matched-card ${className}`}
+      role={onOpenProfile ? "button" : undefined}
+      tabIndex={onOpenProfile ? 0 : undefined}
+      onClick={onOpenProfile}
+      onKeyDown={
+        onOpenProfile
+          ? (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onOpenProfile();
+            }
+          }
+          : undefined
+      }
+      style={onOpenProfile ? { cursor: "pointer" } : undefined}
+    >
+      <style>{`
         .matched-card {
           container-type: inline-size;
           width: 100%;
@@ -159,14 +197,15 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
           padding: 1.8cqw 3cqw;
           border-radius: 999px;
           white-space: nowrap;
-          opacity: 0.45;
+          background: #eef0f2;
+          color: #a6abb2;
         }
         .mc-step.active {
           opacity: 1;
         }
-        .mc-step-sent { background: #f5e9d6; color: #9c7a2e; }
-        .mc-step-seen { background: #dbeafe; color: #2563eb; }
-        .mc-step-matched { background: #dcfce7; color: #16a34a; }
+        .mc-step-sent.active { background: #f5e9d6; color: #9c7a2e; }
+        .mc-step-seen.active { background: #dbeafe; color: #2563eb; }
+        .mc-step-matched.active { background: #dcfce7; color: #16a34a; }
         .mc-step-line {
           width: 3cqw;
           height: 1px;
@@ -193,55 +232,72 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
         }
       `}</style>
 
-            <div className="mc-inner">
-                {/* Top row */}
-                <div className="mc-top">
-                    <div className="mc-status">
-                        <span className="mc-dot" />
-                        Matched
-                    </div>
-                    <div className="mc-ago">{matchedAgo}</div>
-                </div>
-
-                {/* Middle row */}
-                <div className="mc-middle">
-                    <div className="mc-person">
-                        <img className="mc-avatar" src={avatarUrl} alt={`${name}'s photo`} />
-                        <div style={{ minWidth: 0 }}>
-                            <div className="mc-name">
-                                {name}, {age}
-                            </div>
-                            <div className="mc-sub">
-                                {matchPercent}% Match · {location}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mc-liked">♥ You liked her</div>
-                </div>
-
-                {/* Bottom row */}
-                <div className="flex flex-row justify-between  w-full">
-                    <div className=" w-1/2 flex gap-0.5 items-center text-[7px]">
-                        {steps.map((step, i) => (
-                            <React.Fragment key={step}>
-                                {i > 0 && <span className="mc-step-line" />}
-                                <span
-                                    className={` rounded-full px-2 py-0.5 mc-step-${step} ${i <= stepIndex ? "active" : ""}`}
-                                >
-                                    {step.toUpperCase()}
-                                </span>
-                            </React.Fragment>
-                        ))}
-                    </div>
-                    <div className="">
-                        <button type="button" className="mc-rose-btn " onClick={onSendRose}>
-                            🌹 Send a rose
-                        </button>
-                    </div>
-                </div>
-            </div>
+      <div className="mc-inner">
+        {/* Top row */}
+        <div className="mc-top">
+          <div className="mc-status">
+            <span className="mc-dot" />
+            Matched
+          </div>
+          <div className="mc-ago">{matchedAgo}</div>
         </div>
-    );
+
+        {/* Middle row */}
+        <div className="mc-middle">
+          <div className="mc-person">
+            <img className="mc-avatar" src={avatarUrl} alt={`${name}'s photo`} />
+            <div style={{ minWidth: 0 }}>
+              <div className="mc-name">
+                {name}, {age}
+              </div>
+              <div className="mc-sub">
+                {matchPercent}% Match · {location}
+              </div>
+            </div>
+          </div>
+          <div className="mc-liked">♥ You liked {likedPronoun(gender)}</div>
+        </div>
+
+        {/* Bottom row */}
+        <div className="flex flex-row justify-between w-full gap-1.5">
+          <div className="flex gap-0.5 items-center text-[6px]">
+            {steps.map((step, i) => {
+              const active = likeStatus ? !!likeStatus[step] : i <= stepIndex;
+
+              return (
+                <React.Fragment key={step}>
+                  {i > 0 && (
+                    <span
+                      className={`mc-step-line ${active ? "" : "opacity-40 grayscale"
+                        }`}
+                    />
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 transition-colors ${active
+                        ? `mc-step-${step} active`
+                        : "bg-gray-200 text-gray-400 grayscale"
+                      }`}
+                  >
+                    {step.toUpperCase()}
+                  </span>
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          <div>
+            <button
+              type="button"
+              className="mc-rose-btn hover:scale-105"
+              onClick={onSendRose}
+            >
+              🌹 Send a rose
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AdmirerSentCard;

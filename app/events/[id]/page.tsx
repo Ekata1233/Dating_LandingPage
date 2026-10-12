@@ -36,6 +36,7 @@ import {
 import { EventDetails, useEventDetails } from "@/app/context/EventContext";
 import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { getClientToken } from "@/utils/token";
+import CheckoutModal from "@/components/ui/EventCheckOutModal";
 
 const C = {
   bg: "#FCF8F4",
@@ -241,6 +242,7 @@ function ApiIcon({
 function useLoggedIn(): boolean {
   const [loggedIn, setLoggedIn] = useState(false);
 
+
   useEffect(() => {
     const sync = () => setLoggedIn(getClientToken() !== null);
     sync();
@@ -308,7 +310,10 @@ type ModalType = "share" | null;
 export default function EventDetailsPage() {
   const router = useRouter();
   const params = useParams();
-
+  const [checkOutOpen, setCheckOutOpen] = useState(false)
+  function handleClose() {
+    setCheckOutOpen(false)
+  }
   const eventId = useMemo(() => {
     const raw = params?.id;
     return typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : null;
@@ -350,12 +355,7 @@ export default function EventDetailsPage() {
   );
 
   const handleBookNow = () => {
-    if (!loggedIn) {
-      const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-      loginBtn?.click();
-      return;
-    }
-    toast.info("Booking opens soon.");
+    setCheckOutOpen(true)
   };
 
   const handleShare = async (type: string) => {
@@ -447,6 +447,7 @@ export default function EventDetailsPage() {
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
       className="pb-24 pt-16 lg:pb-5"
     >
+      <CheckoutModal open={checkOutOpen} onClose={handleClose} />
       {/* ---------------------------- HERO ---------------------------- */}
       <div
         className="relative w-full overflow-hidden"

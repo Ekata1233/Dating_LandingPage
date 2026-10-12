@@ -32,13 +32,13 @@ export interface HomeSidebarProps {
     className?: string;
 }
 
-const PLAN_CARD_WIDTH = "250px";
+const PLAN_CARD_WIDTH = "84.459cqw";
 
 /* ------------------------------ mappers ------------------------------ */
 
 /** API balances object -> the card list MyBalances renders. */
 const toBalanceCards = (b: UserBalances | null): BalanceItem[] => [
-    { label: "Roses", value: String(b?.roses.balance ?? 0), bg: "#fdeecb", emoji: "⭐" },
+    { label: "Roses", value: String(b?.roses.balance ?? 0), bg: "#fdeecb", emoji: "🌹" },
     { label: "Compliments", value: String(b?.compliments.balance ?? 0), bg: "#fbe1e6", emoji: "💌" },
     { label: "My Boosts", value: String(b?.boosts.balance ?? 0), bg: "#dcebfa", emoji: "🚀" },
     { label: "My Wallet", value: b?.wallet.formattedBalance ?? "₹0", bg: "#fbdce8", emoji: "👛" },
@@ -104,13 +104,13 @@ function HomeSidebar({
     return (
         <div className={`flex flex-col w-full h-full min-h-0 ${className}`}>
             {/* Tabs */}
-            <div className="flex px-3 py-4">
+                <div className="flex px-[4.054cqw] py-[1.778cqh]">
                 {!plansOnly && (
-                    <button onClick={() => select("wallet")} className={`flex-1 cursor-pointer text-[14px] py-3 text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
+                    <button onClick={() => select("wallet")} className={`flex-1 cursor-pointer text-[4.73cqw] py-[1.333cqh] text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
                         Wallet
                     </button>
                 )}
-                <button onClick={() => select("plans")} className={`cursor-pointer flex-1 text-[14px] py-3  text-center font-semibold border-b-2 ${activeTab === "plans" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
+                <button onClick={() => select("plans")} className={`cursor-pointer flex-1 text-[4.73cqw] py-[1.333cqh]  text-center font-semibold border-b-2 ${activeTab === "plans" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
                     Plans
                 </button>
             </div>
@@ -120,8 +120,8 @@ function HomeSidebar({
                 <div
                     className={
                         isStack
-                            ? "flex flex-col gap-3 py-5 px-3"
-                            : "flex flex-col items-center gap-3 py-5 overflow-x-auto"
+                            ?                         "flex flex-col gap-[4.054cqw] py-[2.222cqh] px-[4.054cqw]"
+                            : "flex flex-col items-center gap-[4.054cqw] py-[2.222cqh] overflow-x-auto"
                     }
                     style={{
                         scrollbarWidth: "none",
@@ -129,13 +129,13 @@ function HomeSidebar({
                     }}
                 >
                     {plansLoading && planItems.length === 0 ? (
-                        <p className="text-[13px] text-slate-500">Loading plans…</p>
+                        <p className="text-[4.392cqw] text-slate-500">Loading plans…</p>
                     ) : plansError && planItems.length === 0 ? (
-                        <div className="flex flex-col items-center gap-2">
-                            <p className="text-[13px] text-slate-500">{plansError}</p>
+                        <div className="flex flex-col items-center gap-[2.703cqw]">
+                            <p className="text-[4.392cqw] text-slate-500">{plansError}</p>
                             <button
                                 onClick={() => void refetchPlans()}
-                                className="cursor-pointer text-[13px] font-semibold text-[#C21559]"
+                                className="cursor-pointer text-[4.392cqw] font-semibold text-[#C21559]"
                             >
                                 Retry
                             </button>

@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { StepFooter } from "../OnboardingFields";
 import { useStepForm } from "../../context/OnboardingFormContext";
 import { StepShell } from "../StepShell";
-
+import {
+  formatLocation,
+  getPosition,
+  reverseGeocode,
+} from "@/lib/googleGeocode";
 /* -------------------------------------------------------------------------- */
 /*  Step 10 — Location.                                                       */
 /*                                                                            */
@@ -16,25 +20,33 @@ import { StepShell } from "../StepShell";
 /*  permission. The input is read-only and just displays the result. The      */
 /*  geolocation request is only made on an explicit click, never on mount.    */
 /*                                                                            */
+/*  Reverse geocoding uses the Google Maps Geocoding API.                     */
+/*  Setup:                                                                    */
+/*    1. Enable "Geocoding API" in Google Cloud Console.                      */
+/*    2. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local.                   */
+/*    3. Restrict the key (HTTP referrers + API restriction: Geocoding API).  */
+/*                                                                            */
 /*  Values stored on the form (matches the save endpoint):                    */
 /*    country, state, city, area, latitude, longitude, max_distance_km        */
 /* -------------------------------------------------------------------------- */
 
 const DEFAULT_MAX_DISTANCE_KM = 25;
 
-type NominatimAddress = {
-  city?: string;
-  town?: string;
-  village?: string;
-  municipality?: string;
-  county?: string;
-  state_district?: string;
-  suburb?: string;
-  neighbourhood?: string;
-  city_district?: string;
-  quarter?: string;
-  state?: string;
-  country?: string;
+
+type GoogleAddressComponent = {
+  long_name: string;
+  short_name: string;
+  types: string[];
+};
+
+export type GoogleGeocodeResult = {
+  address_components: GoogleAddressComponent[];
+};
+
+export type GoogleGeocodeResponse = {
+  status: string;
+  error_message?: string;
+  results: GoogleGeocodeResult[];
 };
 
 type ResolvedLocation = {
@@ -46,88 +58,31 @@ type ResolvedLocation = {
   longitude: number;
 };
 
-/**
- * Reverse-geocodes coordinates via OpenStreetMap Nominatim (free, no key,
- * light use only). For production traffic, proxy this through your own API
- * route with Google / Mapbox / LocationIQ.
- */
-async function reverseGeocode(
-  latitude: number,
-  longitude: number,
-  signal?: AbortSignal
-): Promise<ResolvedLocation> {
-  const params = new URLSearchParams({
-    format: "jsonv2",
-    lat: String(latitude),
-    lon: String(longitude),
-    zoom: "14",
-    addressdetails: "1",
-    "accept-language": "en",
-  });
+export class GeocodeError extends Error {
+  kind: "missing_key" | "no_results" | "request_failed";
 
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?${params}`,
-    {
-      signal,
-      headers: {
-        Accept: "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Reverse geocoding failed: ${response.status}`);
+  constructor(kind: GeocodeError["kind"], message: string) {
+    super(message);
+    this.name = "GeocodeError";
+    this.kind = kind;
   }
-
-  const data = await response.json();
-  const address = data.address ?? {};
-  const country = address.country ?? "";
-  const state = address.state ?? "";
-  const city =
-    address.city ??
-    address.town ??
-    address.municipality ??
-    address.village ??
-    "";
-
-  // Prefer broader locality/suburb over small neighbourhoods.
-  // This is more likely to return "Hadapsar" instead of "Fatima Nagar".
-  const area =
-    address.suburb ??
-    address.city_district ??
-    address.neighbourhood ??
-    address.quarter ??
-    "";
-
-  return {
-    country,
-    state,
-    city,
-    // Some places have no sub-locality in OSM; fall back to the city so the
-    // required `area` field is never empty.
-    area: area || city,
-    latitude: Number(latitude.toFixed(4)),
-    longitude: Number(longitude.toFixed(4)),
-  };
 }
 
+/**
+ * Finds the first address component matching any of the given types, trying
+ * the types in priority order and scanning every result (the first result is
+ * the most precise, later ones are broader).
+ */
 
-function getPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10_000,
-      maximumAge: 5 * 60 * 1000,
-    });
-  });
-}
 
-/** "Kothrud, Pune, Maharashtra, India" (drops empty/duplicate parts). */
-function formatLocation(l: Pick<ResolvedLocation, "area" | "city" | "state" | "country">) {
-  return [l.area, l.city, l.state, l.country]
-    .filter((part, i, arr) => Boolean(part) && arr.indexOf(part) === i)
-    .join(", ");
-}
+/**
+ * Reverse-geocodes coordinates via the Google Maps Geocoding API.
+ *
+ * NOTE: a NEXT_PUBLIC_ key is visible in the browser, so it MUST be restricted
+ * in Google Cloud Console. For stricter control, proxy this call through your
+ * own API route and keep the key server-side.
+ */
+
 
 export default function LocationStep() {
   const form = useStepForm("location");
@@ -171,6 +126,11 @@ export default function LocationStep() {
       const loc = await reverseGeocode(coords.latitude, coords.longitude, controller.signal);
       if (controller.signal.aborted) return;
 
+      if (!loc.city) {
+        setLocateError("We got your position but couldn't work out your city. Please try again.");
+        return;
+      }
+
       form.set("country", loc.country);
       form.set("state", loc.state);
       form.set("city", loc.city);
@@ -180,6 +140,19 @@ export default function LocationStep() {
       form.set("max_distance_km", DEFAULT_MAX_DISTANCE_KM);
     } catch (err) {
       if (controller.signal.aborted) return;
+
+      if (err instanceof GeocodeError) {
+        if (err.kind === "missing_key") {
+          console.error(err.message);
+          setLocateError("Location lookup isn't configured right now. Please try again later.");
+        } else if (err.kind === "no_results") {
+          setLocateError("We couldn't find an address for your position. Please try again.");
+        } else {
+          console.error(err.message);
+          setLocateError("We got your position but couldn't work out your city. Please try again.");
+        }
+        return;
+      }
 
       const code = (err as Partial<GeolocationPositionError> | null)?.code;
       if (code === 1) {
@@ -191,6 +164,7 @@ export default function LocationStep() {
       } else if (code === 2) {
         setLocateError("Your location isn't available right now. Please try again.");
       } else {
+        // Network failure or anything unexpected during the geocode request.
         setLocateError("We got your position but couldn't work out your city. Please try again.");
       }
     } finally {
