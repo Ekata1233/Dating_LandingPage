@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useCallback, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import { useAccountSettings } from "@/app/context/AccountSettingsContext";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 
 import { NAV_ITEMS, SECTION_META, navSlotFor } from "./config/sections";
 import { useSectionBack } from "./config/useSectionBack";
@@ -41,6 +43,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
      never be a different person. Neutral avatar until the payload lands. */
   const { profile } = useMyProfile();
   const profileAvatar = profile?.image || FALLBACK_AVATAR;
+  const { ensureLoaded } = useUserProfileData();
+  const { ensurePlans } = useAccountSettings();
+
+  /* Wallet/plans live in providers that sit in the root layout, so they can
+     mount before a session exists and then never load. The shell is the one
+     thing every /app screen mounts, so it is where those idle resources are
+     nudged awake on the first render. */
+  useEffect(() => {
+    ensureLoaded();
+    ensurePlans();
+  }, [ensureLoaded, ensurePlans]);
 
   const meta = SECTION_META[activeSection];
   const closeWallet = useCallback(() => setWalletOpen(false), []);
@@ -55,7 +68,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   );
 
   return (
-    <div className="h-dvh md:h-screen min-h-screen max-h-screen font-figtree flex flex-col bg-white">
+    <div className="h-dvh md:h-screen font-figtree flex flex-col bg-white">
       {/* <MobileTopBar
         className="md:hidden"
         title={meta.title}

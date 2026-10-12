@@ -34,6 +34,32 @@ const DETAILS_PREFETCH_DELAY_MS = 700;
 /** Card scroll depth (px) that counts as "the user opened the profile". */
 const DETAILS_SCROLL_TRIGGER_PX = 40;
 
+/**
+ * Keyframes for the swipe reaction. Kept as plain CSS so the pop does not depend
+ * on Tailwind theme animations, which this project does not configure.
+ */
+const SWIPE_EMOJI_CSS = `
+@keyframes swipeEmojiLike {
+  0% { opacity: 0; transform: scale(0.3) rotate(-15deg); }
+  55% { opacity: 1; transform: scale(1.25) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes swipeEmojiNope {
+  0% { opacity: 0; transform: scale(0.3) rotate(18deg); }
+  50% { opacity: 1; transform: scale(1.22) rotate(-8deg); }
+  70% { transform: scale(1.05) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes swipeEmojiRose {
+  0% { opacity: 0; transform: translateY(16px) scale(0.6); }
+  60% { opacity: 1; transform: translateY(-6px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1); }
+}
+.swipe-emoji-like { animation: swipeEmojiLike 360ms cubic-bezier(.2,.9,.3,1.3) both; }
+.swipe-emoji-nope { animation: swipeEmojiNope 360ms cubic-bezier(.2,.9,.3,1.3) both; }
+.swipe-emoji-rose { animation: swipeEmojiRose 460ms ease-out both; }
+`;
+
 type SwipeDir = "left" | "right" | "up";
 
 type Fact = {
@@ -392,7 +418,8 @@ function HomeMain({
           <div
             ref={cardScrollRef}
             onScroll={handleCardScroll}
-            className="h-full overflow-y-auto scrollbar-hide overscroll-contain"
+            style={{ touchAction: "pan-y" }}
+            className="h-full overflow-y-auto scrollbar-hide overscroll-contain touch-pan-y"
           >
             {/* Photo – full card height */}
             <div className="relative h-full shrink-0">
@@ -523,20 +550,22 @@ function HomeMain({
               ))}
             </div>
           </div>
-          {/* Swipe labels */}
-          {swipeDir === "right" && (
-            <div className="absolute top-10 left-6 rotate-[-20deg] border-4 border-[#44ff44] rounded-lg px-4 py-1 z-20 pointer-events-none">
-              <span className="text-[#44ff44] text-3xl font-black tracking-wider">LIKE</span>
-            </div>
-          )}
-          {swipeDir === "left" && (
-            <div className="absolute top-10 right-6 rotate-[20deg] border-4 border-[#ff4444] rounded-lg px-4 py-1 z-20 pointer-events-none">
-              <span className="text-[#ff4444] text-3xl font-black tracking-wider">NOPE</span>
-            </div>
-          )}
-          {swipeDir === "up" && (
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 rotate-[-8deg] border-4 border-[#4a9eff] rounded-lg px-4 py-1 z-20 pointer-events-none">
-              <span className="text-[#4a9eff] text-3xl font-black tracking-wider">Send Rose</span>
+          {/* Swipe reaction — a heart on like, a cross on reject. */}
+          {swipeDir && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <style>{SWIPE_EMOJI_CSS}</style>
+              <span
+                aria-hidden
+                className={`text-[128px] leading-none drop-shadow-2xl ${
+                  swipeDir === "right"
+                    ? "swipe-emoji-like"
+                    : swipeDir === "left"
+                      ? "swipe-emoji-nope"
+                      : "swipe-emoji-rose"
+                }`}
+              >
+                {swipeDir === "right" ? "\u2764\uFE0F" : swipeDir === "left" ? "\u274C" : "\u{1F339}"}
+              </span>
             </div>
           )}
         </div>

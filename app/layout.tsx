@@ -21,6 +21,7 @@ import { UsersProvider } from "./context/UsersContext";
 import { AccountSettingsProvider } from "./context/AccountSettingsContext";
 import { Toaster } from "sonner";
 import { UserProfileDataProvider } from "./context/UserProfileDataContext";
+import { MyProfileProvider } from "@/app/app/shared/useMyProfile";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -117,30 +118,32 @@ export default function RootLayout({
 
       <body className="flex min-h-full flex-col">
         <IntroVideo>
-          <HashHandler />
+          <MyProfileProvider>
+            <HashHandler />
 
-          <ConditionalNavbar />
+            <ConditionalNavbar />
 
-          <ScrollProgress />
+            <ScrollProgress />
 
-          <main className="flex-1">
-            <UsersProvider>
-              <LegalProvider>
-                <EventProvider>
-                  <ActiveSectionProvider>
-                    <AccountSettingsProvider >
-                      <UserProfileDataProvider >
-                        {children}
-                        <Toaster position="bottom-right" richColors />
-                      </UserProfileDataProvider>
-                    </AccountSettingsProvider>
-                  </ActiveSectionProvider>
-                </EventProvider>
-              </LegalProvider>
-            </UsersProvider>
-          </main>
+            <main className="flex-1">
+              <UsersProvider>
+                <LegalProvider>
+                  <EventProvider>
+                    <ActiveSectionProvider>
+                      <AccountSettingsProvider >
+                        <UserProfileDataProvider >
+                          {children}
+                          <Toaster position="bottom-right" richColors />
+                        </UserProfileDataProvider>
+                      </AccountSettingsProvider>
+                    </ActiveSectionProvider>
+                  </EventProvider>
+                </LegalProvider>
+              </UsersProvider>
+            </main>
 
-          <ConditionalFooter />
+            <ConditionalFooter />
+          </MyProfileProvider>
         </IntroVideo>
       </body>
     </html>

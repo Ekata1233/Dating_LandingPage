@@ -463,6 +463,13 @@ interface UserProfileDataContextData {
     balancesError: string | null;
     refetchBalances: () => Promise<void>;
 
+    /**
+     * Runs the one-off full load (balances, wallet, date plans, referral…) if it
+     * hasn't run yet. The provider lives in the root layout and can mount before
+     * a session exists, so screens call this on mount to nudge it awake.
+     */
+    ensureLoaded: () => void;
+
     /* Referral Dashboard */
     referralDashboard: ReferralDashboardData | null;
     referralDashboardLoading: boolean;
@@ -580,6 +587,7 @@ const UserProfileDataContext =
         balancesLoading: true,
         balancesError: null,
         refetchBalances: async () => { },
+        ensureLoaded: () => { },
 
         referralDashboard: null,
         referralDashboardLoading: true,
@@ -1556,64 +1564,75 @@ export function UserProfileDataProvider({
     /* INITIAL GET APIs (single Promise.all)                            */
     /* ---------------------------------------------------------------- */
 
+    /* Guards against state updates after unmount. */
+    const alive = useRef(true);
     useEffect(() => {
-        if (!getClientToken()) {
-            return;
-        } else {
-            let alive = true;
+        alive.current = true;
+        return () => {
+            alive.current = false;
+        };
+    }, []);
 
-            (async () => {
-                const [
-                    dashboardResponse,
-                    historyResponse,
-                    religionResponse,
-                    languagesResponse,
-                    balancesResponse,
-                    rosesResponse,
-                    complimentsResponse,
-                    boostsResponse,
-                    superBoostsResponse,
-                    walletResponse,
-                    walletInResponse,
-                    walletOutResponse,
-                    datePlansResponse,
-                ] = await Promise.all([
-                    authGet(REFERRAL_DASHBOARD_URL),
-                    authGet(REFERRAL_HISTORY_URL),
-                    authGet(RELIGION_URL),
-                    authGet(LANGUAGES_URL),
-                    authGet(MY_BALANCES_URL),
-                    authGet(ROSES_URL),
-                    authGet(COMPLIMENTS_URL),
-                    authGet(BOOSTS_URL),
-                    authGet(SUPER_BOOSTS_URL),
-                    authGet(WALLET_URL),
-                    authGet(WALLET_FILTER_IN_URL),
-                    authGet(WALLET_FILTER_OUT_URL),
-                    authGet(DATEPLANS_URL),
-                ]);
+    /* True once a load has run with a session. A token-less call leaves it
+       clear, so `ensureLoaded` can retry after login. */
+    const loaded = useRef(false);
 
-                if (!alive) return;
+    /**
+     * The one-off full load, shared by the mount effect and `ensureLoaded`.
+     * No session means "not loaded" rather than "empty", so it stays retryable.
+     */
+    const loadAll = useCallback(() => {
+        if (loaded.current) return;
+        if (!getClientToken()) return;
+        loaded.current = true;
 
-                applyReferralDashboard(dashboardResponse);
-                applyReferralHistory(historyResponse);
-                applyReligions(religionResponse);
-                applyLanguages(languagesResponse);
-                applyBalances(balancesResponse);
-                applyRoses(rosesResponse);
-                applyCompliments(complimentsResponse);
-                applyBoosts(boostsResponse);
-                applySuperBoosts(superBoostsResponse);
-                applyWallet(walletResponse);
-                applyWalletIn(walletInResponse);
-                applyWalletOut(walletOutResponse);
-                applyDatePlans(datePlansResponse);
-            })();
+        void (async () => {
+            const [
+                dashboardResponse,
+                historyResponse,
+                religionResponse,
+                languagesResponse,
+                balancesResponse,
+                rosesResponse,
+                complimentsResponse,
+                boostsResponse,
+                superBoostsResponse,
+                walletResponse,
+                walletInResponse,
+                walletOutResponse,
+                datePlansResponse,
+            ] = await Promise.all([
+                authGet(REFERRAL_DASHBOARD_URL),
+                authGet(REFERRAL_HISTORY_URL),
+                authGet(RELIGION_URL),
+                authGet(LANGUAGES_URL),
+                authGet(MY_BALANCES_URL),
+                authGet(ROSES_URL),
+                authGet(COMPLIMENTS_URL),
+                authGet(BOOSTS_URL),
+                authGet(SUPER_BOOSTS_URL),
+                authGet(WALLET_URL),
+                authGet(WALLET_FILTER_IN_URL),
+                authGet(WALLET_FILTER_OUT_URL),
+                authGet(DATEPLANS_URL),
+            ]);
 
-            return () => {
-                alive = false;
-            };
-        }
+            if (!alive.current) return;
+
+            applyReferralDashboard(dashboardResponse);
+            applyReferralHistory(historyResponse);
+            applyReligions(religionResponse);
+            applyLanguages(languagesResponse);
+            applyBalances(balancesResponse);
+            applyRoses(rosesResponse);
+            applyCompliments(complimentsResponse);
+            applyBoosts(boostsResponse);
+            applySuperBoosts(superBoostsResponse);
+            applyWallet(walletResponse);
+            applyWalletIn(walletInResponse);
+            applyWalletOut(walletOutResponse);
+            applyDatePlans(datePlansResponse);
+        })();
     }, [
         authGet,
         applyReferralDashboard,
@@ -1631,6 +1650,14 @@ export function UserProfileDataProvider({
         applyDatePlans,
     ]);
 
+    useEffect(() => {
+        loadAll();
+    }, [loadAll]);
+
+    const ensureLoaded = useCallback(() => {
+        loadAll();
+    }, [loadAll]);
+
     /* ---------------------------------------------------------------- */
     /* CONTEXT VALUE                                                    */
     /* ---------------------------------------------------------------- */
@@ -1642,6 +1669,7 @@ export function UserProfileDataProvider({
             balancesLoading,
             balancesError,
             refetchBalances,
+            ensureLoaded,
 
             /* Dashboard */
             referralDashboard,
@@ -1745,6 +1773,7 @@ export function UserProfileDataProvider({
             balancesLoading,
             balancesError,
             refetchBalances,
+            ensureLoaded,
 
             referralDashboard,
             referralDashboardLoading,
