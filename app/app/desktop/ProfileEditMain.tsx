@@ -268,7 +268,7 @@ export interface ProfileEditMainProps {
   fluid?: boolean;
   /** Caller-owned busy state, for when a caller wants to show its own spinner. */
   saving?: boolean;
-  showBack: boolean;
+  showBack?: boolean;
   /**
    * Values applied underneath the API payload. Useful for a preview or a draft,
    * never used to stand in for a missing payload.
