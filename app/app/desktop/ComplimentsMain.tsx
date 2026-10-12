@@ -379,7 +379,7 @@ export default function ComplimentsStore({
                     className={
                         fluid
                             ? "absolute inset-0 overflow-hidden"
-                            : "  mt-2 w-[320px] sm:w-[300px] h-[480px] sm:h-[520px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out "
+                            : "  h-full aspect-[300/520] max-w-full rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out "
                     }
                 >
                     {/* container-query root: everything inside is sized in cqw */}

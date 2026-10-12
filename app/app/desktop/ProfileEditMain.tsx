@@ -139,6 +139,35 @@ export interface PromptAnswer {
   question: string;
   answer: string;
 }
+const U = (n: number) => `${n}cqw`;
+const HAIR = "max(1px, 0.3cqw)";
+
+const C = {
+  pink: "#e23a6a",
+  pinkDeep: "#c2185b",
+  pinkText: "#e0355f",
+  pinkSoft: "#fde4ea",
+  pinkTint: "#fff6f8",
+  pinkBorder: "#f8d9e1",
+  ink: "#1f1f24",
+  grey: "#8a817c",
+  greyLight: "#b3b3b3",
+  border: "#ececec",
+  white: "#ffffff",
+};
+const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
+const stroke = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+};
+const BackIcon = () => (
+    <svg viewBox="0 0 24 24" style={svgBase} {...stroke} strokeWidth={2.4}>
+        <path d="M15 5l-7 7 7 7" />
+    </svg>
+);
 export const ZODIAC: readonly FieldOption[] = [
   { value: "ARIES", label: "Aries" },
   { value: "TAURUS", label: "Taurus" },
@@ -234,6 +263,7 @@ export interface ProfileEditMainProps {
   fluid?: boolean;
   /** Caller-owned busy state, for when a caller wants to show its own spinner. */
   saving?: boolean;
+  showBack:boolean;
   /**
    * Values applied underneath the API payload. Useful for a preview or a draft,
    * never used to stand in for a missing payload.
@@ -745,9 +775,9 @@ function hydrateSiblingCounts(
      by halving them — an uneven guess beats dropping a sibling on a save. */
   const halved = rows.length > 0
     ? {
-        sisters: Math.floor(rows.length / 2),
-        brothers: rows.length - Math.floor(rows.length / 2),
-      }
+      sisters: Math.floor(rows.length / 2),
+      brothers: rows.length - Math.floor(rows.length / 2),
+    }
     : { sisters: 0, brothers: 0 };
 
   const counts =
@@ -812,10 +842,10 @@ function hydrateSiblingRows(
         marital: optionValueFor(
           lists?.siblingMarital ?? [],
           record.marital ??
-            record.maritalId ??
-            record.maritalStatus ??
-            record.maritalStatusId ??
-            record.marital_status
+          record.maritalId ??
+          record.maritalStatus ??
+          record.maritalStatusId ??
+          record.marital_status
         ),
       };
     })
@@ -1312,6 +1342,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
   saving = false,
   initialData,
   photos: photosProp,
+  showBack=true,
   onRemovePhoto,
   onRecordVideo,
   onSaved,
@@ -2554,7 +2585,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
           className={cn(
             fluid
               ? "absolute inset-0 overflow-hidden"
-              : "mt-2 w-[320px] sm:w-[300px] h-[480px] sm:h-[520px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out"
+              : "h-full aspect-[300/520] max-w-full rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out"
           )}
         >
           <div className="pec-root">
@@ -3422,11 +3453,29 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
         <div className="min-w-0 min-h-5 flex items-center gap-1">
           <button
             type="button"
-            onClick={() => router.back()}
+            className="lc-btn cursor-pointer"
             aria-label="Go back"
-            className="shrink-0 -ml-1 w-9 h-9 flex text-gray-400 items-center justify-center rounded-full hover:bg-black/5 active:bg-black/5 cursor-pointer"
+            onClick={onBack ?? handleCLick()}
+            style={{
+              position: "absolute",
+              left: U(-1.9),
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: U(10),
+              height: U(10),
+              borderRadius: "50%",
+              background: C.white,
+              border: `${HAIR} solid ${C.border}`,
+              boxShadow: `0 ${U(0.5)} ${U(2)} rgba(0,0,0,.06)`,
+              color: C.ink,
+              fontSize: U(4),
+              display: showBack ? "flex" : "none",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
           >
-            <ChevronLeft size={22} />
+            <BackIcon />
           </button>
           <p className="font-figtree text-pink-500 ">Edit profile</p>
         </div>

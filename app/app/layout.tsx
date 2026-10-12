@@ -76,7 +76,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       /> */}
 
       <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden md:overflow-visible md:text-white">
-        <div className="hidden md:flex flex-col w-74 bg-slate-50">
+        <div className="hidden md:flex flex-col w-[20.6%] bg-slate-50">
           <SidebarHeaderStrip
             variant="top"
             items={NAV_ITEMS}

@@ -94,10 +94,10 @@ export default function EventsFeed() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col gap-2 bg-white px-3 py-24 font-sans text-black lg:px-12">
+    <div className="flex min-h-screen mx-auto max-w-7xl flex-col gap-2 bg-white py-24 font-sans text-black ">
 
       {/* HEADER */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center px-4 sm:justify-between">
         <h1 className="font-poppins px-0 text-[28px] font-bold lg:px-5">
           Events near {selectedCity}
         </h1>
@@ -143,7 +143,7 @@ export default function EventsFeed() {
       {/* FILTERS */}
       <div
         className="
-          grid w-full grid-flow-col auto-cols-[180px]
+          grid w-full px-2 grid-flow-col auto-cols-[180px]
           grid-rows-2 gap-4 overflow-x-auto pb-5
           text-center text-[12px]
           scroll-smooth touch-pan-x

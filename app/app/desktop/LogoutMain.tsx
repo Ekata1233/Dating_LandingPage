@@ -189,13 +189,13 @@ export default function LogoutMain({
         <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
             {/* Card container – fills remaining height */}
             <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
-                <div className={fluid ? "hidden" : "w-[300px] flex gap-1 justify-start items-start"}>
+                <div className={fluid ? "hidden" : "w-full flex gap-1 justify-start items-start"}>
                 </div>
                 {/* Profile card */}
                 <div
                     className={fluid
                         ? "absolute inset-0 overflow-hidden"
-                        : "  mt-2 w-[320px] sm:w-[300px] h-[480px] sm:h-[520px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out"}>
+                        : "  h-full aspect-[300/520] max-w-full rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out"}>
                     <div
                         className={className}
                         style={{

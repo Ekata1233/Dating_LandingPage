@@ -167,7 +167,7 @@ function ProfileMain({ profile: profileProp, fluid = false, onExpand }: ProfileM
         {/* Profile card */}
         <div
           className={`absolute ${
-            fluid ? "inset-0" : "w-[320px] sm:w-[300px] h-[480px] sm:h-[520px]"
+            fluid ? "inset-0" : "h-full aspect-[300/520] max-w-full"
           } rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out`}
         >
           {/* Scrollable content – scroll down to view full profile */}

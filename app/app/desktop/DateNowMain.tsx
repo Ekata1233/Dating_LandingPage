@@ -18,7 +18,7 @@ function DateNowMain({ fluid = false, count = 2 }: DateNowMainProps) {
                     className={
                         fluid
                             ? "flex flex-col w-full h-full overflow-y-auto snap-y snap-mandatory py-3 px-3 gap-4"
-                            : "flex flex-col mt-2 w-[320px] sm:w-[300px] h-[520px] sm:h-[520px] rounded-2xl overflow-y-auto shadow-2xl transition-all duration-500 ease-out py-3 px-2 gap-4 "
+                            : "flex flex-col h-full aspect-[300/520] max-w-full rounded-2xl overflow-y-auto shadow-2xl transition-all duration-500 ease-out py-3 px-2 gap-4 "
                     }
                     style={{
                         scrollbarWidth: "none",

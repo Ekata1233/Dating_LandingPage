@@ -528,7 +528,7 @@ export default function EventDetailsPage() {
       </div>
 
       {/* --------------------------- CONTENT --------------------------- */}
-      <div className="mx-auto max-w-[1100px] px-4 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* header card */}
         <div
           className="relative z-10 -mt-8 rounded-3xl p-5 shadow-[0_18px_50px_-30px_rgba(43,42,40,0.5)] sm:-mt-12 sm:p-7"

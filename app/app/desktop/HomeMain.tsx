@@ -392,7 +392,7 @@ function HomeMain({
               ? { transform: `translate3d(${drag.x}px, ${drag.y}px, 0) rotate(${drag.x / 18}deg)`, transition: "none" }
               : undefined
           }
-          className={`absolute ${fluid ? "inset-0" : "w-[320px] sm:w-[300px] h-[480px] sm:h-[520px]"
+          className={`absolute ${fluid ? "inset-0" : "h-full aspect-[300/520] max-w-full"
             } rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out ${fluid ? "touch-pan-y" : "cursor-pointer"
             } ${swipeDir === "right"
               ? "translate-x-[120%] rotate-12 opacity-0"

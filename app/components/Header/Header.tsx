@@ -414,7 +414,7 @@ function Header() {
                     boxShadow: `0 8px 28px ${C.pink}35`,
                   }}
                 >
-                  <span className="relative z-10 flex items-center">
+                  <span className="relative z-10 flex items-center gap-1 ">
                     <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
                     Discover Welvors
                   </span>
