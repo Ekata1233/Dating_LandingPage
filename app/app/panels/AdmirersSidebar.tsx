@@ -76,6 +76,7 @@ function toSentCard(admirer: Admirer): AdmirerSent {
         avatarUrl: admirer.user.profileImage,
         name: admirer.user.name,
         age: admirer.user.age,
+        id:admirer.user.id,
         gender:admirer.user.gender,
         matchPercent: Math.round(admirer.user.matchScore ?? 0),
         location: formatDistance(admirer.user.distanceKm),
@@ -112,6 +113,7 @@ function AdmiererSidebar({
         admirersSentLoading,
         admirersSentError,
         refetchAdmirersSent,
+        sendRose,
     } = useUserProfileData();
 
     const select = (next: AdmirersTab) => {
@@ -209,11 +211,9 @@ function AdmiererSidebar({
                         ))}
                     </div>
                 ) : (
-                    <Notice
-                        title="No admirers yet"
-                        detail="When someone likes you, they'll appear here."
-                        className="flex-1 min-h-0"
-                    />
+                    <p className="flex-1 min-h-0 flex items-center justify-center px-4 text-center text-sm text-gray-400">
+                        No admirers yet. When someone likes you, they&apos;ll appear here.
+                    </p>
                 )
             ) : admirersSentLoading && !sentItems.length ? (
                 <Loader label="Loading likes…" className="flex-1 min-h-0" />
@@ -239,16 +239,17 @@ function AdmiererSidebar({
                             onOpenProfile={
                                 item.id ? () => selectAdmirer(item.id!) : undefined
                             }
-                            onSendRose={() => onSendRose?.(item.card)}
+                            onSendRose={() => {
+                                if (item.id) void sendRose(item.id);
+                                else onSendRose?.(item.card);
+                            }}
                         />
                     ))}
                 </div>
             ) : (
-                <Notice
-                    title="No likes sent yet"
-                    detail="Profiles you like will show up here."
-                    className="flex-1 min-h-0"
-                />
+                <p className="flex-1 min-h-0 flex items-center justify-center px-4 text-center text-sm text-gray-400">
+                    No likes sent yet. Profiles you like will show up here.
+                </p>
             )}
         </div>
     )

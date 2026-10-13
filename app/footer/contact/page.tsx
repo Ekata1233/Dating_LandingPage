@@ -61,7 +61,6 @@ const TEAM_EMAILS: [string, string][] = [
   ["Member support", "support@welvors.com"],
   ["Privacy & data", "support@welvors.com"],
   ["Partnerships", "support@welvors.com"],
-  ["Press & media", "support@welvors.com"],
   ["Careers", "support@welvors.com"],
 ];
 
@@ -70,7 +69,6 @@ const TOPICS = [
   "Member support",
   "Privacy & data",
   "Partnerships",
-  "Press & media",
   "Careers",
 ];
 

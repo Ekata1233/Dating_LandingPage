@@ -260,6 +260,7 @@ export const MOCK_ADMIRERS_SENT: AdmirerSent[] = [
   {
     avatarUrl: GALLERY[0],
     name: "Elena",
+    id:"1",
     age: 23,
     gender: "FEMALE",
     matchPercent: 95,
@@ -271,6 +272,7 @@ export const MOCK_ADMIRERS_SENT: AdmirerSent[] = [
     avatarUrl: GALLERY[1],
     name: "Sara",
     age: 26,
+    id:"1",
     gender: "FEMALE",
     matchPercent: 88,
     location: "Pune",

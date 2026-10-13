@@ -125,7 +125,6 @@ const COMPARISON: { most: string; welvors: React.ReactNode }[] = [
 /* ------------------------------------------------------------------ */
 const MORE_LINKS = [
   { label: "Careers", href: "/careers" },
-  { label: "Press", href: "/press" },
   { label: "Become a partner", href: "/partner" },
   { label: "Contact us", href: "/contact" },
 ];

@@ -1,27 +1,25 @@
+import NewMatches, { NewMatch } from "@/app/components/ui/newMatches";
+import {
+    Conversation,
+    useConversations,
+    useNewMatches,
+} from "@/app/context/ChatContext";
 import React, { useCallback, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  Messages                                                                   */
 /*                                                                              */
 /*  An independent, fully fluid screen showing a conversation/message list:    */
-/*    1. Header ("Messages") + search action                                   */
+/*    1. Header ("Messages") + new matches                                     */
 /*    2. Horizontally scrollable filter tabs (All, Unread, Online, ...)        */
 /*    3. List of conversation rows, each with avatar, name, match/trust pills, */
-/*       timestamp, and a status line (last message, gift sent, date status,   */
-/*       or a progress bar toward a milestone like "Dinner Date").             */
+/*       timestamp, and a status line (last message, gift sent, date status).  */
 /*                                                                              */
 /*  It fills 100% width and 100% height of its PARENT. Every size inside       */
 /*  (fonts, padding, gaps, radii, icons) is measured in `cqw`, i.e. 1% of the  */
 /*  parent's width, so everything scales with the parent. If the content is    */
 /*  taller than the parent's height, it scrolls vertically (scrollbar hidden   */
 /*  across browsers, scrolling still works).                                   */
-/*                                                                              */
-/*  Usage:                                                                     */
-/*    <div style={{ width: 390, height: 800 }}>                                */
-/*      <Messages conversations={myConversations} />                          */
-/*    </div>                                                                   */
-/*                                                                              */
-/*  Zero dependencies: no Tailwind, no icon library, no CSS files.             */
 /* -------------------------------------------------------------------------- */
 
 /* ---------------------------------- types ---------------------------------- */
@@ -45,22 +43,10 @@ export interface ConversationStatus {
     progressPercent?: number;
 }
 
-export interface Conversation {
-    id: string | number;
-    name: string;
-    avatarUrl?: string;
-    matchPercent: number;
-    trustPercent: number;
-    timestamp: string;
-    unread?: boolean;
-    status: ConversationStatus;
-}
-
 export interface MessagesProps {
     title?: string;
     tabs?: { key: FilterTab; label: string }[];
     activeTab?: FilterTab;
-    conversations?: Conversation[];
     onTabChange?: (tab: FilterTab) => void;
     onSearch?: () => void;
     onSelectConversation?: (id: string | number) => void;
@@ -89,50 +75,6 @@ const C = {
     white: "#ffffff",
 };
 
-// const FONT =
-// "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
-
-const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
-const stroke = {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-};
-
-/* ---------------------------------- icons ---------------------------------- */
-const SearchIcon = () => (
-    <svg viewBox="0 0 24 24" style={svgBase} {...stroke} strokeWidth={2.3}>
-        <circle cx="11" cy="11" r="7" />
-        <path d="M21 21l-4.3-4.3" />
-    </svg>
-);
-const GiftIcon = () => (
-    <svg viewBox="0 0 24 24" style={svgBase} fill="none" stroke="none">
-        <rect x="3" y="9" width="18" height="12" rx="2" fill="#f28c12" />
-        <rect x="2" y="6" width="20" height="5" rx="1.4" fill="#e2355f" />
-        <rect x="10.6" y="6" width="2.8" height="15" fill="#fff3d6" />
-        <path
-            d="M12 6c-2-3-6-2-5 1s5 1 5-1Zm0 0c2-3 6-2 5 1s-5 1-5-1Z"
-            fill="#ffd166"
-        />
-    </svg>
-);
-const CheckBadgeIcon = () => (
-    <svg viewBox="0 0 24 24" style={svgBase}>
-        <rect x="2" y="2" width="20" height="20" rx="5" fill={C.greenBadge} />
-        <path
-            d="M6.5 12.5l3.7 3.7L17.5 8"
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
-
 /* -------------------------------- defaults --------------------------------- */
 const DEFAULT_TABS: { key: FilterTab; label: string }[] = [
     { key: "all", label: "All" },
@@ -143,29 +85,168 @@ const DEFAULT_TABS: { key: FilterTab; label: string }[] = [
     { key: "events", label: "Events" },
 ];
 
-export const DEFAULT_CONVERSATIONS: Conversation[] = [
-    {
-        id: 1,
-        name: "yogesh Ha...",
-        matchPercent: 0,
-        trustPercent: 85,
-        timestamp: "Yesterday",
-        status: {
-            kind: "gift",
-            text: "You sent a gift",
-            progressLabel: "Dinner Date",
-            progressPercent: 78,
+/* --------------------------------- chrome ---------------------------------- */
+/* The "Messages" header + new matches + filter tabs. Extracted so the mobile
+   thread can keep the same chrome pinned above the conversation, not just the
+   list. */
+export interface ChatChromeProps {
+    tabs?: { key: FilterTab; label: string }[];
+    activeTab?: FilterTab;
+    onTabChange?: (tab: FilterTab) => void;
+    className?: string;
+    style?: React.CSSProperties;
+}
+
+export function ChatChrome({
+    tabs = DEFAULT_TABS,
+    activeTab = "all",
+    onTabChange,
+    className,
+    style,
+}: ChatChromeProps) {
+    const [tab, setTab] = useState<FilterTab>(activeTab);
+    const { newMatches } = useNewMatches();
+    const { conversations, selectConversation } = useConversations();
+
+    const matches: NewMatch[] = newMatches.map((m) => ({
+        id: m.sender.id,
+        name: m.sender.name,
+        photo: m.sender.photo,
+        hasGift: m.type === "GIFT",
+    }));
+
+    const handleTab = useCallback(
+        (key: FilterTab) => {
+            setTab(key);
+            onTabChange?.(key);
         },
-    },
-    {
-        id: 2,
-        name: "vaibhav bad...",
-        matchPercent: 0,
-        trustPercent: 85,
-        timestamp: "12:51 PM",
-        status: { kind: "dateConfirmed", text: "Date confirmed" },
-    },
-];
+        [onTabChange]
+    );
+
+    const openMatch = useCallback(
+        (senderId: string) => {
+            const conversation = conversations.find((c) => c.user.id === senderId);
+            if (conversation) selectConversation(conversation.conversationId);
+        },
+        [conversations, selectConversation]
+    );
+
+    return (
+        <div
+            className={`shrink-0 ${className ?? ""}`}
+            style={{
+                width: "100%",
+                boxSizing: "border-box",
+                containerType: "inline-size",
+                ...style,
+            }}
+        >
+            <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+        .msg-tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
+      `}</style>
+
+            {/* header */}
+            <header
+                className="px-[4.054cqw] py-[1.778cqh]"
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                }}
+            >
+                <h1
+                    className="text-[7.432cqw]"
+                    style={{
+                        margin: 0,
+                        fontWeight: 800,
+                        letterSpacing: "-0.01em",
+                    }}
+                >
+                    <span style={{ color: C.ink }}>Mess</span>
+                    <span style={{ color: C.pinkText }}>ages</span>
+                </h1>
+            </header>
+
+            {/* new matches + tabs */}
+            <NewMatches matches={matches} onSelect={openMatch} />
+            <nav
+                role="tablist"
+                className="msg-tabs pt-2 pb-3 px-2"
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: U(6.4),
+                    overflowX: "auto",
+                    borderBottom: `${HAIR} solid ${C.border}`,
+                }}
+            >
+                {tabs.map(({ key, label }) => {
+                    const active = tab === key;
+                    return (
+                        <button
+                            key={key}
+                            role="tab"
+                            aria-selected={active}
+                            type="button"
+                            className="msg-btn"
+                            onClick={() => handleTab(key)}
+                            style={{
+                                position: "relative",
+                                flexShrink: 0,
+                                paddingBottom: U(2.6),
+                                fontSize: U(3.7),
+                                fontWeight: active ? 700 : 500,
+                                color: active ? C.pinkText : "#4a4750",
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {label}
+                            {active && (
+                                <span
+                                    aria-hidden
+                                    style={{
+                                        position: "absolute",
+                                        left: 0,
+                                        right: 0,
+                                        bottom: `-${U(0.15)}`,
+                                        height: U(0.7),
+                                        borderRadius: U(1),
+                                        background: C.pinkText,
+                                    }}
+                                />
+                            )}
+                        </button>
+                    );
+                })}
+            </nav>
+        </div>
+    );
+}
+
+export function formatTimeAgo(timestamp: string) {
+    const time = new Date(timestamp).getTime();
+
+    if (Number.isNaN(time)) return "";
+
+    const diff = Math.max(0, Date.now() - time);
+
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    const week = 7 * day;
+    const month = 30 * day;
+    const year = 365 * day;
+
+    if (diff < minute) return "now";
+    if (diff < hour) return `${Math.floor(diff / minute)}m`;
+    if (diff < day) return `${Math.floor(diff / hour)}hr`;
+    if (diff < week) return `${Math.floor(diff / day)}d`;
+    if (diff < month) return `${Math.floor(diff / week)}w`;
+    if (diff < year) return `${Math.floor(diff / month)}mo`;
+
+    return `${Math.floor(diff / year)}y`;
+}
 
 /* --------------------------------- avatar ----------------------------------- */
 const initialsGradient = (seed: string) => {
@@ -199,6 +280,7 @@ const Avatar = ({ name, url }: { name: string; url?: string }) => (
         }}
     >
         {url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
                 src={url}
                 alt={name}
@@ -239,76 +321,41 @@ const Pill = ({
 );
 
 /* --------------------------------- status row -------------------------------- */
-const StatusRow = ({ status }: { status: ConversationStatus }) => {
-    if (status.kind === "dateConfirmed") {
+/* Last-message line. Unread conversations render black + bold; read ones keep
+   their original color and weight. Inline styles are used on purpose, since
+   they would override any Tailwind color/weight classes. */
+const StatusRow = ({ conversation }: { conversation: Conversation }) => {
+    const unread = conversation.unreadCount >= 1;
+    const { messageType, content } = conversation.lastMessage;
+
+    const textStyle = (
+        readColor: string,
+        readWeight: number
+    ): React.CSSProperties => ({
+        fontSize: U(3.5),
+        color: unread ? C.ink : readColor,
+        fontWeight: unread ? 700 : readWeight,
+    });
+
+    if (messageType === "DATE_CONFIRMED") {
         return (
             <div style={{ display: "flex", alignItems: "center", gap: U(1.6) }}>
-                <span style={{ fontSize: U(3.6), display: "flex" }}>
-                    <CheckBadgeIcon />
-                </span>
-                <span style={{ fontSize: U(3.3), color: C.green, fontWeight: 600 }}>
-                    {status.text}
-                </span>
+                <span style={textStyle(C.green, 400)}>{content}</span>
             </div>
         );
     }
 
-    if (status.kind === "gift") {
+    if (messageType === "GIFT") {
         return (
             <div style={{ display: "flex", flexDirection: "column", gap: U(1.6) }}>
-                <div style={{ display: "flex", alignItems: "center", gap: U(1.8) }}>
-                    <span style={{ fontSize: U(3.8), display: "flex" }}>
-                        <GiftIcon />
-                    </span>
-                    <span style={{ fontSize: U(3.3), color: C.grey, fontWeight: 500 }}>
-                        {status.text}
-                    </span>
+                <div style={{ display: "flex ", alignItems: "center", gap: U(1.8) }}>
+                    <span style={textStyle(C.grey, 500)}>{content}</span>
                 </div>
-                {typeof status.progressPercent === "number" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: U(2.4) }}>
-                        <span
-                            style={{
-                                flex: 1,
-                                height: U(1.2),
-                                borderRadius: U(1),
-                                background: C.track,
-                                overflow: "hidden",
-                            }}
-                        >
-                            <span
-                                style={{
-                                    display: "block",
-                                    height: "100%",
-                                    width: `${Math.max(0, Math.min(100, status.progressPercent))}%`,
-                                    borderRadius: U(1),
-                                    background: `linear-gradient(90deg, ${C.pink}, #f28c5a)`,
-                                }}
-                            />
-                        </span>
-                        {status.progressLabel && (
-                            <span
-                                style={{
-                                    flexShrink: 0,
-                                    fontSize: U(3),
-                                    fontWeight: 600,
-                                    color: C.green,
-                                    whiteSpace: "nowrap",
-                                }}
-                            >
-                                {status.progressLabel}
-                            </span>
-                        )}
-                    </div>
-                )}
             </div>
         );
     }
 
-    return (
-        <span style={{ fontSize: U(3.3), color: C.grey, fontWeight: 500 }}>
-            {status.text}
-        </span>
-    );
+    return <span style={textStyle(C.grey, 500)}>{content}</span>;
 };
 
 /* -------------------------------- component -------------------------------- */
@@ -317,21 +364,20 @@ export default function ChatSideBar({
        owned by the host (desktop sidebar header / mobile top bar). */
     tabs = DEFAULT_TABS,
     activeTab = "all",
-    conversations = DEFAULT_CONVERSATIONS,
     onTabChange,
-    onSearch,
     onSelectConversation,
     className,
     style,
 }: MessagesProps) {
-    const [tab, setTab] = useState<FilterTab>(activeTab);
+    const { conversations, activeConversationId, selectConversation } =
+        useConversations();
 
-    const handleTab = useCallback(
-        (key: FilterTab) => {
-            setTab(key);
-            onTabChange?.(key);
+    const openConversation = useCallback(
+        (id: string) => {
+            selectConversation(id);
+            onSelectConversation?.(id);
         },
-        [onTabChange]
+        [selectConversation, onSelectConversation]
     );
 
     return (
@@ -360,9 +406,8 @@ export default function ChatSideBar({
         .msg-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
       `}</style>
 
-            <div className="px-[4.054cqw] py-[1.778cqh]"
+            <div
                 style={{
-                    // fontFamily: FONT,
                     color: C.ink,
                     boxSizing: "border-box",
                     minHeight: "100%",
@@ -370,78 +415,12 @@ export default function ChatSideBar({
                     flexDirection: "column",
                 }}
             >
-                {/* header */}
-                <header className='px-[2.703cqw] '
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <h1 className='text-[7.432cqw]'
-                        style={{
-                            margin: 0,
-                            fontWeight: 800,
-                            letterSpacing: "-0.01em",
-                        }}
-                    >
-                        <span style={{ color: C.ink }}>Mess</span>
-                        <span style={{ color: C.pinkText }}>ages</span>
-                    </h1>
-                </header>
-
-                {/* tabs */}
-                {/* <nav
-                    role="tablist"
-                    className="msg-tabs"
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: U(6.4),
-                        padding: `0 ${U(5)} ${U(3.4)}`,
-                        overflowX: "auto",
-                        borderBottom: `${HAIR} solid ${C.border}`,
-                    }}
-                >
-                    {tabs.map(({ key, label }) => {
-                        const active = tab === key;
-                        return (
-                            <button
-                                key={key}
-                                role="tab"
-                                aria-selected={active}
-                                type="button"
-                                className="msg-btn"
-                                onClick={() => handleTab(key)}
-                                style={{
-                                    position: "relative",
-                                    flexShrink: 0,
-                                    paddingBottom: U(2.6),
-                                    fontSize: U(3.7),
-                                    fontWeight: active ? 700 : 500,
-                                    color: active ? C.pinkText : "#4a4750",
-                                    whiteSpace: "nowrap",
-                                }}
-                            >
-                                {label}
-                                {active && (
-                                    <span
-                                        aria-hidden
-                                        style={{
-                                            position: "absolute",
-                                            left: 0,
-                                            right: 0,
-                                            bottom: `-${U(0.15)}`,
-                                            height: U(0.7),
-                                            borderRadius: U(1),
-                                            background: C.pinkText,
-                                        }}
-                                    />
-                                )}
-                            </button>
-                        );
-                    })}
-                </nav> */}
+                {/* header + new matches + tabs */}
+                <ChatChrome
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={onTabChange}
+                />
 
                 {/* list */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
@@ -455,88 +434,114 @@ export default function ChatSideBar({
                                 padding: U(10),
                             }}
                         >
-                            <p style={{ margin: 0, fontSize: U(3.6), color: C.greyLight, textAlign: "center" }}>
+                            <p
+                                style={{
+                                    margin: 0,
+                                    fontSize: U(3.6),
+                                    color: C.greyLight,
+                                    textAlign: "center",
+                                }}
+                            >
                                 No conversations yet
                             </p>
                         </div>
                     ) : (
-                        conversations.map((c, i) => (
-                            <div
-                                key={c.id}
-                                className="msg-row bg-white"
-                                onClick={() => onSelectConversation?.(c.id)}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: U(3.4),
-                                    padding: `${U(4)} ${U(5)}`,
-                                    borderTop: i === 0 ? "none" : `${HAIR} solid ${C.border}`,
-                                }}
-                            >
-                                <Avatar name={c.name} url={c.avatarUrl} />
+                        conversations
+                            .toSorted(
+                                (a, b) =>
+                                    new Date(b.updatedAt).getTime() -
+                                    new Date(a.updatedAt).getTime()
+                            )
+                            .map((c, i) => (
+                                <div
+                                    key={c.conversationId}
+                                    className="msg-row bg-white"
+                                    onClick={() => openConversation(c.conversationId)}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: U(3.4),
+                                        padding: `${U(4)} ${U(5)}`,
+                                        borderTop:
+                                            i === 0 ? "none" : `${HAIR} solid ${C.border}`,
+                                        backgroundColor:
+                                            c.conversationId === activeConversationId
+                                                ? "#F2F2F2"
+                                                : undefined,
+                                    }}
+                                >
+                                    <Avatar name={c.user.fullName} url={c.user.profilePhoto} />
 
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            gap: U(2),
-                                        }}
-                                    >
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <div
                                             style={{
                                                 display: "flex",
                                                 alignItems: "center",
+                                                justifyContent: "space-between",
                                                 gap: U(2),
-                                                minWidth: 0,
-                                                flex: 1,
                                             }}
                                         >
-                                            <span
-                                                className="msg-ellipsis"
-                                                style={{ fontSize: U(3.9), fontWeight: 700 }}
+                                            <div
+                                                className="justify-between"
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: U(2),
+                                                    minWidth: 0,
+                                                    flex: 1,
+                                                }}
                                             >
-                                                {c.name}
+                                                <span
+                                                    className="msg-ellipsis truncate"
+                                                    style={{ fontSize: U(3.9), fontWeight: 700 }}
+                                                >
+                                                    {c.user.fullName}
+                                                </span>
+                                                <span className="flex">
+                                                    <Pill
+                                                        label={`${c.user.matchPercentage}% Match`}
+                                                        color={C.pinkText}
+                                                        background={C.pinkSoft}
+                                                    />
+                                                    <Pill
+                                                        label={`${c.user.trustPercentage}% Trust`}
+                                                        color={C.green}
+                                                        background={C.greenSoft}
+                                                    />
+                                                </span>
+                                            </div>
+                                            <span
+                                                style={{
+                                                    flexShrink: 0,
+                                                    fontSize: U(3),
+                                                    color: C.greyLight,
+                                                    fontWeight: 500,
+                                                }}
+                                            >
+                                                {formatTimeAgo(c.updatedAt)}
                                             </span>
                                         </div>
-                                        <span
+
+                                        <div
+                                            className="flex justify-between"
                                             style={{
-                                                flexShrink: 0,
-                                                fontSize: U(3),
-                                                color: C.greyLight,
-                                                fontWeight: 500,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: U(1.8),
+                                                marginTop: U(1.4),
+                                                marginBottom: U(2.4),
                                             }}
                                         >
-                                            {c.timestamp}
-                                        </span>
+                                            <StatusRow conversation={c} />
+                                            {c.unreadCount > 0 && (
+                                                <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-[#E7477D] px-1 text-[10px] font-bold leading-none text-white">
+                                                    {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: U(1.8),
-                                            marginTop: U(1.4),
-                                            marginBottom: U(2.4),
-                                        }}
-                                    >
-                                        <Pill
-                                            label={`${c.matchPercent}% Match`}
-                                            color={C.pinkText}
-                                            background={C.pinkSoft}
-                                        />
-                                        <Pill
-                                            label={`${c.trustPercent}% Trust`}
-                                            color={C.green}
-                                            background={C.greenSoft}
-                                        />
-                                    </div>
-
-                                    <StatusRow status={c.status} />
                                 </div>
-                            </div>
-                        ))
+                            ))
                     )}
                 </div>
             </div>

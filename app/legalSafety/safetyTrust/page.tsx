@@ -102,12 +102,6 @@ export default function SafetyAndTrustPage() {
             className="mt-4 inline-flex items-center rounded-full border px-3 py-1"
             style={{ borderColor: "#F0CFDC", backgroundColor: "#FCEDF2" }}
           >
-            <span
-              className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
-              style={{ color: C.pink }}
-            >
-              Legal · Safety & Trust
-            </span>
           </div>
 
           {/* Heading */}

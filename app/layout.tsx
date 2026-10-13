@@ -22,6 +22,7 @@ import { AccountSettingsProvider } from "./context/AccountSettingsContext";
 import { Toaster } from "sonner";
 import { UserProfileDataProvider } from "./context/UserProfileDataContext";
 import { MyProfileProvider } from "@/app/app/shared/useMyProfile";
+import { ChatConversationsProvider } from "./context/ChatContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -105,7 +106,6 @@ export default function RootLayout({
       `}
     >
       <head>
-        <link rel="icon" type="image/png" href="/logo.png" />
         <link
           rel="preload"
           href="/Intro1.mp4"
@@ -130,12 +130,14 @@ export default function RootLayout({
                 <LegalProvider>
                   <EventProvider>
                     <ActiveSectionProvider>
-                      <AccountSettingsProvider >
-                        <UserProfileDataProvider >
-                          {children}
-                          <Toaster position="bottom-right" richColors />
-                        </UserProfileDataProvider>
-                      </AccountSettingsProvider>
+                      <ChatConversationsProvider>
+                        <AccountSettingsProvider >
+                          <UserProfileDataProvider >
+                            {children}
+                            <Toaster position="bottom-right" richColors />
+                          </UserProfileDataProvider>
+                        </AccountSettingsProvider>
+                      </ChatConversationsProvider>
                     </ActiveSectionProvider>
                   </EventProvider>
                 </LegalProvider>

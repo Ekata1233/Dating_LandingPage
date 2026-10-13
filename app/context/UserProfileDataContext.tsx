@@ -51,6 +51,8 @@ const DATEPLANS_URL = `${API_BASE_URL}/api/user/date-now/date-plan-packages/get-
 
 const ADMIRER_RECEIVED = `${API_BASE_URL}/api/user/admirers?type=LIKE&direction=RECEIVED`;
 const ADMIRER_SENT = `${API_BASE_URL}/api/user/admirers?type=LIKE&direction=SENT`;
+const SEND_ROSE = `${API_BASE_URL}/api/user/rose/send`;
+
 
 /* ------------------------------------------------------------------ */
 /* Types — Date plans                                                 */
@@ -184,6 +186,18 @@ export type AdmirersResponse = {
         hasNext: boolean;
     };
 };
+
+/* ----------------------------- Send Rose -------------------------- */
+
+export interface SendRoseRequest {
+    receiverId: string;
+}
+
+export interface SendRoseResponse {
+    success: boolean;
+    message?: string;
+    data?: unknown;
+}
 
 /* --------------------------------- Boosts --------------------------------- */
 
@@ -777,6 +791,11 @@ interface UserProfileDataContextData {
     admirersSentLoading: boolean;
     admirersSentError: string | null;
     refetchAdmirersSent: () => Promise<void>;
+
+    /* Send Rose — POST /api/user/rose/send */
+    sendRose: (receiverId: string) => Promise<SendRoseResponse | null>;
+    sendRoseLoading: boolean;
+    sendRoseError: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -886,6 +905,10 @@ const UserProfileDataContext =
         admirersSentLoading: true,
         admirersSentError: null,
         refetchAdmirersSent: async () => { },
+
+        sendRose: async () => null,
+        sendRoseLoading: false,
+        sendRoseError: null,
     });
 
 /* ------------------------------------------------------------------ */
@@ -1075,6 +1098,13 @@ export function UserProfileDataProvider({
     const [admirersSentLoading, setAdmirersSentLoading] = useState(true);
     const [admirersSentError, setAdmirersSentError] =
         useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
+    /* Send Rose State                                                  */
+    /* ---------------------------------------------------------------- */
+
+    const [sendRoseLoading, setSendRoseLoading] = useState(false);
+    const [sendRoseError, setSendRoseError] = useState<string | null>(null);
 
     /* ---------------------------------------------------------------- */
     /* Generic Auth GET                                                 */
@@ -1502,6 +1532,51 @@ export function UserProfileDataProvider({
 
         applyAdmirerSent(response);
     }, [authGet, applyAdmirerSent]);
+
+    /* ---------------------------------------------------------------- */
+    /* SEND ROSE — POST /api/user/rose/send                             */
+    /* ------------------------------------------------------------------ */
+
+    const sendRose = useCallback(
+        async (receiverId: string): Promise<SendRoseResponse | null> => {
+            try {
+                setSendRoseLoading(true);
+                setSendRoseError(null);
+
+                const payload: SendRoseRequest = { receiverId };
+                const response = await axios.post(SEND_ROSE, payload, {
+                    headers: authHeader(),
+                });
+
+                if (response.data?.success) {
+                    /* A rose spends coins and shows up in the sent list. */
+                    await Promise.all([
+                        refetchBalances(),
+                        refetchAdmirersSent(),
+                    ]);
+
+                    return response.data as SendRoseResponse;
+                }
+
+                const message =
+                    response.data?.message || "Couldn't send the rose.";
+                setSendRoseError(message);
+
+                return { success: false, message };
+            } catch (err) {
+                const message = axios.isAxiosError(err)
+                    ? err.response?.data?.message ||
+                    "Something went wrong while sending the rose."
+                    : "Something went wrong while sending the rose.";
+                setSendRoseError(message);
+
+                return { success: false, message };
+            } finally {
+                setSendRoseLoading(false);
+            }
+        },
+        [refetchBalances, refetchAdmirersSent]
+    );
 
     /* ---------------------------------------------------------------- */
     /* REFERRAL DASHBOARD                                               */
@@ -2076,6 +2151,10 @@ export function UserProfileDataProvider({
             admirersSentLoading,
             admirersSentError,
             refetchAdmirersSent,
+
+            sendRose,
+            sendRoseLoading,
+            sendRoseError,
         }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [
@@ -2176,6 +2255,10 @@ export function UserProfileDataProvider({
             admirersSentLoading,
             admirersSentError,
             refetchAdmirersSent,
+
+            sendRose,
+            sendRoseLoading,
+            sendRoseError,
         ]
     );
 

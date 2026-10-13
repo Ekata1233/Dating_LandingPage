@@ -379,6 +379,14 @@ function HomeMain({
   return (
     <main className={`flex-1 flex px-2 py-2 flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
       {/* Card container – fills remaining height */}
+      {roseOpen && (
+        <ComplimentingModal
+          name={profiles[current].name}
+          avatarUrl={profiles[current].image}
+          onClose={() => setRoseOpen(false)}
+        // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
+        />
+      )}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
         {/* Profile card */}
 
@@ -403,17 +411,7 @@ function HomeMain({
                   : "translate-x-0 rotate-0 opacity-100"
             }`}
         >
-          {roseOpen && (
-            <ComplimentingModal
-              name="Aman"
-              avatarUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop"
-              comments={0}
-              roses={124}
-              balance="₹99,460"
-              onClose={() => setRoseOpen(false)}
-            // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
-            />
-          )}
+
           {/* Scrollable content – scroll down to view full profile */}
           <div
             ref={cardScrollRef}
@@ -556,13 +554,12 @@ function HomeMain({
               <style>{SWIPE_EMOJI_CSS}</style>
               <span
                 aria-hidden
-                className={`text-[128px] leading-none drop-shadow-2xl ${
-                  swipeDir === "right"
+                className={`text-[128px] leading-none drop-shadow-2xl ${swipeDir === "right"
                     ? "swipe-emoji-like"
                     : swipeDir === "left"
                       ? "swipe-emoji-nope"
                       : "swipe-emoji-rose"
-                }`}
+                  }`}
               >
                 {swipeDir === "right" ? "\u2764\uFE0F" : swipeDir === "left" ? "\u274C" : "\u{1F339}"}
               </span>

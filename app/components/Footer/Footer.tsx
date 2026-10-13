@@ -140,7 +140,6 @@ const COLUMNS = [
       { label: "Terms & Conditions", href: "/legalSafety/termCondition" },
       { label: "Cookie Policy", href: "/legalSafety/cookiePolicy" },
       { label: "Community Guidelines", href: "/legalSafety/community" },
-      { label: "Safety & Trust", href: "/legalSafety/safetyTrust" },
       { label: "Refund & Cancellation", href: "/legalSafety/refund" },
       { label: "Grievance Redressal", href: "/legalSafety/grievance" },
       { label: "Age Policy", href: "/legalSafety/agePolicy" },
@@ -184,7 +183,12 @@ function Footer() {
               >
                 <Icon.Heart />
               </span> */}
-              <span>
+                            <img
+                src={`/logo2.png`}
+                alt="Welvors"
+                className="h-[40px] object-cover "
+              />
+              {/* <span>
                 <img
                   src={`/logo.png`}
                   alt="Welvors"
@@ -196,7 +200,7 @@ function Footer() {
                 style={{ color: C.headingDark }}
               >
                 Wel<span style={{ color: C.pink }}>vors</span>
-              </span>
+              </span> */}
             </Link>
 
             <p

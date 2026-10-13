@@ -8,10 +8,8 @@
 
 import type { AdmirerReciveCardProps } from "../cards/AdmirerReciveCard";
 import type { AdmirerSentCardProps } from "../cards/AdmirerSentCard";
-import type {
-  Conversation,
-  FilterTab,
-} from "../panels/ChatSideBar";
+import type { FilterTab } from "../panels/ChatSideBar";
+import type { Conversation } from "@/app/context/ChatContext";
 import type {
   ChatMessage,
   ChatTab,

@@ -1,7 +1,10 @@
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 import React from "react";
+import { toast } from "sonner";
 
 export interface AdmirerSentCardProps {
   /** Matched person's photo URL */
+  id:string;
   avatarUrl: string;
   /** Matched person's name */
   name: string;
@@ -47,6 +50,7 @@ function likedPronoun(gender?: string): "her" | "him" | "them" {
  * just resize the parent, no props needed to control scale.
  */
 const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
+  id,
   avatarUrl,
   name,
   age,
@@ -62,7 +66,18 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
 }) => {
   const steps: Array<"sent" | "seen" | "matched"> = ["sent", "seen", "matched"];
   const stepIndex = steps.indexOf(status);
-
+  const {sendRose, refetchAdmirersSent} = useUserProfileData()
+  async function handleSendRose(id:string) {
+    const response = await sendRose(id);
+    console.log(response)
+    if(response?.success){
+      toast.success(response.message)
+      await refetchAdmirersSent;
+    }
+    else{
+      toast.error(response?.message)
+    }
+  }
   return (
     <div
       className={` matched-card ${className}`}
@@ -289,7 +304,7 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
             <button
               type="button"
               className="mc-rose-btn hover:scale-105"
-              onClick={onSendRose}
+              onClick={()=>handleSendRose(id)}
             >
               🌹 Send a rose
             </button>
