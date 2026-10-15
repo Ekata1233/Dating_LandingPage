@@ -212,7 +212,7 @@ export default function LoginPhone({
         type="button"
         onClick={() => (otpSent ? onVerify?.() : onSendOtp())}
         disabled={status === "sending"}
-        className="mt-4 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-60"
+        className="mt-4 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-60 bg-[linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)]"
         style={{
           background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
         }}

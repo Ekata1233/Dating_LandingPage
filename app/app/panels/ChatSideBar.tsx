@@ -495,7 +495,7 @@ export default function ChatSideBar({
                                                     className="msg-ellipsis truncate"
                                                     style={{ fontSize: U(3.9), fontWeight: 700 }}
                                                 >
-                                                    {c.user.fullName}
+                                                    {c.user.fullName},&nbsp;{c.user.age}
                                                 </span>
                                                 <span className="flex">
                                                     <Pill

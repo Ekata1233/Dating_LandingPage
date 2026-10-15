@@ -102,15 +102,29 @@ function HomeSidebar({
     })
 
     return (
-        <div className={`flex flex-col w-full h-full min-h-0 ${className}`}>
+        <div className={`home-sidebar flex flex-col w-full h-full min-h-0 ${className}`}>
+            <style>{`
+                /* The cqw values below are tuned for the ~296px desktop rail.
+                   In the mobile stack this panel is the full viewport width, so
+                   they inflate; below md, pin the tab and plans chrome to their
+                   rail size. Height values (cqh) already track the viewport. */
+                @media (max-width: 767px) {
+                    .home-sidebar .hs-tabs { padding-inline: 12px; }
+                    .home-sidebar .hs-tab { font-size: 14px; }
+                    .home-sidebar .hs-plans { gap: 12px; padding-inline: 12px; }
+                    .home-sidebar .hs-err { gap: 8px; }
+                    .home-sidebar .hs-note { font-size: 13px; }
+                }
+            `}</style>
+
             {/* Tabs */}
-                <div className="flex px-[4.054cqw] py-[1.778cqh]">
+                <div className="hs-tabs flex px-[4.054cqw] py-[1.778cqh]">
                 {!plansOnly && (
-                    <button onClick={() => select("wallet")} className={`flex-1 cursor-pointer text-[4.73cqw] py-[1.333cqh] text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
+                    <button onClick={() => select("wallet")} className={`hs-tab flex-1 cursor-pointer text-[4.73cqw] py-[1.333cqh] text-center border-b-2 font-semibold   ${activeTab === "wallet" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
                         Wallet
                     </button>
                 )}
-                <button onClick={() => select("plans")} className={`cursor-pointer flex-1 text-[4.73cqw] py-[1.333cqh]  text-center font-semibold border-b-2 ${activeTab === "plans" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
+                <button onClick={() => select("plans")} className={`hs-tab cursor-pointer flex-1 text-[4.73cqw] py-[1.333cqh]  text-center font-semibold border-b-2 ${activeTab === "plans" ? "border-[#C21559] text-[#C21559]" : "border-slate-50 text-black"}`}>
                     Plans
                 </button>
             </div>
@@ -120,8 +134,8 @@ function HomeSidebar({
                 <div
                     className={
                         isStack
-                            ?                         "flex flex-col gap-[4.054cqw] py-[2.222cqh] px-[4.054cqw]"
-                            : "flex flex-col items-center gap-[4.054cqw] py-[2.222cqh] overflow-x-auto"
+                            ?                         "hs-plans flex flex-col gap-[4.054cqw] py-[2.222cqh] px-[4.054cqw]"
+                            : "hs-plans flex flex-col items-center gap-[4.054cqw] py-[2.222cqh] overflow-x-auto"
                     }
                     style={{
                         scrollbarWidth: "none",
@@ -129,13 +143,13 @@ function HomeSidebar({
                     }}
                 >
                     {plansLoading && planItems.length === 0 ? (
-                        <p className="text-[4.392cqw] text-slate-500">Loading plans…</p>
+                        <p className="hs-note text-[4.392cqw] text-slate-500">Loading plans…</p>
                     ) : plansError && planItems.length === 0 ? (
-                        <div className="flex flex-col items-center gap-[2.703cqw]">
-                            <p className="text-[4.392cqw] text-slate-500">{plansError}</p>
+                        <div className="hs-err flex flex-col items-center gap-[2.703cqw]">
+                            <p className="hs-note text-[4.392cqw] text-slate-500">{plansError}</p>
                             <button
                                 onClick={() => void refetchPlans()}
-                                className="cursor-pointer text-[4.392cqw] font-semibold text-[#C21559]"
+                                className="hs-note cursor-pointer text-[4.392cqw] font-semibold text-[#C21559]"
                             >
                                 Retry
                             </button>

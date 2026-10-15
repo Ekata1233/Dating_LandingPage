@@ -217,30 +217,34 @@ export default function LoginModal({ open, onClose, onSuccess, redirectTo }: Log
           style={{ borderColor: C.border }}
         >
           <div className="flex flex-row justify-center  items-center gap-2">
-            <span
+            {/* <span
               className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl text-sm font-bold text-white shadow-sm"
               style={{
                 background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                 boxShadow: "0 6px 16px rgba(225,29,99,0.35)",
               }}
             >
-              {/* {logoSrc ? (
+              {
               <img
-                src={logoSrc}
+                src="/public/logo.png"
                 alt="Welvors"
                 className="h-full w-full object-cover"
               />
-            ) : (
-              "W"
-            )} */}
-              W
+            }
+            </span> */}
+            <span className="h-8">
+              <img
+                src="/logo2.png"
+                alt="Welvors"
+                className="h-full w-full object-cover"
+              />
             </span>
-            <span
+            {/* <span
               className="text-2xl font-bold tracking-tight"
               style={{ color: COLORS.brandDark }}
             >
               Wel<span style={{ color: COLORS.brandPink }}>vors</span>
-            </span>
+            </span> */}
           </div>
           <div>
             <button

@@ -372,6 +372,54 @@ const AccountSupportSection: React.FC<AccountSupportSectionProps> = ({
 
           padding: 2cqw 4cqw 8cqw;
         }
+
+        /* ------------------------------------------------------------------ */
+        /* Standalone sizing.                                                  */
+        /* The rail these cqw values were tuned against is ~296px wide; the   */
+        /* mobile container is the whole viewport, so on a phone every value    */
+        /* inflates. Cap each one near its rail size so the rows read as a      */
+        /* compact mobile list instead of a blown-up desktop rail.              */
+        /* ------------------------------------------------------------------ */
+
+        .account-support .account-section {
+          gap: clamp(8px, 2.4cqw, 10px);
+        }
+
+        .account-support .account-section-label {
+          font-size: clamp(10px, 3.4cqw, 12px);
+        }
+
+        .account-support .account-list {
+          border-radius: clamp(14px, 6cqw, 18px);
+        }
+
+        .account-support .account-row {
+          gap: clamp(12px, 4cqw, 14px);
+
+          padding: clamp(12px, 4.4cqw, 14px) clamp(13px, 4.5cqw, 15px);
+        }
+
+        .account-support .account-icon {
+          width: clamp(36px, 13cqw, 40px);
+          height: clamp(36px, 13cqw, 40px);
+
+          font-size: clamp(15px, 6cqw, 18px);
+        }
+
+        .account-support .account-title {
+          font-size: clamp(13px, 4.6cqw, 15px);
+        }
+
+        .account-support .account-subtitle {
+          margin-top: 2px;
+
+          font-size: clamp(11px, 3.4cqw, 12px);
+        }
+
+        .account-support .account-chevron {
+          width: clamp(13px, 3.6cqw, 14px);
+          height: clamp(13px, 3.6cqw, 14px);
+        }
       `}</style>
 
       {variant === "standalone" ? (

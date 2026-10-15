@@ -485,6 +485,107 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           min-width: 12px;
           min-height: 12px;
         }
+
+        /* ------------------------------------------------------------------ */
+        /* Mobile stack.                                                       */
+        /* The cqw values above are tuned against the ~296px desktop rail. On  */
+        /* a phone this sidebar is the full width of the viewport, so every    */
+        /* value inflates. Below md, pin each one to its rail size so the       */
+        /* block reads as a compact profile header instead of a blown-up rail.  */
+        /* ------------------------------------------------------------------ */
+
+        @media (max-width: 767px) {
+          .profile-sidebar-inner {
+            gap: 9px;
+            padding: 15px 12px;
+          }
+
+          .profile-ring {
+            width: 95px;
+            height: 95px;
+          }
+
+          .profile-percent {
+            font-size: 10px;
+            padding: 3px 9px;
+          }
+
+          .profile-name-row {
+            margin-top: 6px;
+            gap: 5px;
+          }
+
+          .profile-name,
+          .profile-age {
+            font-size: 19px;
+          }
+
+          .profile-verified {
+            width: 15px;
+            height: 15px;
+          }
+
+          .profile-location {
+            gap: 3px;
+            font-size: 12px;
+          }
+
+          .profile-location-icon {
+            width: 12px;
+            height: 12px;
+          }
+
+          .profile-badges {
+            margin-top: 3px;
+            gap: 7px;
+          }
+
+          .profile-badge {
+            gap: 4px;
+            font-size: 10px;
+            padding: 6px 12px;
+          }
+
+          .profile-badge-icon {
+            width: 11px;
+            height: 11px;
+          }
+
+          .profile-trust-dot {
+            width: 6px;
+            height: 6px;
+          }
+
+          .completion-box {
+            margin-top: 6px;
+            border-radius: 18px;
+            padding: 15px;
+            gap: 9px;
+          }
+
+          .completion-label {
+            font-size: 14px;
+          }
+
+          .completion-value {
+            font-size: 17px;
+          }
+
+          .progress-track {
+            height: 7px;
+          }
+
+          .edit-profile-btn {
+            gap: 6px;
+            font-size: 13px;
+            padding: 10px 0;
+          }
+
+          .edit-profile-icon {
+            width: 12px;
+            height: 12px;
+          }
+        }
       `}</style>
 
       <div className="profile-sidebar-inner">

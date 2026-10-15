@@ -1603,3 +1603,19 @@ svg {
   }
 
 }
+
+/* ============================================================
+   MOBILE RAIL SCALE CAP
+   The shared app rail components size themselves in `cqw` against
+   the ~296px desktop rail (see app/app/shared/railScale.ts). Below
+   md that rail is gone, so the same `cqw` resolves against the whole
+   viewport and every value inflates. railScale's `rw`/`rh` clamp their
+   result with `min(<cqw>cqw, <px>px * var(--mobile-cap, 9999))`; setting
+   the cap to 1 here switches that clamp on for phones only. Desktop
+   never matches the query, so it keeps the original `cqw` behaviour.
+   ============================================================ */
+@media (max-width: 767px) {
+  :root {
+    --mobile-cap: 1;
+  }
+}

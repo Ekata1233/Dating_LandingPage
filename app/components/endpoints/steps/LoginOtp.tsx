@@ -160,7 +160,9 @@ export default function LoginOtp({
         onClick={onVerify}
         disabled={status === "sending"}
         className="mt-4 w-full rounded-xl px-6 py-3.5 text-[15px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-        style={{ backgroundColor: C.ctaPink }}
+        style={{
+          background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+        }}
       >
         {status === "sending" ? "Verifying…" : "Verify & log in"}
       </button>

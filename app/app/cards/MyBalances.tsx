@@ -246,6 +246,50 @@ export default function MyBalances({
           min-width: 8px;
           min-height: 8px;
         }
+
+        /* ------------------------------------------------------------------ */
+        /* Mobile stack.                                                       */
+        /* The cqw values above are tuned against the ~296px desktop rail. On  */
+        /* a phone the card is the full viewport width, so they inflate; below */
+        /* md, pin each to its rail size so the row stays compact.             */
+        /* ------------------------------------------------------------------ */
+
+        @media (max-width: 767px) {
+          .dp-inner {
+            gap: 9px;
+            padding: 9px 12px;
+            border-radius: 18px;
+          }
+
+          .dp-icon-wrap {
+            width: 44px;
+            height: 44px;
+          }
+
+          .dp-title {
+            font-size: 15px;
+          }
+
+          .dp-subtitle {
+            margin-top: 2px;
+            font-size: 10px;
+          }
+
+          .dp-count {
+            font-size: 22px;
+          }
+
+          .dp-count-sub {
+            margin-top: 2px;
+            gap: 2px;
+            font-size: 10px;
+          }
+
+          .dp-chevron {
+            width: 8px;
+            height: 8px;
+          }
+        }
       `}</style>
 
           <div className="dp-inner">

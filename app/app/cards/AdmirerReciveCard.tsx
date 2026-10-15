@@ -60,7 +60,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
 
   return (
     <div
-      className={`relative cursor-pointer w-full h-[31.111cqh] min-h-0 min-w-0 rounded-[6.757cqw] overflow-hidden shadow-xl select-none ${className}`}
+      className={`relative cursor-pointer w-full h-[37.111cqh] lg:h-[31.111cqh] min-h-0 min-w-0 rounded-[6.757cqw] overflow-hidden shadow-xl select-none ${className}`}
       role={onOpenProfile ? "button" : undefined}
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={onOpenProfile}

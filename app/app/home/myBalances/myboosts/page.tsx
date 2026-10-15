@@ -2,7 +2,6 @@
 
 import React from "react";
 import Screen from "@/app/app/shell/Screen";
-import { OnBoardingDataProvider } from "@/app/context/OnBoardingDataContext";
 import { useRouter } from "next/navigation";
 import BoostStore from "@/app/app/desktop/MyBoostsMain";
 
@@ -15,11 +14,9 @@ export default function Page() {
         router.push("/app/profile")
     };
     return (
-        <OnBoardingDataProvider>
             <Screen
                 desktop={<BoostStore  onBack={onBack}  />}
                 mobile={<BoostStore fluid  onBack={onBackMobile}  />}
             />
-        </OnBoardingDataProvider>
     );
 }

@@ -435,7 +435,6 @@ export interface WalletQuery {
 
 export interface AddMoneyRequest {
     amount: number;
-    method: string;
 }
 
 export interface AddMoneyResponse {

@@ -219,7 +219,6 @@ export default function MyWallet({
     showDatePlans = true,
     pageSize = 20,
     onBenefits,
-    onReferral,
     onDatePlans,
     onTransactionClick,
     fluid = false,
@@ -238,6 +237,9 @@ export default function MyWallet({
     const fetchRef = useRef(fetchWallet);
     fetchRef.current = fetchWallet;
     const reqId = useRef(0);
+    function onReferral() {
+        router.push("/app/profile/refer-earn")
+    }
     function onAddMoney() {
       router.push("/app/home/myBalances/mywallet/addMoney")
     }
@@ -406,7 +408,7 @@ export default function MyWallet({
                                                 {cardLabel}
                                             </span>
                                         </div>
-                                        <button
+                                        {/* <button
                                             type="button"
                                             className="wmw-btn"
                                             onClick={onBenefits}
@@ -427,7 +429,7 @@ export default function MyWallet({
                                                 <Icon name="info" />
                                             </span>
                                             Benefits
-                                        </button>
+                                        </button> */}
                                     </div>
 
                                     <div style={{ position: "relative", marginTop: U(5), fontSize: U(9), fontWeight: 500, lineHeight: 1.1 }}>
@@ -489,7 +491,7 @@ export default function MyWallet({
                                 </section>
 
                                 {/* ========================= date plans ========================= */}
-                                {showDatePlans && data?.datePlans && (
+                                {/* {showDatePlans && data?.datePlans && (
                                     <button
                                         type="button"
                                         className="wmw-btn"
@@ -529,7 +531,7 @@ export default function MyWallet({
                                             <Icon name="chevron" />
                                         </span>
                                     </button>
-                                )}
+                                )} */}
 
                                 {/* ========================= referral ========================= */}
                                 {showReferral && (

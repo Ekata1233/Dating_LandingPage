@@ -445,7 +445,7 @@ export default function EventDetailsPage() {
   return (
     <main
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
-      className="pb-24 pt-16 lg:pb-5"
+      className="pb-24 pt-11 lg:pt-16 lg:pb-5"
     >
       <CheckoutModal open={checkOutOpen} onClose={handleClose} />
       {/* ---------------------------- HERO ---------------------------- */}
@@ -473,7 +473,7 @@ export default function EventDetailsPage() {
         <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/55 via-black/5 to-black/20" />
 
         {/* floating controls */}
-        <div className="absolute inset-x-0 top-0 z-20 mx-auto flex max-w-[1100px] items-center justify-between px-4 pt-5 sm:px-6">
+        <div className="absolute inset-x-0 top-2 z-20 mx-auto flex max-w-[1100px] items-center justify-between px-4 pt-5 sm:px-6">
           <button
             type="button"
             onClick={() => router.back()}

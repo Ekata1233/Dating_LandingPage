@@ -2,7 +2,6 @@
 
 import React from "react";
 import Screen from "@/app/app/shell/Screen";
-import { OnBoardingDataProvider } from "@/app/context/OnBoardingDataContext";
 import { useRouter } from "next/navigation";
 import MyWallet from "@/app/app/desktop/MyWalletMain";
 
@@ -15,11 +14,9 @@ export default function Page() {
         router.push("/app/profile")
     };
     return (
-        <OnBoardingDataProvider>
             <Screen
                 desktop={<MyWallet  onBack={onBack}  />}
                 mobile={<MyWallet fluid  onBack={onBackMobile}  />}
             />
-        </OnBoardingDataProvider>
     );
 }
