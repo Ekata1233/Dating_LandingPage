@@ -7,6 +7,7 @@ import {
     DEFAULT_DATE_TYPE,
 } from '../shared/mockData'
 import type { DateAvailability, DateType } from '../shared/types'
+import { DatePlanFilter, useDateNow } from '@/app/context/DateNowContext'
 
 const C = {
     pinkText: '#e0355f',
@@ -14,10 +15,9 @@ const C = {
 }
 
 const chip = (isActive: boolean) =>
-    `text-[4.054cqw] font-semibold px-[4.054cqw] py-[0.444cqh] rounded-full cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
-        isActive
-            ? 'bg-pink-400 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-pink-400 hover:text-white'
+    `text-[4.054cqw] font-semibold px-[4.054cqw] py-[0.444cqh] rounded-full cursor-pointer whitespace-nowrap shrink-0 transition-colors ${isActive
+        ? 'bg-[#E7477D] text-white text-white'
+        : 'bg-gray-200 text-gray-700 hover:bg-[#E7477D] hover:text-white'
     }`
 
 const hideScrollbar = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
@@ -29,7 +29,7 @@ export interface DateNowSidebarProps {
     /** Controlled values. Supply these to lift the filter state into the parent. */
     availability?: DateAvailability
     dateType?: DateType
-    onAvailabilityChange?: (value: DateAvailability) => void
+    onAvailabilityChange?: (value: DatePlanFilter) => void
     onDateTypeChange?: (value: DateType) => void
     /** Hides the "Date Plans" heading when the top bar already shows it. */
     showHeader?: boolean
@@ -50,14 +50,14 @@ function DateNowSidebar({
     className = '',
 }: DateNowSidebarProps) {
     const [internalAvailability, setInternalAvailability] =
-        useState<DateAvailability>(defaultAvailability)
+        useState<DatePlanFilter>(defaultAvailability)
     const [internalDateType, setInternalDateType] =
         useState<DateType>(defaultDateType)
 
     const activeAvailability = availability ?? internalAvailability
     const activeDateType = dateType ?? internalDateType
 
-    const selectAvailability = (value: DateAvailability) => {
+    const selectAvailability = (value: DatePlanFilter) => {
         if (availability === undefined) setInternalAvailability(value)
         onAvailabilityChange?.(value)
     }
@@ -68,12 +68,13 @@ function DateNowSidebar({
     }
 
     const isInline = layout === 'inline'
-
+    const {filter, setFilter} = useDateNow()
     const availabilityChips = DATE_AVAILABILITY_OPTIONS.map((option) => (
         <button
             key={option.value}
             type="button"
-            onClick={() => selectAvailability(option.value)}
+            value={filter}
+            onClick={() => {selectAvailability(option.value); setFilter(option.value)}}
             className={chip(activeAvailability === option.value)}
         >
             {option.label}
@@ -94,18 +95,16 @@ function DateNowSidebar({
     return (
         // Root fills the height its parent gives it. Header never scrolls; only the filters area does.
         <div
-            className={`flex h-full min-h-0 w-full ${
-                isInline ? 'flex-col md:flex-row md:items-center' : 'flex-col'
-            } ${className}`}
+            className={`flex h-full min-h-0 w-full ${isInline ? 'flex-col md:flex-row md:items-center' : 'flex-col'
+                } ${className}`}
         >
             {/* Fixed header */}
             {showHeader && (
                 <header
-                    className={`shrink-0 bg-slate-50 ${
-                        isInline
+                    className={`shrink-0 bg-slate-50 ${isInline
                             ? 'px-[6.757cqw] pt-[1.333cqh] pb-[0.444cqh] md:py-[1.333cqh] md:pr-[2.703cqw]'
                             : 'px-[5.405cqw] py-[1.778cqh] border-b border-gray-100'
-                    }`}
+                        }`}
                 >
                     <h1
                         className="m-0 text-[7.432cqw] font-extrabold leading-tight"
@@ -128,11 +127,11 @@ function DateNowSidebar({
                     >
                         {availabilityChips}
                     </div>
-                    <div
+                    {/* <div
                         className={`flex items-center gap-[2.703cqw] overflow-x-auto px-[6.757cqw] md:shrink-0 md:overflow-visible md:px-0 ${hideScrollbar}`}
                     >
                         {dateTypeChips}
-                    </div>
+                    </div> */}
                 </div>
             ) : (
                 <div
@@ -145,12 +144,12 @@ function DateNowSidebar({
                         </div>
                     </section>
 
-                    <section className="flex flex-col gap-[2.703cqw] text-black">
+                    {/* <section className="flex flex-col gap-[2.703cqw] text-black">
                         <div className="font-bold">Date Type</div>
                         <div className="flex flex-wrap gap-[2.703cqw]">
                             {dateTypeChips}
                         </div>
-                    </section>
+                    </section> */}
                 </div>
             )}
         </div>

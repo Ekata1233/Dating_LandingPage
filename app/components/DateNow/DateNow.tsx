@@ -235,7 +235,7 @@ function DateNow() {
               className={`mt-2 flex flex-col sm:flex-row items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ animationDelay: "500ms" }}
             >
-              <a href="https://play.google.com">
+              <a href="/app/date-now">
                 <button
                   type="button"
                   // onClick={handleDiscover}

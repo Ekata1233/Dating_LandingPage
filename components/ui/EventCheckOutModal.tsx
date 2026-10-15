@@ -232,8 +232,8 @@ export default function CheckoutModal({
                 tabIndex={-1}
                 className={`wco-dialog ${className ?? ""}`}
                 style={{
-                    width: "min(100%, 480px)",
-                    maxHeight: "min(100%, 860px)",
+                    width: "min(80%, 480px)",
+                    maxHeight: "min(90%, 860px)",
                     containerType: "inline-size",
                     display: "flex",
                     flexDirection: "column",

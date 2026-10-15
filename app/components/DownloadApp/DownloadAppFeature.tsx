@@ -2,6 +2,7 @@
 
 import React, { SVGProps, useState, useEffect } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+import Link from "next/link";
 
 const C = {
   bg: "#FCF8F4",
@@ -393,9 +394,8 @@ function DownloadAppFeature() {
 
             {/* App Store Buttons */}
             <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
-              <a target="_blank"
-                rel="noopener noreferrer"
-                href="https://apps.apple.com/"
+              <Link
+                href="https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
@@ -404,10 +404,9 @@ function DownloadAppFeature() {
                   <p className="text-[9px] leading-none opacity-80">Download on the</p>
                   <p className="text-[12px] font-semibold leading-tight">App Store</p>
                 </div>
-              </a>
-              <a target="_blank"
-                rel="noopener noreferrer"
-                href="https://play.google.com"
+              </Link>
+              <Link
+                href="https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
@@ -416,7 +415,7 @@ function DownloadAppFeature() {
                   <p className="text-[9px] leading-none opacity-80">Get it on</p>
                   <p className="text-[12px] font-semibold leading-tight">Google Play</p>
                 </div>
-              </a>
+              </Link>
             </div>
 
           </div>

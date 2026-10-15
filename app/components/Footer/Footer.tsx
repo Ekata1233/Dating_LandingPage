@@ -119,8 +119,8 @@ const COLUMNS = [
   {
     heading: "Download App",
     links: [
-      { label: "Google Play", href: "https://play.google.com" },
-      { label: "Apple Store", href: "https://apps.apple.com/" },
+      { label: "Google Play", href: "https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share" },
+      { label: "Apple Store", href: "https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share" },
       { label: "Support", href: "mailto:support@welvors.com" },
     ],
   },
@@ -183,7 +183,7 @@ function Footer() {
               >
                 <Icon.Heart />
               </span> */}
-                            <img
+              <img
                 src={`/logo2.png`}
                 alt="Welvors"
                 className="h-[40px] object-cover "

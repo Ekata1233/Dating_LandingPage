@@ -7,6 +7,7 @@
 /*  the UI keeps rendering until real data arrives.                             */
 /* -------------------------------------------------------------------------- */
 
+import { DatePlanFilter } from "@/app/context/DateNowContext";
 import type {
   AdmirerReceived,
   AdmirerSent,
@@ -283,7 +284,8 @@ export const MOCK_ADMIRERS_SENT: AdmirerSent[] = [
 
 /* ------------------------------- date filters ------------------------------ */
 
-export const DATE_AVAILABILITY_OPTIONS: FilterOption<DateAvailability>[] = [
+export const DATE_AVAILABILITY_OPTIONS: FilterOption<DatePlanFilter>[] = [
+  { value: "all", label: "All" },
   { value: "today", label: "Today" },
   { value: "tomorrow", label: "Tomorrow" },
   { value: "weekend", label: "Weekend" },

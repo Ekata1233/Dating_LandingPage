@@ -3,6 +3,7 @@
 import React, { SVGProps, useEffect, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 /* ------------------------------------------------------------------ */
 /*  Mockup profile photo — apni image /public me daal ke path yahan     */
@@ -403,7 +404,7 @@ function Header() {
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
-                <a href="https://play.google.com" className="w-full">
+                <Link href="/app/home" className="w-full">
                   <button
                   type="button"
                   // onClick={handleDownloadApp}
@@ -420,7 +421,7 @@ function Header() {
                   </span>
                   <span className="cm-shimmer pointer-events-none absolute inset-0" />
                 </button>
-                </a>
+                </Link>
               </div>
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button

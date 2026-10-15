@@ -6,6 +6,7 @@ import DateNowMain from "../desktop/DateNowMain";
 import DateNowSidebar from "../panels/DateNowSidebar";
 import { BRAND } from "../shared/theme";
 import type { DateAvailability, DateType } from "../shared/types";
+import type { DatePlanFilter } from "@/app/context/DateNowContext";
 
 /* -------------------------------------------------------------------------- */
 /*  Date Plans – the filter row is pinned above a snap-scrolling card stack.    */
@@ -16,7 +17,7 @@ export interface MobileDateNowSectionProps {
   /** Leave undefined to let the filter row own its own state. */
   availability?: DateAvailability;
   dateType?: DateType;
-  onAvailabilityChange?: (value: DateAvailability) => void;
+  onAvailabilityChange?: (value: DatePlanFilter) => void;
   onDateTypeChange?: (value: DateType) => void;
   /** How many plan cards to show. */
   count?: number;

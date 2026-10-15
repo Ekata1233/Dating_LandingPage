@@ -3,9 +3,9 @@
 /* -------------------------------------------------------------------------- */
 /*  The frame every step body sits in.                                          */
 /*                                                                            */
-/*  Eyebrow / heading / blurb, a scrolling body, and a pinned footer. Because   */
-/*  the card is a fixed 4:5, the middle has to be the only thing that scrolls  */
-/*  — otherwise a long step pushes the Continue button off the bottom.         */
+/*  Eyebrow / heading / blurb, a scrolling body, and a pinned footer. The      */
+/*  card is height-capped to the viewport, so the middle has to be the only    */
+/*  thing that scrolls — otherwise a long step pushes Continue off the bottom. */
 /* -------------------------------------------------------------------------- */
 
 import { cn } from "cn";

@@ -10,9 +10,7 @@ import { OnboardingProvider, useOnboarding } from "../context/OnboardingContext"
 /*  /onBoarding - shared card + header chrome for every onboarding step.      */
 /* -------------------------------------------------------------------------- */
 
-const SCALE = 0.86;
-
-// 1 design unit = card width / 720 * SCALE
+// 1 design unit — the card owns the real value (see --onb-u on .onb-card).
 const u = (n: number) => `calc(var(--onb-u) * ${n})`;
 
 const css = `
@@ -35,8 +33,30 @@ const css = `
 /* ---------- card ---------- */
 
 .onb-card {
-  --onb-scale: ${SCALE};
-  --onb-u: calc(100cqw / 720 * var(--onb-scale));
+  /*
+   * One design unit = the smaller of 1% of the card width and 1% of its
+   * height (the card is square), scaled to the design's reference. It is
+   * clamped so the step content stays readable on a small phone and never
+   * balloons on a large screen. Everything in the card is expressed in this
+   * unit, so the chrome and the step content scale together — exactly like
+   * the fluid cards in the member app.
+   */
+  --onb-u: clamp(0.5px, calc(min(1cqw, 1cqh) * 0.12), 0.72px);
+
+  /*
+   * Re-point Tailwind's design tokens at that unit so every utility the steps
+   * use — padding, gap, height, font size, radius — scales with the card.
+   * The factors keep today's pixel sizes at the reference unit.
+   */
+  --spacing: calc(var(--onb-u) * 7);
+  --text-xs: calc(var(--onb-u) * 21);
+  --text-sm: calc(var(--onb-u) * 24);
+  --text-base: calc(var(--onb-u) * 28);
+  --text-lg: calc(var(--onb-u) * 31);
+  --text-xl: calc(var(--onb-u) * 35);
+  --text-2xl: calc(var(--onb-u) * 42);
+  --text-3xl: calc(var(--onb-u) * 52);
+  --radius: calc(var(--onb-u) * 17);
 
   /* WELVORS brand palette */
   --onb-pink: #E11D63;
@@ -50,14 +70,15 @@ const css = `
   --onb-track: #F8DCE7;
 
   /*
-   * 4:5 at every viewport.
-   * The 100dvh term caps the width so the card can never
-   * grow taller than the screen it is centred in.
+   * The card is a square: one side follows the viewport (capped so it never
+   * gets silly on tall displays, and never wider than the screen it is
+   * centred in) and width and height are locked to it.
    */
-  width: min(92vw, 480px, (100dvh - 3rem) * 0.8);
-  aspect-ratio: 4 / 5;
+  --onb-card-side: min(92vw, 100dvh - 3rem, 600px);
+  width: var(--onb-card-side);
+  height: var(--onb-card-side);
 
-  container-type: inline-size;
+  container-type: size;
 
   position: relative;
   display: flex;
@@ -296,7 +317,7 @@ const css = `
   }
 
   .onb-card {
-    width: min(96vw, 480px, (100dvh - 1.5rem) * 0.8);
+    --onb-card-side: min(96vw, 100dvh - 1.5rem, 600px);
   }
 }
 `;

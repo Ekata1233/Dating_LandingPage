@@ -2,6 +2,7 @@
 
 import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+import Link from "next/link";
 
 const C = {
   bg: "#FCF8F4",
@@ -279,7 +280,7 @@ function CommitmentMode() {
 
             {/* CTA */}
             <div className="mt-8 sm:mt-10 lg:mt-12">
-              <a href="https://play.google.com">
+              <Link href="/app/home">
               <button
                 type="button"
                 // onClick={handleJoin}
@@ -292,7 +293,7 @@ function CommitmentMode() {
                   <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
-              </a>
+              </Link>
               <p className="mt-3 text-[12px] "
               style={{ color: "rgba(255,255,255,0.8)" }}>
                 Programme terms & eligibility apply

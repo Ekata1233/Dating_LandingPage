@@ -19,10 +19,11 @@ import React from "react";
 
 export interface DateNowCardProps {
   /** Hero image URL */
-  image?: string;
+  image?: string | null;
   /** Top-left green pill text */
   liveLabel?: string;
   /** Top-left dark pill text */
+  description?: string;
   nearLabel?: string;
   /** Match percentage (0-100) */
   matchPercent?: number;
@@ -36,6 +37,8 @@ export interface DateNowCardProps {
   category?: string;
   /** Card title */
   title?: string;
+  duration?: number;
+  whoPays?: string;
   /** Small grey chips under the title */
   chips?: { icon?: string; label: string }[];
   /** Host details */
@@ -43,7 +46,7 @@ export interface DateNowCardProps {
     name: string;
     age?: number;
     role?: string;
-    avatar?: string;
+    profilePhoto?: string;
   };
   /** Label of the main action button */
   requestLabel?: string;
@@ -146,11 +149,35 @@ const DEFAULT_CHIPS = [
   { icon: "⏱️", label: "Flexible" },
   { icon: "🤷", label: "Decide there" },
 ];
+export function formatLocation(location: string, parts = 2): string {
+  return (location ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, parts)
+    .join(', ');
+}
 
+export function formatTime(iso: string): string {
+  const match = iso.match(/(\d{2}):(\d{2})/);
+  if (!match) return '';
+
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const period = hours >= 12 ? 'PM' : 'AM';
+
+  hours = hours % 12 || 12;
+
+  return `${hours}:${minutes} ${period}`;
+}
+
+// Input is a string
+console.log(formatTime("T11:30:00.000Z")); // 05:00 pm
 /* -------------------------------- component -------------------------------- */
 export default function DateNowCard({
   image = DEFAULT_IMAGE,
-  liveLabel = "Live · Pune",
+  liveLabel = "Pune",
+  description,
   nearLabel = "Near you",
   matchPercent = 35,
   trustPercent = 98,
@@ -162,6 +189,8 @@ export default function DateNowCard({
   host = { name: "Sidhi Deshmukh", age: 18, role: "Host, Organizer" },
   requestLabel = "Request Date",
   profileLabel = "Profile",
+  duration=0,
+  whoPays,
   onRequest,
   onProfile,
   onDismiss,
@@ -230,7 +259,7 @@ export default function DateNowCard({
         >
           {!imgFailed && (
             <img
-              src={image}
+              src={image || DEFAULT_IMAGE}
               alt={title}
               onError={() => setImgFailed(true)}
               style={{
@@ -271,17 +300,20 @@ export default function DateNowCard({
             >
               <span
                 style={{
-                  width: U(1.6),
                   height: U(1.6),
                   borderRadius: "50%",
                   background: COLORS.white,
                   flexShrink: 0,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               />
+              Live · &nbsp;
               {liveLabel}
             </span>
 
-            <span
+            {/* <span
               className="dnc-ellipsis"
               style={{
                 display: "inline-flex",
@@ -296,11 +328,11 @@ export default function DateNowCard({
                 <PinIcon />
               </span>
               {nearLabel}
-            </span>
+            </span> */}
           </div>
 
           {/* report / flag button */}
-          <button
+          {/* <button
             type="button"
             className="dnc-btn"
             aria-label="Report"
@@ -322,7 +354,7 @@ export default function DateNowCard({
             }}
           >
             <FlagIcon />
-          </button>
+          </button> */}
 
           {/* match / trust pill */}
           <div
@@ -378,13 +410,13 @@ export default function DateNowCard({
               minWidth: 0,
             }}
           >
-            <Tag bg={COLORS.pink} shadow="rgba(244,63,107,.35)">
+            <Tag bg="#E7477D" shadow="rgba(244,63,107,.35)">
               <CalendarIcon />
               {date}
             </Tag>
             <Tag bg="#1c2438" shadow="rgba(28,36,56,.35)">
               <ClockIcon />
-              {time}
+              {formatTime(time)}
             </Tag>
             <Tag bg={COLORS.purpleTag} shadow="rgba(139,92,246,.35)">
               {category}
@@ -404,12 +436,12 @@ export default function DateNowCard({
           >
             {title}
           </h2>
-
+          {description && <h6 className="text-gray-500" style={{
+            fontSize: U(3.8),
+          }}>{description}</h6>}
           {/* soft chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: U(2) }}>
-            {chips.map((c, i) => (
               <span
-                key={i}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -418,16 +450,31 @@ export default function DateNowCard({
                   border: `${U(0.15)} solid ${COLORS.border}`,
                   padding: `${U(1.5)} ${U(3)}`,
                   borderRadius: U(4),
-                  fontSize: U(2.8),
+                  fontSize: U(3),
                   fontWeight: 500,
                   color: COLORS.ink,
                   whiteSpace: "nowrap",
                 }}
               >
-                {c.icon && <span>{c.icon}</span>}
-                {c.label}
+                ⏱️&nbsp;{duration===0?"flexible" : duration+" mins"}
               </span>
-            ))}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: U(1.4),
+                  background: COLORS.chipGrey,
+                  border: `${U(0.15)} solid ${COLORS.border}`,
+                  padding: `${U(1.5)} ${U(3)}`,
+                  borderRadius: U(4),
+                  fontSize: U(3),
+                  fontWeight: 500,
+                  color: COLORS.ink,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {whoPays}
+              </span>
           </div>
 
           {/* host row */}
@@ -458,9 +505,9 @@ export default function DateNowCard({
                 fontWeight: 600,
               }}
             >
-              {host.avatar ? (
+              {host.profilePhoto ? (
                 <img
-                  src={host.avatar}
+                  src={host.profilePhoto}
                   alt={host.name}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
@@ -481,7 +528,7 @@ export default function DateNowCard({
               )}
             </div>
 
-            <button
+            {/* <button
               type="button"
               className="dnc-btn"
               onClick={onProfile}
@@ -490,7 +537,7 @@ export default function DateNowCard({
                 alignItems: "center",
                 gap: U(1.4),
                 flexShrink: 0,
-                background: `linear-gradient(135deg, ${COLORS.pink}, ${COLORS.pinkDeep})`,
+                background: `#E7477D`,
                 color: COLORS.white,
                 fontSize: U(3.2),
                 fontWeight: 500,
@@ -501,12 +548,12 @@ export default function DateNowCard({
             >
               {profileLabel}
               <ArrowIcon />
-            </button>
+            </button> */}
           </div>
 
           {/* action row */}
           <div style={{ display: "flex", alignItems: "stretch", gap: U(2.6), height: U(13.5) }}>
-            <button
+            {/* <button
               type="button"
               className="dnc-btn"
               aria-label="Dismiss"
@@ -526,7 +573,7 @@ export default function DateNowCard({
               }}
             >
               <CloseIcon />
-            </button>
+            </button> */}
 
             <button
               type="button"
@@ -539,7 +586,7 @@ export default function DateNowCard({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: U(2.4),
-                background: `linear-gradient(90deg, ${COLORS.pink}, ${COLORS.pinkDeep})`,
+                background: `#E7477D`,
                 color: COLORS.white,
                 fontSize: U(4.4),
                 fontWeight: 500,
