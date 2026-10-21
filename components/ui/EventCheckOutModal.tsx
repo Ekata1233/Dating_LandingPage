@@ -18,20 +18,7 @@ import { createPortal } from "react-dom";
 /*  real check (plus a Razorpay webhook on the backend as a safety net).      */
 /* -------------------------------------------------------------------------- */
 
-/* ------------------------------ API types ------------------------------ */
-export interface CreateOrderResponse {
-    success: boolean;
-    message: string;
-    data?: {
-        paymentId: string;
-        razorpayOrderId: string;
-        razorpayKeyId: string;
-        amount: number; // paise
-        amountInRupees: string;
-        currency: string;
-        bookingId: string;
-    };
-}
+import { usePayment } from "@/app/context/PaymentContext";
 
 export interface PaymentResult {
     bookingId: string;
@@ -50,14 +37,6 @@ export interface CheckoutModalProps {
     menTicketCount: number;
     womenTicketCount: number;
     otherTicketCount?: number;
-
-    /* ---------- API config ---------- */
-    /** e.g. "https://dev-api.welvors.com" — put it in NEXT_PUBLIC_API_URL */
-    apiBase?: string;
-    /** Confirm the exact path with backend */
-    verifyPath?: string;
-    /** Return the logged-in user's JWT (or null). Sent as Bearer token. */
-    getAuthToken?: () => string | null;
 
     /* ---------- Razorpay prefill (optional, speeds up checkout) ---------- */
     prefill?: { name?: string; email?: string; contact?: string };
@@ -85,34 +64,6 @@ export interface CheckoutModalProps {
     closeOnBackdrop?: boolean;
     className?: string;
     style?: React.CSSProperties;
-}
-
-/* -------------------------- Razorpay script loader -------------------------- */
-declare global {
-    interface Window {
-        Razorpay?: any;
-    }
-}
-
-let razorpayScriptPromise: Promise<boolean> | null = null;
-
-function loadRazorpay(): Promise<boolean> {
-    if (typeof window === "undefined") return Promise.resolve(false);
-    if (window.Razorpay) return Promise.resolve(true);
-    if (razorpayScriptPromise) return razorpayScriptPromise;
-
-    razorpayScriptPromise = new Promise((resolve) => {
-        const s = document.createElement("script");
-        s.src = "https://checkout.razorpay.com/v1/checkout.js";
-        s.async = true;
-        s.onload = () => resolve(true);
-        s.onerror = () => {
-            razorpayScriptPromise = null; // allow retry
-            resolve(false);
-        };
-        document.body.appendChild(s);
-    });
-    return razorpayScriptPromise;
 }
 
 /* --------------------------------- helpers --------------------------------- */
@@ -198,9 +149,6 @@ export default function CheckoutModal({
     womenTicketCount,
     otherTicketCount = 0,
 
-    apiBase = process.env.NEXT_PUBLIC_API_URL ?? "https://dev-api.welvors.com",
-    verifyPath = "/api/payment/verify",
-    getAuthToken,
     prefill,
 
     eventTitle = "Sunrise Trails & New Connections",
@@ -212,12 +160,8 @@ export default function CheckoutModal({
     gstPercent = 18,
     couponCode = "WELVORS100",
     discount = 0,
-    eventIntent,
-    menTicketPrice,
-    womenTicketPrice,
-    defaultTicketGender,
     partnerNote = "Ticket price differs by gender — a partner's ticket is charged at their rate.",
-    showPartner = false,
+    showPartner = true,
     currencySymbol = "₹",
 
     onSuccess,
@@ -227,6 +171,7 @@ export default function CheckoutModal({
     className,
     style,
 }: CheckoutModalProps) {
+    const { loadRazorpay, createOrder, verifyPayment } = usePayment();
     const [mounted, setMounted] = useState(false);
     const [stage, setStage] = useState<PayStage>("idle");
     const [error, setError] = useState<string | null>(null);
@@ -241,18 +186,12 @@ export default function CheckoutModal({
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
 
-    /* which gender's ticket is being booked — anyone may pick either */
-    const hasMenTicket = typeof menTicketPrice === "number" && menTicketPrice >= 0;
-    const hasWomenTicket = typeof womenTicketPrice === "number" && womenTicketPrice >= 0;
-    const genderedTickets = hasMenTicket || hasWomenTicket;
-    const [pickedGender, setPickedGender] = useState<"men" | "women" | null>(null);
-
     useEffect(() => setMounted(true), []);
 
     // preload checkout.js as soon as the modal opens, so Pay feels instant
     useEffect(() => {
         if (open) loadRazorpay();
-    }, [open]);
+    }, [open, loadRazorpay]);
 
     // reset state every time the modal re-opens
     useEffect(() => {
@@ -289,15 +228,7 @@ export default function CheckoutModal({
     const shownTotal = serverAmount ?? localTotal;
     const money = (n: number) => `${currencySymbol}${n.toFixed(2)}`;
 
-    /* ------------------------------ API calls ------------------------------ */
-    const authHeaders = (): Record<string, string> => {
-        const token = getAuthToken?.();
-        return {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        };
-    };
-
+    /* ------------------------------ payment flow ------------------------------ */
     const fail = (msg: string) => {
         setStage("idle");
         setError(msg);
@@ -312,8 +243,6 @@ export default function CheckoutModal({
         if (!eventId) return fail("eventId missing — CheckoutModal ko eventId prop pass karo.");
         if (!(menTicketCount + womenTicketCount + otherTicketCount > 0) || [menTicketCount, womenTicketCount, otherTicketCount].some((n) => typeof n !== "number"))
             return fail("Ticket count missing — menTicketCount / womenTicketCount props pass karo.");
-        if (getAuthToken && !getAuthToken()) return fail("Login token nahi mila. Dobara login karo.");
-        if (!getAuthToken) console.warn("[CheckoutModal] getAuthToken prop nahi diya — request bina token ke jayegi (401 aayega).");
         setStage("creating");
 
         try {
@@ -321,25 +250,11 @@ export default function CheckoutModal({
             const loaded = await loadRazorpay();
             if (!loaded) return fail("Payment gateway load nahi hua. Internet check karke dobara try karo.");
 
-            /* ---- 2. create order on backend ---- */
-            const res = await fetch(`${apiBase}/api/payment/create-order`, {
-                method: "POST",
-                headers: authHeaders(),
-                body: JSON.stringify({
-                    purpose: "EVENT_BOOKING",
-                    eventId,
-                    menTicketCount,
-                    womenTicketCount,
-                    otherTicketCount,
-                }),
-            });
+            /* ---- 2. create order on backend (PaymentContext) ---- */
+            const created = await createOrder({ eventId, menTicketCount, womenTicketCount, otherTicketCount });
+            if (!created.ok) return fail(created.message || "Order create nahi hua. Dobara try karo.");
 
-            const json: CreateOrderResponse = await res.json().catch(() => ({ success: false, message: "Invalid server response" }));
-            if (!res.ok || !json.success || !json.data) {
-                return fail(json.message || "Order create nahi hua. Dobara try karo.");
-            }
-
-            const order = json.data;
+            const order = created.data;
             setServerAmount(Number(order.amountInRupees));
 
             /* ---- 3. open Razorpay checkout ---- */
@@ -365,19 +280,14 @@ export default function CheckoutModal({
                 }) => {
                     setStage("verifying");
                     try {
-                        const vRes = await fetch(`${apiBase}${verifyPath}`, {
-                            method: "POST",
-                            headers: authHeaders(),
-                            // backend schema is strict: only these 3 keys are allowed
-                            body: JSON.stringify({
-                                razorpay_order_id: resp.razorpay_order_id,
-                                razorpay_payment_id: resp.razorpay_payment_id,
-                                razorpay_signature: resp.razorpay_signature,
-                            }),
+                        /* verify via PaymentContext (sends only the 3 razorpay_* keys) */
+                        const verified = await verifyPayment({
+                            razorpay_order_id: resp.razorpay_order_id,
+                            razorpay_payment_id: resp.razorpay_payment_id,
+                            razorpay_signature: resp.razorpay_signature,
                         });
-                        const vJson = await vRes.json().catch(() => ({ success: false }));
 
-                        if (!vRes.ok || !vJson.success) {
+                        if (!verified.ok) {
                             // money may be captured; backend webhook should still reconcile it
                             return fail(
                                 "Payment receive hua par confirm nahi ho paaya. Paisa kata hai to booking kuch minute mein update ho jayegi, ya support se contact karo."
@@ -454,7 +364,7 @@ export default function CheckoutModal({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "20px",
+                padding: "16px",
                 boxSizing: "border-box",
                 background: "rgba(20, 18, 30, 0.38)",
                 backdropFilter: "blur(10px)",
@@ -602,31 +512,13 @@ export default function CheckoutModal({
                                     >
                                         {eventDate}
                                     </p>
-                                    {intentChip && (
-                                        <span
-                                            style={{
-                                                display: "inline-block",
-                                                marginTop: U(2),
-                                                padding: `${U(0.9)} ${U(2.6)}`,
-                                                borderRadius: 999,
-                                                fontSize: U(2.7),
-                                                fontWeight: 700,
-                                                letterSpacing: "0.08em",
-                                                textTransform: "uppercase",
-                                                background: C.pinkSoft,
-                                                color: C.pinkText,
-                                            }}
-                                        >
-                                            {intentChip}
-                                        </span>
-                                    )}
                                 </div>
                             </div>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: U(4.2), paddingTop: U(5) }}>
                                 <div style={row}>
-                                    <span>{effectiveLabel}</span>
-                                    <span style={{ fontWeight: 500 }}>{money(effectivePrice)}</span>
+                                    <span>{ticketLabel}</span>
+                                    <span style={{ fontWeight: 500 }}>{money(ticketPrice)}</span>
                                 </div>
                                 <div style={row}>
                                     <span>Platform fee</span>

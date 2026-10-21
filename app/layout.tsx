@@ -23,6 +23,7 @@ import { Toaster } from "sonner";
 import { UserProfileDataProvider } from "./context/UserProfileDataContext";
 import { MyProfileProvider } from "@/app/app/shared/useMyProfile";
 import { ChatConversationsProvider } from "./context/ChatContext";
+import { PaymentProvider } from "./context/PaymentContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -133,8 +134,11 @@ export default function RootLayout({
                       <ChatConversationsProvider>
                         <AccountSettingsProvider >
                           <UserProfileDataProvider >
+                          <PaymentProvider>
                             {children}
+                            
                             <Toaster position="bottom-right" richColors />
+                            </PaymentProvider>
                           </UserProfileDataProvider>
                         </AccountSettingsProvider>
                       </ChatConversationsProvider>

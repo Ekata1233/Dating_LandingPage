@@ -6,71 +6,24 @@
 /*  Place at:  app/app/booking-confirmation/[bookingId]/page.tsx              */
 /*  (any folder works — the route param must be named `bookingId`)            */
 /*                                                                            */
-/*  API: GET {API}/api/user/event-bookings/:bookingId/payment-success         */
+/*  Data: usePaymentSuccess() from PaymentContext (no direct API calls)       */
 /*                                                                            */
 /*  Shows "Payment Successful" ONLY when booking.status === CONFIRMED and     */
 /*  payment.status === COMPLETED. Otherwise shows a pending / failed state.   */
 /* -------------------------------------------------------------------------- */
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MoonLoader } from "react-spinners";
 import { toast } from "sonner";
 import { ArrowLeft, Calendar, Check, Clock, Download, Link2, MapPin, RefreshCw, X } from "lucide-react";
+import { PaymentSuccessData, usePaymentSuccess } from "@/app/context/PaymentContext";
 
-import { getClientToken } from "@/utils/token";
+
 
 /* ----------------------------- config (edit) ----------------------------- */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://dev-api.welvors.com";
-const MY_BOOKINGS_ROUTE = "/events"; // your "My Bookings" page
+const MY_BOOKINGS_ROUTE = "/app/bookings"; // your "My Bookings" page
 const EVENT_ROUTE = (eventId: string) => `/app/events/${eventId}`; // your event details page
-
-/* --------------------------------- types --------------------------------- */
-interface BookingTicket {
-  id: string;
-  ticketId: string;
-  ticketType: string;
-  ticketAmount: number;
-  qrCodeUrl: string;
-  status: string;
-}
-
-interface PaymentSuccessData {
-  booking: {
-    id: string;
-    bookingNumber: string;
-    ticketCount: number;
-    ticketAmount: number;
-    discountAmount: number;
-    platformFee: number;
-    gstAmount: number;
-    totalAmount: number;
-    paidAmount: number;
-    status: string;
-    tickets: BookingTicket[];
-  };
-  payment: {
-    transactionId: string | null;
-    orderId: string | null;
-    paidVia: string | null;
-    paidAt: string | null;
-    amount: number;
-    currency: string;
-    status: string;
-    gatewayPaymentStatus: string | null;
-  };
-  event: {
-    id: string;
-    title: string;
-    eventDate: string;
-    startTime: string | null;
-    endTime: string | null;
-    venueName: string | null;
-    fullAddress: string | null;
-    city: string | null;
-    heroImage: string | null;
-  };
-}
 
 /* --------------------------------- theme --------------------------------- */
 const C = {
@@ -188,53 +141,7 @@ export default function BookingConfirmationPage() {
     return typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : null;
   }, [params]);
 
-  const [data, setData] = useState<PaymentSuccessData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(
-    async (silent = false) => {
-      if (!bookingId) {
-        setError("Booking ID missing.");
-        setLoading(false);
-        return;
-      }
-      const token = getClientToken();
-      if (!token) {
-        setError("Booking dekhne ke liye login karo.");
-        setLoading(false);
-        return;
-      }
-
-      silent ? setRefreshing(true) : setLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch(`${API_BASE}/api/user/event-bookings/${encodeURIComponent(bookingId)}/payment-success`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
-        const json = await res.json().catch(() => null);
-
-        if (!res.ok || !json?.success || !json?.data) {
-          setError(res.status === 404 ? "Booking nahi mili." : "Booking details load nahi ho paaye.");
-          return;
-        }
-        setData(json.data as PaymentSuccessData);
-      } catch {
-        setError("Network issue. Internet check karke dobara try karo.");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [bookingId]
-  );
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data, loading, refreshing, error, reload: load } = usePaymentSuccess(bookingId);
 
   /* ------------------------------ actions ------------------------------ */
   const handleShare = async () => {
