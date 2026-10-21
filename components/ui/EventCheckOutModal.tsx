@@ -4,27 +4,40 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /* -------------------------------------------------------------------------- */
-/*  CheckoutModal  (STATIC – no API calls)                                    */
+/*  CheckoutModal  (with Razorpay payment)                                    */
 /*                                                                            */
-/*  A large popup version of the Checkout screen.                             */
-/*   - the page behind it is blurred and dimmed                               */
-/*   - clicking the blurred area outside the popup closes it                  */
-/*   - the ✕ button closes it (Esc closes it too)                             */
-/*   - page scrolling is locked while it is open                              */
+/*  Flow when the user taps "Pay securely":                                   */
+/*   1. POST /api/payment/create-order  -> backend creates Razorpay order     */
+/*   2. Load Razorpay checkout.js (once) and open it with that order_id       */
+/*   3. On success Razorpay gives payment_id + order_id + signature           */
+/*   4. POST /api/payment/verify -> backend checks the signature and          */
+/*      confirms the booking. ONLY after this is the booking "paid".          */
+/*   5. onSuccess(bookingId) -> navigate to the ticket / success screen       */
 /*                                                                            */
-/*  Same sizing rule as the other screens: everything inside the popup is     */
-/*  measured in `cqw` (1% of the popup's width), so it scales with the popup. */
-/*                                                                            */
-/*  Usage:                                                                    */
-/*    const [open, setOpen] = useState(false);                                */
-/*    <button onClick={() => setOpen(true)}>Checkout</button>                 */
-/*    <CheckoutModal                                                          */
-/*      open={open}                                                           */
-/*      onClose={() => setOpen(false)}                                        */
-/*      onPay={(total) => { ... }}                                            */
-/*      onAddPartner={() => { ... }}                                          */
-/*    />                                                                      */
+/*  Never treat Razorpay's handler callback alone as success. Step 4 is the   */
+/*  real check (plus a Razorpay webhook on the backend as a safety net).      */
 /* -------------------------------------------------------------------------- */
+
+/* ------------------------------ API types ------------------------------ */
+export interface CreateOrderResponse {
+    success: boolean;
+    message: string;
+    data?: {
+        paymentId: string;
+        razorpayOrderId: string;
+        razorpayKeyId: string;
+        amount: number; // paise
+        amountInRupees: string;
+        currency: string;
+        bookingId: string;
+    };
+}
+
+export interface PaymentResult {
+    bookingId: string;
+    paymentId: string;
+    razorpayPaymentId: string;
+}
 
 export interface CheckoutModalProps {
     open: boolean;
@@ -32,10 +45,26 @@ export interface CheckoutModalProps {
 
     title?: string;
 
-    /* order summary (defaults match the design) */
+    /* ---------- booking input (sent to create-order) ---------- */
+    eventId: string;
+    menTicketCount: number;
+    womenTicketCount: number;
+    otherTicketCount?: number;
+
+    /* ---------- API config ---------- */
+    /** e.g. "https://dev-api.welvors.com" — put it in NEXT_PUBLIC_API_URL */
+    apiBase?: string;
+    /** Confirm the exact path with backend */
+    verifyPath?: string;
+    /** Return the logged-in user's JWT (or null). Sent as Bearer token. */
+    getAuthToken?: () => string | null;
+
+    /* ---------- Razorpay prefill (optional, speeds up checkout) ---------- */
+    prefill?: { name?: string; email?: string; contact?: string };
+
+    /* ---------- order summary (display only) ---------- */
     eventTitle?: string;
     eventDate?: string;
-    /** Event poster. A gradient placeholder is shown when omitted. */
     eventImage?: string;
     ticketLabel?: string;
     ticketPrice?: number;
@@ -44,24 +73,49 @@ export interface CheckoutModalProps {
     couponCode?: string;
     discount?: number;
 
-    /* bring a partner */
     partnerNote?: string;
     showPartner?: boolean;
-
     currencySymbol?: string;
 
-    /** Tap on "Pay ₹… securely". Receives the total payable. */
-    onPay?: (total: number) => void;
+    /* ---------- result callbacks ---------- */
+    onSuccess?: (result: PaymentResult) => void;
+    onFailure?: (message: string) => void;
     onAddPartner?: () => void;
 
-    /** Set false to stop the backdrop click from closing the popup */
     closeOnBackdrop?: boolean;
     className?: string;
     style?: React.CSSProperties;
 }
 
+/* -------------------------- Razorpay script loader -------------------------- */
+declare global {
+    interface Window {
+        Razorpay?: any;
+    }
+}
+
+let razorpayScriptPromise: Promise<boolean> | null = null;
+
+function loadRazorpay(): Promise<boolean> {
+    if (typeof window === "undefined") return Promise.resolve(false);
+    if (window.Razorpay) return Promise.resolve(true);
+    if (razorpayScriptPromise) return razorpayScriptPromise;
+
+    razorpayScriptPromise = new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = "https://checkout.razorpay.com/v1/checkout.js";
+        s.async = true;
+        s.onload = () => resolve(true);
+        s.onerror = () => {
+            razorpayScriptPromise = null; // allow retry
+            resolve(false);
+        };
+        document.body.appendChild(s);
+    });
+    return razorpayScriptPromise;
+}
+
 /* --------------------------------- helpers --------------------------------- */
-/** 1 unit = 1% of the popup's width */
 const U = (n: number) => `${n}cqw`;
 const HAIR = "max(1px, 0.25cqw)";
 
@@ -76,10 +130,10 @@ const C = {
     white: "#ffffff",
     page: "#fbfafb",
     green: "#2f9e5b",
+    red: "#c62828",
 };
 
 const FONT = "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const Icon = ({ children, width = 2 }: { children: React.ReactNode; width?: number }) => (
@@ -95,7 +149,6 @@ const Icon = ({ children, width = 2 }: { children: React.ReactNode; width?: numb
         {children}
     </svg>
 );
-
 const CloseIcon = () => (
     <Icon width={2.4}>
         <path d="M6 6l12 12M18 6 6 18" />
@@ -117,12 +170,39 @@ const PlusIcon = () => (
         <path d="M12 5v14M5 12h14" />
     </Icon>
 );
+const Spinner = () => (
+    <span
+        aria-hidden
+        style={{
+            width: "1em",
+            height: "1em",
+            borderRadius: "50%",
+            border: "0.15em solid rgba(255,255,255,.4)",
+            borderTopColor: "#fff",
+            animation: "wco-spin .7s linear infinite",
+            display: "block",
+        }}
+    />
+);
+
+type PayStage = "idle" | "creating" | "awaiting" | "verifying";
 
 /* -------------------------------- component -------------------------------- */
 export default function CheckoutModal({
     open,
     onClose,
     title = "Checkout",
+
+    eventId,
+    menTicketCount,
+    womenTicketCount,
+    otherTicketCount = 0,
+
+    apiBase = process.env.NEXT_PUBLIC_API_URL ?? "https://dev-api.welvors.com",
+    verifyPath = "/api/payment/verify",
+    getAuthToken,
+    prefill,
+
     eventTitle = "Sunrise Trails & New Connections",
     eventDate = "Sun, Oct 4, 2026 · 06:00 · Sinhagad G...",
     eventImage,
@@ -135,25 +215,50 @@ export default function CheckoutModal({
     partnerNote = "Ticket price differs by gender — a partner's ticket is charged at their rate.",
     showPartner = true,
     currencySymbol = "₹",
-    onPay,
+
+    onSuccess,
+    onFailure,
     onAddPartner,
     closeOnBackdrop = true,
     className,
     style,
 }: CheckoutModalProps) {
     const [mounted, setMounted] = useState(false);
+    const [stage, setStage] = useState<PayStage>("idle");
+    const [error, setError] = useState<string | null>(null);
+    /** Amount confirmed by backend (rupees). Backend is the source of truth. */
+    const [serverAmount, setServerAmount] = useState<number | null>(null);
+
     const dialogRef = useRef<HTMLDivElement>(null);
+    const busy = stage !== "idle";
+    const busyRef = useRef(false);
+    busyRef.current = busy;
+
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
 
     useEffect(() => setMounted(true), []);
 
-    /* Esc to close, lock page scroll, focus the dialog, restore focus after */
+    // preload checkout.js as soon as the modal opens, so Pay feels instant
+    useEffect(() => {
+        if (open) loadRazorpay();
+    }, [open]);
+
+    // reset state every time the modal re-opens
+    useEffect(() => {
+        if (open) {
+            setStage("idle");
+            setError(null);
+            setServerAmount(null);
+        }
+    }, [open]);
+
+    /* Esc to close (not while paying), lock scroll, focus management */
     useEffect(() => {
         if (!open) return;
         const previouslyFocused = document.activeElement as HTMLElement | null;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") closeRef.current();
+            if (e.key === "Escape" && !busyRef.current) closeRef.current();
         };
         document.addEventListener("keydown", onKey);
         const prevOverflow = document.body.style.overflow;
@@ -168,11 +273,149 @@ export default function CheckoutModal({
 
     if (!mounted || !open) return null;
 
-    /* totals */
+    /* display totals (estimate only — backend amount overrides once known) */
     const gst = round2(((ticketPrice + platformFee) * gstPercent) / 100);
-    const total = round2(ticketPrice + platformFee + gst - discount);
+    const localTotal = round2(ticketPrice + platformFee + gst - discount);
+    const shownTotal = serverAmount ?? localTotal;
     const money = (n: number) => `${currencySymbol}${n.toFixed(2)}`;
 
+    /* ------------------------------ API calls ------------------------------ */
+    const authHeaders = (): Record<string, string> => {
+        const token = getAuthToken?.();
+        return {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
+    };
+
+    const fail = (msg: string) => {
+        setStage("idle");
+        setError(msg);
+        onFailure?.(msg);
+    };
+
+    const handlePay = async () => {
+        if (busyRef.current) return; // block double taps
+        setError(null);
+
+        /* guard: catch missing props before hitting the API */
+        if (!eventId) return fail("eventId missing — CheckoutModal ko eventId prop pass karo.");
+        if (!(menTicketCount + womenTicketCount + otherTicketCount > 0) || [menTicketCount, womenTicketCount, otherTicketCount].some((n) => typeof n !== "number"))
+            return fail("Ticket count missing — menTicketCount / womenTicketCount props pass karo.");
+        if (getAuthToken && !getAuthToken()) return fail("Login token nahi mila. Dobara login karo.");
+        if (!getAuthToken) console.warn("[CheckoutModal] getAuthToken prop nahi diya — request bina token ke jayegi (401 aayega).");
+        setStage("creating");
+
+        try {
+            /* ---- 1. load Razorpay SDK ---- */
+            const loaded = await loadRazorpay();
+            if (!loaded) return fail("Payment gateway load nahi hua. Internet check karke dobara try karo.");
+
+            /* ---- 2. create order on backend ---- */
+            const res = await fetch(`${apiBase}/api/payment/create-order`, {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    purpose: "EVENT_BOOKING",
+                    eventId,
+                    menTicketCount,
+                    womenTicketCount,
+                    otherTicketCount,
+                }),
+            });
+
+            const json: CreateOrderResponse = await res.json().catch(() => ({ success: false, message: "Invalid server response" }));
+            if (!res.ok || !json.success || !json.data) {
+                return fail(json.message || "Order create nahi hua. Dobara try karo.");
+            }
+
+            const order = json.data;
+            setServerAmount(Number(order.amountInRupees));
+
+            /* ---- 3. open Razorpay checkout ---- */
+            setStage("awaiting");
+
+            const rzp = new window.Razorpay({
+                key: order.razorpayKeyId,
+                order_id: order.razorpayOrderId,
+                amount: order.amount, // paise; must match the order
+                currency: order.currency,
+                name: "Welvors",
+                description: eventTitle,
+                prefill: prefill ?? {},
+                notes: { bookingId: order.bookingId, paymentId: order.paymentId },
+                theme: { color: C.pink },
+                retry: { enabled: true, max_count: 3 },
+
+                /* ---- 4. success from Razorpay -> verify on backend ---- */
+                handler: async (resp: {
+                    razorpay_payment_id: string;
+                    razorpay_order_id: string;
+                    razorpay_signature: string;
+                }) => {
+                    setStage("verifying");
+                    try {
+                        const vRes = await fetch(`${apiBase}${verifyPath}`, {
+                            method: "POST",
+                            headers: authHeaders(),
+                            // backend schema is strict: only these 3 keys are allowed
+                            body: JSON.stringify({
+                                razorpay_order_id: resp.razorpay_order_id,
+                                razorpay_payment_id: resp.razorpay_payment_id,
+                                razorpay_signature: resp.razorpay_signature,
+                            }),
+                        });
+                        const vJson = await vRes.json().catch(() => ({ success: false }));
+
+                        if (!vRes.ok || !vJson.success) {
+                            // money may be captured; backend webhook should still reconcile it
+                            return fail(
+                                "Payment receive hua par confirm nahi ho paaya. Paisa kata hai to booking kuch minute mein update ho jayegi, ya support se contact karo."
+                            );
+                        }
+
+                        setStage("idle");
+                        onSuccess?.({
+                            bookingId: order.bookingId,
+                            paymentId: order.paymentId,
+                            razorpayPaymentId: resp.razorpay_payment_id,
+                        });
+                    } catch {
+                        fail("Network issue during confirmation. Booking status thodi der mein check karo.");
+                    }
+                },
+
+                modal: {
+                    // user closed Razorpay without paying
+                    ondismiss: () => {
+                        setStage((s) => (s === "verifying" ? s : "idle"));
+                    },
+                    confirm_close: true,
+                },
+            });
+
+            rzp.on("payment.failed", (resp: any) => {
+                // fires on each failed attempt; Razorpay lets the user retry inside its modal
+                const reason = resp?.error?.description || "Payment fail ho gaya.";
+                setError(reason);
+            });
+
+            rzp.open();
+        } catch {
+            fail("Kuch galat hua. Internet check karke dobara try karo.");
+        }
+    };
+
+    const payLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? "Confirming booking…"
+                : `Pay ${money(shownTotal)} securely`;
+
+    /* ------------------------------- styles ------------------------------- */
     const sectionLabel: React.CSSProperties = {
         margin: `0 0 ${U(3.2)} ${U(0.6)}`,
         fontSize: U(2.9),
@@ -181,7 +424,6 @@ export default function CheckoutModal({
         color: C.grey,
         textTransform: "uppercase",
     };
-
     const row: React.CSSProperties = {
         display: "flex",
         alignItems: "center",
@@ -193,8 +435,7 @@ export default function CheckoutModal({
     return createPortal(
         <div
             onMouseDown={(e) => {
-                // only a press that starts on the blurred area itself counts as "outside"
-                if (closeOnBackdrop && e.target === e.currentTarget) onClose();
+                if (closeOnBackdrop && !busy && e.target === e.currentTarget) onClose();
             }}
             style={{
                 position: "fixed",
@@ -215,9 +456,11 @@ export default function CheckoutModal({
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         @keyframes wco-fade { from { opacity: 0 } to { opacity: 1 } }
         @keyframes wco-pop  { from { opacity: 0; transform: translateY(14px) scale(.96) } to { opacity: 1; transform: none } }
-        .wco-btn { cursor: pointer; border: 0; font: inherit; transition: transform .12s ease, filter .12s ease, background .15s ease; }
-        .wco-btn:hover { filter: brightness(1.05); }
-        .wco-btn:active { transform: scale(.985); }
+        @keyframes wco-spin { to { transform: rotate(360deg) } }
+        .wco-btn { cursor: pointer; border: 0; font: inherit; transition: transform .12s ease, filter .12s ease, background .15s ease, opacity .15s ease; }
+        .wco-btn:hover:not(:disabled) { filter: brightness(1.05); }
+        .wco-btn:active:not(:disabled) { transform: scale(.985); }
+        .wco-btn:disabled { cursor: not-allowed; opacity: .75; }
         .wco-btn:focus-visible { outline: 2px solid ${C.pink}; outline-offset: 2px; }
         .wco-scroll { scrollbar-width: none; -ms-overflow-style: none; }
         .wco-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
@@ -229,6 +472,7 @@ export default function CheckoutModal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
+                aria-busy={busy}
                 tabIndex={-1}
                 className={`wco-dialog ${className ?? ""}`}
                 style={{
@@ -266,6 +510,7 @@ export default function CheckoutModal({
                         className="wco-btn"
                         aria-label="Close"
                         onClick={onClose}
+                        disabled={busy}
                         style={{
                             position: "absolute",
                             right: U(4.4),
@@ -292,7 +537,6 @@ export default function CheckoutModal({
                 {/* ------------------------------ scroll ------------------------------ */}
                 <div className="wco-scroll" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
                     <div style={{ boxSizing: "border-box", padding: `${U(2)} ${U(5.5)} ${U(6)}` }}>
-                        {/* ========================= order summary ========================= */}
                         <h2 style={sectionLabel}>Order summary</h2>
 
                         <section
@@ -304,7 +548,6 @@ export default function CheckoutModal({
                                 boxShadow: `0 ${U(1.4)} ${U(5)} rgba(224,36,94,.10)`,
                             }}
                         >
-                            {/* event */}
                             <div
                                 style={{
                                     display: "flex",
@@ -352,7 +595,6 @@ export default function CheckoutModal({
                                 </div>
                             </div>
 
-                            {/* line items */}
                             <div style={{ display: "flex", flexDirection: "column", gap: U(4.2), paddingTop: U(5) }}>
                                 <div style={row}>
                                     <span>{ticketLabel}</span>
@@ -379,7 +621,6 @@ export default function CheckoutModal({
                                 )}
                             </div>
 
-                            {/* total */}
                             <div
                                 style={{
                                     marginTop: U(5),
@@ -393,12 +634,11 @@ export default function CheckoutModal({
                             >
                                 <span style={{ fontSize: U(4.1), fontWeight: 600 }}>Total payable</span>
                                 <span style={{ fontSize: U(6.2), fontWeight: 700, color: C.pinkText, letterSpacing: "-0.01em" }}>
-                                    {money(total)}
+                                    {money(shownTotal)}
                                 </span>
                             </div>
                         </section>
 
-                        {/* ========================= bring a partner ========================= */}
                         {showPartner && (
                             <>
                                 <h2 style={{ ...sectionLabel, margin: `${U(8)} 0 ${U(3.2)} ${U(0.6)}` }}>Bring a partner</h2>
@@ -416,6 +656,7 @@ export default function CheckoutModal({
                                         type="button"
                                         className="wco-btn"
                                         onClick={onAddPartner}
+                                        disabled={busy}
                                         style={{
                                             marginTop: U(4.6),
                                             width: "100%",
@@ -452,10 +693,16 @@ export default function CheckoutModal({
                         borderTop: `${HAIR} solid ${C.border}`,
                     }}
                 >
+                    {error && (
+                        <p role="alert" style={{ margin: `0 0 ${U(3)}`, fontSize: U(3.2), lineHeight: 1.45, color: C.red, textAlign: "center" }}>
+                            {error}
+                        </p>
+                    )}
                     <button
                         type="button"
                         className="wco-btn"
-                        onClick={() => onPay?.(total)}
+                        onClick={handlePay}
+                        disabled={busy}
                         style={{
                             width: "100%",
                             height: U(13.8),
@@ -471,10 +718,8 @@ export default function CheckoutModal({
                             boxShadow: `0 ${U(1.4)} ${U(4)} rgba(224,36,94,.35)`,
                         }}
                     >
-                        <span style={{ fontSize: U(4.4), display: "flex" }}>
-                            <LockIcon />
-                        </span>
-                        Pay {money(total)} securely
+                        <span style={{ fontSize: U(4.4), display: "flex" }}>{busy ? <Spinner /> : <LockIcon />}</span>
+                        {payLabel}
                     </button>
                 </footer>
             </div>

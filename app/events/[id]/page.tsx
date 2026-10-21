@@ -324,6 +324,9 @@ export default function EventDetailsPage() {
   const { profile } = useMyProfile();
   const gender = profile?.gender ?? null;
 
+  /* ---- PAYMENT: which ticket bucket this member books ---- */
+  const myBucket: Bucket | null = gender && gender.trim() ? bucketForGender(gender) : null;
+
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [modal, setModal] = useState<ModalType>(null);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -354,7 +357,32 @@ export default function EventDetailsPage() {
     [details]
   );
 
+  /* ---- PAYMENT: checks before opening checkout ---- */
   const handleBookNow = () => {
+    if (!details || !price) return;
+
+    if (!loggedIn || !getClientToken()) {
+      toast.error("Book karne ke liye pehle login karo.");
+      return;
+    }
+    if (!myBucket) {
+      toast.error("Profile mein gender missing hai. Pehle profile complete karo.");
+      return;
+    }
+    if (price.amount == null || price.amount <= 0) {
+      toast.error("Is event ke liye online payment available nahi hai.");
+      return;
+    }
+    const left =
+      details.bookingStats?.spotsLeft ??
+      (details.bookingStats?.totalCapacity != null && details.bookingStats?.bookedCount != null
+        ? details.bookingStats.totalCapacity - details.bookingStats.bookedCount
+        : null);
+    if (left != null && left <= 0) {
+      toast.error("Event full ho chuka hai.");
+      return;
+    }
+
     setCheckOutOpen(true)
   };
 
@@ -442,12 +470,43 @@ export default function EventDetailsPage() {
   const safety = details.safetyFeatures ?? [];
   const partner = details.eventPartner ?? null;
 
+  /* ---- PAYMENT: values for the checkout modal ---- */
+  const p = (profile ?? {}) as Record<string, any>;
+  const bucketLabel = myBucket === "men" ? "Man" : myBucket === "women" ? "Woman" : "Other";
+
   return (
     <main
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
       className="pb-24 pt-11 lg:pt-16 lg:pb-5"
     >
-      <CheckoutModal open={checkOutOpen} onClose={handleClose} />
+      {myBucket && eventId && (
+        <CheckoutModal
+          open={checkOutOpen}
+          onClose={handleClose}
+          eventId={eventId}
+          menTicketCount={myBucket === "men" ? 1 : 0}
+          womenTicketCount={myBucket === "women" ? 1 : 0}
+          otherTicketCount={myBucket === "other" ? 1 : 0}
+          getAuthToken={getClientToken}
+          prefill={{
+            name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+            email: p.email ?? undefined,
+            contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+          }}
+          eventTitle={details.title}
+          eventDate={[dateStr, timeStr, details.fullAddress].filter(Boolean).join(" · ")}
+          eventImage={details.heroImage ?? undefined}
+          ticketLabel={`Ticket × 1 (${bucketLabel})`}
+          ticketPrice={price.amount ?? 0}
+          couponCode=""
+          showPartner={false}
+          onSuccess={({ bookingId }) => {
+            setCheckOutOpen(false);
+            router.push(`/app/booking-confirmation/${bookingId}`); // match the folder you place the page in
+          }}
+          onFailure={(msg) => toast.error(msg)}
+        />
+      )}
       {/* ---------------------------- HERO ---------------------------- */}
       <div
         className="relative w-full overflow-hidden"

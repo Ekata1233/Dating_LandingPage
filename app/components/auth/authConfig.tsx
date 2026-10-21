@@ -1,5 +1,7 @@
 "use client";
 
+import { API_BASE_URL } from "@/utils/api";
+
 export {
   C,
   Icon,
@@ -12,8 +14,8 @@ export {
 export const MOCK_MODE = false;
 
 export const LOGIN_SEND_OTP =
-  "https://api.welvors.com/api/user/send-otp";
+  `${API_BASE_URL}/api/user/send-otp`;
 export const LOGIN_VERIFY_OTP =
-  "https://api.welvors.com/api/user/verify-otp";
+  `${API_BASE_URL}/api/user/verify-otp`;
 
 export type Status = "idle" | "sending" | "error";

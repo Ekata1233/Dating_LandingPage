@@ -12,6 +12,7 @@ import {
   ErrorNote,
   BackLink,
 } from "../waitlistConfig";
+import { API_BASE_URL } from "@/utils/api";
 
 interface Props {
   fullName: string;
@@ -25,11 +26,11 @@ interface Props {
 
 /* ---- Waitlist config API (single source of truth) ---- */
 const WAITLIST_API =
-  "https://api.welvors.com/api/user/waitlist/get";
+  `${API_BASE_URL}/api/user/waitlist/get`;
 
 /* ---- Payment order API (founding spot) ---- */
 const PAYMENT_API =
-  "https://api.welvors.com/api/payments/create-order";
+  `${API_BASE_URL}/api/payments/create-order`;
 
 /* === SET THIS ONCE ===
    Put the exact localStorage/sessionStorage key that holds YOUR app's login

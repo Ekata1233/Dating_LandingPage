@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plan } from "../waitlist/waitlistConfig";
 import StepDone from "../waitlist/steps/StepDone";
 import { DONE_STORAGE_KEY } from "@/app/context/WaitlistContext";
+import { API_BASE_URL } from "@/utils/api";
 
 type PaymentStatus = "success" | "failed";
 
@@ -20,7 +21,7 @@ interface DoneData {
 
 /* ---- Waitlist details API (source of truth for payment/spot) ---- */
 const WAITLIST_USER_API =
-  "https://api.welvors.com/api/user/waitlist-user/get";
+  `${API_BASE_URL}/api/user/waitlist-user/get`;
 
 interface WaitlistUser {
   id: string;

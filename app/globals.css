@@ -1619,3 +1619,36 @@ svg {
     --mobile-cap: 1;
   }
 }
+
+.welvors-phone-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welvors-phone-input .PhoneInputCountry {
+  margin-right: 8px;
+}
+
+.welvors-phone-input .PhoneInputCountrySelect {
+  cursor: pointer;
+}
+
+.welvors-phone-input .PhoneInputCountryIcon {
+  width: 26px;
+  height: 20px;
+}
+
+.welvors-phone-input .PhoneInputInput {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #2b2a28;
+}
+
+.welvors-phone-input .PhoneInputInput::placeholder {
+  color: #9ca3af;
+}

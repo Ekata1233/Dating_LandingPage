@@ -10,6 +10,7 @@ import {
   ErrorNote,
   BackLink,
 } from "../waitlistConfig";
+import { API_BASE_URL } from "@/utils/api";
 
 interface CardState {
   number: string;
@@ -33,7 +34,7 @@ interface Props {
 
 /* ---- Price API (display only — charged amount server-side order se aata hai) ---- */
 const WAITLIST_API =
-  "https://api.welvors.com/api/user/waitlist/get";
+  `${API_BASE_URL}/api/user/waitlist/get`;
 const inr = (n: number | string) => "₹" + Number(n).toLocaleString("en-IN");
 
 /* ------------------------------------------------------------------ */
