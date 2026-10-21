@@ -6,6 +6,7 @@ import ChatMain from "../desktop/ChatMain";
 import ChatSideBar from "../panels/ChatSideBar";
 import { useConversations } from "@/app/context/ChatContext";
 import type { Conversation } from "@/app/context/ChatContext";
+import { useChatThread } from "../shared/chatMessages";
 
 /* -------------------------------------------------------------------------- */
 /*  Chats – two-step, Tinder inbox style.                                      */
@@ -39,6 +40,8 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
     conversations.find((c) => c.conversationId === activeConversationId) ??
     null;
 
+  const chat = useChatThread(thread?.user.id ?? null);
+
   /* ------------------------------ Thread ------------------------------ */
 
   if (thread) {
@@ -52,9 +55,17 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
               selectConversation(null);
               onBackToList?.();
             }}
+            userId={thread.user.id}
             name={thread.user.fullName}
             avatarUrl={thread.user.profilePhoto}
             online={thread.user.isOnline}
+            messages={chat.chatMessages}
+            messagesLoading={chat.loading}
+            messagesError={chat.error}
+            onRetryMessages={() => void chat.refetch()}
+            hasOlderMessages={chat.hasMore}
+            onLoadOlderMessages={() => void chat.loadMore()}
+            loadingOlderMessages={chat.loadMoreLoading}
           />
         </div>
       </div>

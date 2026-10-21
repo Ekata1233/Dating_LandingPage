@@ -3,7 +3,7 @@
 import React, { SVGProps, useEffect, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { getClientToken } from "@/utils/token";
 
 /* ------------------------------------------------------------------ */
 /*  Mockup profile photo — apni image /public me daal ke path yahan     */
@@ -308,10 +308,13 @@ function Header() {
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
   const router = useRouter();
   const handleDiscover = () => {
-    // if (typeof document === "undefined") return;
-    // const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    // loginBtn?.click();
-    router.push("/app");
+    if (getClientToken() === null) {
+      /* logged out → open the navbar login modal */
+      if (typeof document === "undefined") return;
+      document.querySelector<HTMLElement>("[data-login-trigger]")?.click();
+      return;
+    }
+    router.push("/app/home");
   };
 
   const handleDownloadApp = () => {
@@ -404,10 +407,9 @@ function Header() {
             {/* ---- CTA ---- */}
             <div className={`mt-4 flex flex-col sm:flex-row  items-center mb-10 gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }} >
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
-                <Link href="/app/home" className="w-full">
                   <button
                   type="button"
-                  // onClick={handleDownloadApp}
+                  onClick={handleDiscover}
                   className="cm-cta group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95 w-full sm:w-auto"
                   style={{
                     background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
@@ -421,7 +423,6 @@ function Header() {
                   </span>
                   <span className="cm-shimmer pointer-events-none absolute inset-0" />
                 </button>
-                </Link>
               </div>
               <div className={`flex flex-col w-full md:w-auto items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "800ms" }}>
                 <button

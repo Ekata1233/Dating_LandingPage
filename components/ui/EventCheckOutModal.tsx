@@ -212,8 +212,12 @@ export default function CheckoutModal({
     gstPercent = 18,
     couponCode = "WELVORS100",
     discount = 0,
+    eventIntent,
+    menTicketPrice,
+    womenTicketPrice,
+    defaultTicketGender,
     partnerNote = "Ticket price differs by gender — a partner's ticket is charged at their rate.",
-    showPartner = true,
+    showPartner = false,
     currencySymbol = "₹",
 
     onSuccess,
@@ -236,6 +240,12 @@ export default function CheckoutModal({
 
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
+
+    /* which gender's ticket is being booked — anyone may pick either */
+    const hasMenTicket = typeof menTicketPrice === "number" && menTicketPrice >= 0;
+    const hasWomenTicket = typeof womenTicketPrice === "number" && womenTicketPrice >= 0;
+    const genderedTickets = hasMenTicket || hasWomenTicket;
+    const [pickedGender, setPickedGender] = useState<"men" | "women" | null>(null);
 
     useEffect(() => setMounted(true), []);
 
@@ -444,7 +454,7 @@ export default function CheckoutModal({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "16px",
+                padding: "20px",
                 boxSizing: "border-box",
                 background: "rgba(20, 18, 30, 0.38)",
                 backdropFilter: "blur(10px)",
@@ -592,13 +602,31 @@ export default function CheckoutModal({
                                     >
                                         {eventDate}
                                     </p>
+                                    {intentChip && (
+                                        <span
+                                            style={{
+                                                display: "inline-block",
+                                                marginTop: U(2),
+                                                padding: `${U(0.9)} ${U(2.6)}`,
+                                                borderRadius: 999,
+                                                fontSize: U(2.7),
+                                                fontWeight: 700,
+                                                letterSpacing: "0.08em",
+                                                textTransform: "uppercase",
+                                                background: C.pinkSoft,
+                                                color: C.pinkText,
+                                            }}
+                                        >
+                                            {intentChip}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
                             <div style={{ display: "flex", flexDirection: "column", gap: U(4.2), paddingTop: U(5) }}>
                                 <div style={row}>
-                                    <span>{ticketLabel}</span>
-                                    <span style={{ fontWeight: 500 }}>{money(ticketPrice)}</span>
+                                    <span>{effectiveLabel}</span>
+                                    <span style={{ fontWeight: 500 }}>{money(effectivePrice)}</span>
                                 </div>
                                 <div style={row}>
                                     <span>Platform fee</span>

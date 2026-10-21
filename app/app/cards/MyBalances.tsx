@@ -74,7 +74,7 @@ export default function MyBalances({
         MY BALANCES
       </div>
 
-      <div
+      <div className="overflow-x-hidden"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",

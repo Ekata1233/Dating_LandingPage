@@ -16,7 +16,7 @@ export interface DateNowMainProps {
 }
 
 function DateNowMain({ fluid = false, count }: DateNowMainProps) {
-    const { filter, datePlans, loading, error, refetch } = useDatePlans();
+    const { filter, datePlans, loading, error, status, hasSession, refetch } = useDatePlans();
     const [selectedPlanId, setSelectedPlanId] = useState<string | number | null>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
@@ -28,6 +28,12 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
     const isModalOpen = selectedPlanId !== null;
     const plans = (datePlans ?? []).slice(0, count);
     const cardClass = fluid ? 'shrink-0 snap-start snap-always' : 'shrink-0';
+
+    /* "idle" means nothing has been requested yet. With a session the request
+       is about to start, so keep the spinner. Without one it never will. */
+    const waiting = loading && !(status === 'idle' && hasSession === false);
+    /* Nothing to show: the filter came back empty, or there is no session. */
+    const empty = !waiting && !error && plans.length === 0;
 
     return (
         <main className={`flex-1 flex flex-col relative ${fluid ? 'h-full w-full' : 'h-screen'}`}>
@@ -49,14 +55,14 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                     }
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {loading && (
+                    {waiting && (
                         <Loader
                             label="Finding date plans…"
                             hint="This only takes a moment."
                         />
                     )}
 
-                    {!loading && error && (
+                    {!waiting && error && (
                         <div className="m-auto flex flex-col items-center gap-3 text-center">
                             <p className="text-sm">Something went wrong loading plans.</p>
                             <button
@@ -69,11 +75,18 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                         </div>
                     )}
 
-                    {!loading && !error && plans.length === 0 && (
-                        <p className="m-auto text-sm opacity-70">No date plans found.</p>
+                    {empty && (
+                        <div className="m-auto flex flex-col items-center gap-2 px-6 text-center">
+                            <p className="text-sm font-semibold">No date plans found</p>
+                            <p className="text-xs opacity-70">
+                                {hasSession === false
+                                    ? 'Sign in to see plans near you.'
+                                    : 'Try another filter or check back shortly.'}
+                            </p>
+                        </div>
                     )}
 
-                    {!loading &&
+                    {!waiting &&
                         !error &&
                         plans.map((d) => (
                             <DateNowCard
