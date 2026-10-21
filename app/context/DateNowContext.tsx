@@ -138,6 +138,8 @@ interface DateNowContextData {
     loading: boolean;
     error: string | null;
     pagination: DatePlanPagination;
+    /** False once we know there is no session; null before the first attempt. */
+    hasSession: boolean | null;
 
     /** Reloads the active filter from the first page. Pass a filter to reload
         a different one without switching the visible selection. */
@@ -164,6 +166,7 @@ const DateNowContext = createContext<DateNowContextData>({
     loading: true,
     error: null,
     pagination: EMPTY_PAGINATION,
+    hasSession: null,
 
     refetchDatePlans: async () => { },
     ensureDatePlans: () => { },
@@ -226,6 +229,9 @@ export function DateNowProvider({
     const [filter, setFilterState] = useState<DatePlanFilter>("all");
     const [filterStates, setFilterStates] =
         useState<Record<DatePlanFilter, FilterState>>(initialFilterStates);
+    /* Whether a session existed the last time a request was attempted. Without
+       one the request never leaves "idle", so the screen needs to know. */
+    const [hasSession, setHasSession] = useState<boolean | null>(null);
 
     const setFilter = useCallback((next: DatePlanFilter) => {
         setFilterState(next);
@@ -272,9 +278,12 @@ export function DateNowProvider({
                 /* No session: "not loaded", not "empty". Stay idle so a later
                    `ensureDatePlans` can try again. */
                 if (!getClientToken()) {
+                    setHasSession(false);
                     patchFilter(active, { status: "idle" });
                     return;
                 }
+
+                setHasSession(true);
 
                 patchFilter(active, {
                     status: "loading",
@@ -396,6 +405,7 @@ export function DateNowProvider({
             loading: active.status === "idle" || active.status === "loading",
             error: active.error,
             pagination: active.pagination,
+            hasSession,
 
             refetchDatePlans,
             ensureDatePlans,
@@ -409,6 +419,7 @@ export function DateNowProvider({
             filter,
             setFilter,
             active,
+            hasSession,
             refetchDatePlans,
             ensureDatePlans,
             loadMore,
@@ -444,6 +455,7 @@ export function useDatePlans() {
         error,
         status,
         pagination,
+        hasSession,
         refetchDatePlans,
         ensureDatePlans,
         hasMore,
@@ -464,6 +476,7 @@ export function useDatePlans() {
         error,
         status,
         pagination,
+        hasSession,
         refetch: refetchDatePlans,
         hasMore,
         loadMore,

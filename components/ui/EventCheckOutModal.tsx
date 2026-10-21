@@ -44,6 +44,13 @@ export interface CheckoutModalProps {
     couponCode?: string;
     discount?: number;
 
+    /* gendered tickets — any user may book a ticket for either gender */
+    /** "MEN_ONLY" | "WOMEN_ONLY" | "MIXED". Single-gender events get a chip. */
+    eventIntent?: string | null;
+    menTicketPrice?: number | null;
+    womenTicketPrice?: number | null;
+    defaultTicketGender?: "men" | "women";
+
     /* bring a partner */
     partnerNote?: string;
     showPartner?: boolean;
@@ -132,8 +139,12 @@ export default function CheckoutModal({
     gstPercent = 18,
     couponCode = "WELVORS100",
     discount = 0,
+    eventIntent,
+    menTicketPrice,
+    womenTicketPrice,
+    defaultTicketGender,
     partnerNote = "Ticket price differs by gender — a partner's ticket is charged at their rate.",
-    showPartner = true,
+    showPartner = false,
     currencySymbol = "₹",
     onPay,
     onAddPartner,
@@ -146,7 +157,22 @@ export default function CheckoutModal({
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
 
+    /* which gender's ticket is being booked — anyone may pick either */
+    const hasMenTicket = typeof menTicketPrice === "number" && menTicketPrice >= 0;
+    const hasWomenTicket = typeof womenTicketPrice === "number" && womenTicketPrice >= 0;
+    const genderedTickets = hasMenTicket || hasWomenTicket;
+    const [pickedGender, setPickedGender] = useState<"men" | "women" | null>(null);
+
     useEffect(() => setMounted(true), []);
+
+    /* effective gender: user's pick → caller's default → whichever has a price;
+       clamped to a bucket that actually has a price */
+    const ticketGender: "men" | "women" = (() => {
+        const preferred = pickedGender ?? defaultTicketGender ?? (hasMenTicket ? "men" : "women");
+        if (preferred === "men" && hasMenTicket) return "men";
+        if (preferred === "women" && hasWomenTicket) return "women";
+        return hasMenTicket ? "men" : "women";
+    })();
 
     /* Esc to close, lock page scroll, focus the dialog, restore focus after */
     useEffect(() => {
@@ -168,9 +194,24 @@ export default function CheckoutModal({
 
     if (!mounted || !open) return null;
 
+    /* effective ticket after gender selection */
+    const effectivePrice = genderedTickets
+        ? ticketGender === "men"
+            ? (menTicketPrice ?? 0)
+            : (womenTicketPrice ?? 0)
+        : ticketPrice;
+    const effectiveLabel = genderedTickets
+        ? `Ticket × 1 (${ticketGender === "men" ? "Man" : "Woman"})`
+        : ticketLabel;
+    const showGenderPicker = hasMenTicket && hasWomenTicket;
+
+    const intent = (eventIntent || "").toUpperCase();
+    const intentChip =
+        intent === "MEN_ONLY" ? "Men Only" : intent === "WOMEN_ONLY" ? "Women Only" : null;
+
     /* totals */
-    const gst = round2(((ticketPrice + platformFee) * gstPercent) / 100);
-    const total = round2(ticketPrice + platformFee + gst - discount);
+    const gst = round2(((effectivePrice + platformFee) * gstPercent) / 100);
+    const total = round2(effectivePrice + platformFee + gst - discount);
     const money = (n: number) => `${currencySymbol}${n.toFixed(2)}`;
 
     const sectionLabel: React.CSSProperties = {
@@ -203,7 +244,7 @@ export default function CheckoutModal({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "16px",
+                padding: "20px",
                 boxSizing: "border-box",
                 background: "rgba(20, 18, 30, 0.38)",
                 backdropFilter: "blur(10px)",
@@ -349,14 +390,73 @@ export default function CheckoutModal({
                                     >
                                         {eventDate}
                                     </p>
+                                    {intentChip && (
+                                        <span
+                                            style={{
+                                                display: "inline-block",
+                                                marginTop: U(2),
+                                                padding: `${U(0.9)} ${U(2.6)}`,
+                                                borderRadius: 999,
+                                                fontSize: U(2.7),
+                                                fontWeight: 700,
+                                                letterSpacing: "0.08em",
+                                                textTransform: "uppercase",
+                                                background: C.pinkSoft,
+                                                color: C.pinkText,
+                                            }}
+                                        >
+                                            {intentChip}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* ticket gender picker — book any gender's ticket */}
+                            {showGenderPicker && (
+                                <div style={{ paddingTop: U(5) }}>
+                                    <p style={{ margin: `0 0 ${U(2.6)}`, fontSize: U(3.1), color: C.grey }}>Ticket for</p>
+                                    <div style={{ display: "flex", gap: U(2.4) }}>
+                                        {(["men", "women"] as const).map((g) => {
+                                            const selected = ticketGender === g;
+                                            const price = g === "men" ? menTicketPrice! : womenTicketPrice!;
+                                            return (
+                                                <button
+                                                    key={g}
+                                                    type="button"
+                                                    className="wco-btn"
+                                                    onClick={() => setPickedGender(g)}
+                                                    aria-pressed={selected}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: `${U(2.8)} ${U(2)}`,
+                                                        borderRadius: U(3.2),
+                                                        border: `${U(0.45)} solid ${selected ? C.pink : C.border}`,
+                                                        background: selected ? C.pinkSoft : C.white,
+                                                        color: selected ? C.pinkText : C.ink,
+                                                        fontSize: U(3.3),
+                                                        fontWeight: 600,
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        alignItems: "center",
+                                                        gap: U(0.8),
+                                                    }}
+                                                >
+                                                    <span>{g === "men" ? "Man" : "Woman"}</span>
+                                                    <span style={{ fontSize: U(2.9), fontWeight: 500, color: selected ? C.pinkText : C.grey }}>
+                                                        {money(price)}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* line items */}
                             <div style={{ display: "flex", flexDirection: "column", gap: U(4.2), paddingTop: U(5) }}>
                                 <div style={row}>
-                                    <span>{ticketLabel}</span>
-                                    <span style={{ fontWeight: 500 }}>{money(ticketPrice)}</span>
+                                    <span>{effectiveLabel}</span>
+                                    <span style={{ fontWeight: 500 }}>{money(effectivePrice)}</span>
                                 </div>
                                 <div style={row}>
                                     <span>Platform fee</span>

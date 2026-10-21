@@ -2,7 +2,8 @@
 
 import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getClientToken } from "@/utils/token";
 
 const C = {
   bg: "#FCF8F4",
@@ -134,11 +135,16 @@ function CommitmentMode() {
   const [headRef, headVisible] = useScrollReveal();
   const [bentoRef, bentoVisible] = useScrollReveal({ threshold: 0.05 });
   const [perksRef, perksVisible] = useScrollReveal({ threshold: 0.05 });
+  const router = useRouter();
 
   const handleJoin = () => {
-    if (typeof document === "undefined") return;
-    const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    loginBtn?.click();
+    if (getClientToken() === null) {
+      /* logged out → open the navbar login modal */
+      if (typeof document === "undefined") return;
+      document.querySelector<HTMLElement>("[data-login-trigger]")?.click();
+      return;
+    }
+    router.push("/app/home");
   };
 
   return (
@@ -280,10 +286,9 @@ function CommitmentMode() {
 
             {/* CTA */}
             <div className="mt-8 sm:mt-10 lg:mt-12">
-              <Link href="/app/home">
               <button
                 type="button"
-                // onClick={handleJoin}
+                onClick={handleJoin}
                 className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full px-7 py-3.5 text-[14px] font-bold text-white transition-all duration-500 hover:scale-105 hover:shadow-[0_20px_60px_rgba(212,168,83,0.3)] active:scale-95 cursor-pointer sm:px-8 sm:py-4 sm:text-[15px]"
                 style={{ background: "linear-gradient(135deg, #D4A853, #C9962A)" }}
               >
@@ -293,7 +298,6 @@ function CommitmentMode() {
                   <Icon.Arrow className="transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
-              </Link>
               <p className="mt-3 text-[12px] "
               style={{ color: "rgba(255,255,255,0.8)" }}>
                 Programme terms & eligibility apply

@@ -174,6 +174,17 @@ function selectPrice(details: EventDetails, gender: string | null): PriceView {
     return buckets[bucketForGender(gender)];
   }
 
+  /* Logged out: quote the highest of men's / women's entry price so nobody is
+     shown a price below the real range. Fall back to any other paid bucket. */
+  const mwPaid = [buckets.men, buckets.women].filter(
+    (view) => view.amount != null && view.amount > 0
+  );
+  if (mwPaid.length > 0) {
+    return mwPaid.reduce((highest, view) =>
+      (view.amount ?? 0) > (highest.amount ?? 0) ? view : highest
+    );
+  }
+
   const paid = (Object.values(buckets) as PriceView[]).filter(
     (view) => view.amount != null && view.amount > 0
   );
@@ -320,6 +331,9 @@ export default function EventDetailsPage() {
   }, [params]);
 
   const { details, loading, error } = useEventDetails(eventId);
+    useEffect(()=>{
+    console.log(details)
+  },[])
   const loggedIn = useLoggedIn();
   const { profile } = useMyProfile();
   const gender = profile?.gender ?? null;
@@ -333,6 +347,24 @@ export default function EventDetailsPage() {
     () => (details ? selectPrice(details, loggedIn ? gender : null) : null),
     [details, loggedIn, gender]
   );
+
+  /* gendered ticket data for the checkout modal — anyone may book either */
+  const ticketOptions = useMemo(() => {
+    if (!details) return null;
+    const men = priceView(details.menEntryPrice, details.menDiscountedPrice, details.discountPercentage);
+    const women = priceView(details.womenEntryPrice, details.womenDiscountedPrice, details.discountPercentage);
+    const intent = (details.eventIntent || "").toUpperCase();
+    let def: "men" | "women";
+    if (intent === "MEN_ONLY") def = "men";
+    else if (intent === "WOMEN_ONLY") def = "women";
+    else {
+      const b = bucketForGender(gender);
+      if (b === "women") def = "women";
+      else if (b === "men") def = "men";
+      else def = (women.amount ?? 0) >= (men.amount ?? 0) ? "women" : "men";
+    }
+    return { men: men.amount, women: women.amount, def };
+  }, [details, gender]);
 
   const gallery = useMemo(
     () => (details?.galleryImages ?? []).slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
@@ -355,7 +387,14 @@ export default function EventDetailsPage() {
   );
 
   const handleBookNow = () => {
-    setCheckOutOpen(true)
+    if (!loggedIn) {
+      /* open the navbar's login modal instead of the checkout */
+      if (typeof document !== "undefined") {
+        document.querySelector<HTMLElement>("[data-login-trigger]")?.click();
+      }
+      return;
+    }
+    setCheckOutOpen(true);
   };
 
   const handleShare = async (type: string) => {
@@ -447,7 +486,19 @@ export default function EventDetailsPage() {
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
       className="pb-24 pt-11 lg:pt-16 lg:pb-5"
     >
-      <CheckoutModal open={checkOutOpen} onClose={handleClose} />
+      <CheckoutModal
+        open={checkOutOpen}
+        onClose={handleClose}
+        eventImage={details.heroImage}
+        eventDate={timeStr ? `${dateStr} · ${timeStr}` : dateStr}
+        eventTitle={details.title}
+        eventIntent={details.eventIntent}
+        gstPercent={18}
+        ticketPrice={price.amount ?? 0}
+        menTicketPrice={ticketOptions?.men ?? null}
+        womenTicketPrice={ticketOptions?.women ?? null}
+        defaultTicketGender={ticketOptions?.def}
+      />
       {/* ---------------------------- HERO ---------------------------- */}
       <div
         className="relative w-full overflow-hidden"

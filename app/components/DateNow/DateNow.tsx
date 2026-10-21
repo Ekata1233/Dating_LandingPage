@@ -3,6 +3,7 @@
 import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import { useRouter } from "next/navigation";
+import { getClientToken } from "@/utils/token";
 
 const C = {
   bg: "#FBF7F3",
@@ -127,10 +128,13 @@ function DateNow() {
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
   const router = useRouter();
   const handleDiscover = () => {
-    // if (typeof document === "undefined") return;
-    // const loginBtn = document.querySelector<HTMLElement>("[data-login-trigger]");
-    // loginBtn?.click();
-    router.push("/app");
+    if (getClientToken() === null) {
+      /* logged out → open the navbar login modal */
+      if (typeof document === "undefined") return;
+      document.querySelector<HTMLElement>("[data-login-trigger]")?.click();
+      return;
+    }
+    router.push("/app/date-now");
   };
 
 
@@ -235,23 +239,21 @@ function DateNow() {
               className={`mt-2 flex flex-col sm:flex-row items-start gap-3 ${headerVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
               style={{ animationDelay: "500ms" }}
             >
-              <a href="/app/date-now">
-                <button
-                  type="button"
-                  // onClick={handleDiscover}
-                  className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
-                  style={{
-                    background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
-                    boxShadow: `0 8px 28px ${C.pink}35`,
-                  }}
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
-                    Try Date Now
-                  </span>
-                  <span className="cm-shimmer pointer-events-none absolute inset-0" />
-                </button>
-              </a>
+              <button
+                type="button"
+                onClick={handleDiscover}
+                className="cm-cta group relative inline-flex items-center gap-2 overflow-hidden rounded-full px-6 py-2.5 text-[13px] font-bold text-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_36px_rgba(194,21,89,0.4)] active:scale-95"
+                style={{
+                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+                  boxShadow: `0 8px 28px ${C.pink}35`,
+                }}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon.Heart className="transition-transform duration-300 group-hover:scale-125" />
+                  Try Date Now
+                </span>
+                <span className="cm-shimmer pointer-events-none absolute inset-0" />
+              </button>
             </div>
           </div>
         </div>
