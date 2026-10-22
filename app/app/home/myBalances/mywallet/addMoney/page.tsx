@@ -1,13 +1,20 @@
 "use client";
 
-import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { usePayment, type TopUpStage, type WalletTx } from "@/app/context/PaymentContext";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 /* -------------------------------------------------------------------------- */
-/*  AddMoney (static)                                                         */
-/*  No API, no context, no router. All data lives in the constants below.     */
+/*  AddMoney                                                                  */
+/*                                                                            */
+/*  Add money tab -> PaymentContext.topUpWallet()                             */
+/*     create-order { purpose: "WALLET", amount } -> Razorpay -> verify       */
+/*     Wallet is credited by the BACKEND only after verify. No direct credit. */
+/*                                                                            */
+/*  History tab  -> PaymentContext.getWalletTopUps()                         */
+/*     GET /api/user/my-wallet?filter=ALL&page=1&limit=50&source=WALLET_TOPUP */
 /*  Fills its PARENT, every size in `cqw`.                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -19,28 +26,27 @@ type Filter = "ALL" | TopUpStatus;
 interface TopUpItem {
     id: string;
     reference: string;
-    method: PaymentMethodKey;
+    title: string;
     status: TopUpStatus;
     amountPaid: number;
-    bonus?: number;
-    credited?: number;
     detail?: string;
     date: string;
     month: string;
 }
 
-/* ------------------------------ static data -------------------------------- */
+/* --------------------------------- config ---------------------------------- */
 const CURRENCY = "₹";
 const MIN_AMOUNT = 10;
-const TOTAL_ADDED = 3250;
+const MAX_AMOUNT = 100000; // confirm with backend; backend must enforce it too
 
-const PRESETS = [
+// Bonus removed: backend does not credit any bonus, so we must not promise one.
+const PRESETS: { id: string; amount: number; bonus?: number }[] = [
     { id: "p1", amount: 100 },
     { id: "p2", amount: 200 },
-    { id: "p3", amount: 500, bonus: 25 },
-    { id: "p4", amount: 1000, bonus: 75 },
-    { id: "p5", amount: 2000, bonus: 200 },
-    { id: "p6", amount: 5000, bonus: 600 },
+    { id: "p3", amount: 500 },
+    { id: "p4", amount: 1000 },
+    { id: "p5", amount: 2000 },
+    { id: "p6", amount: 5000 },
 ];
 
 const METHODS: { id: string; key: PaymentMethodKey; title: string }[] = [
@@ -49,13 +55,31 @@ const METHODS: { id: string; key: PaymentMethodKey; title: string }[] = [
     { id: "m3", key: "NETBANKING", title: "Net banking" },
 ];
 
-const HISTORY: TopUpItem[] = [
-    { id: "t1", reference: "TXN-8F2K91A", method: "UPI", status: "SUCCESS", amountPaid: 500, bonus: 25, credited: 525, detail: "tanishka@oksbi", date: "12 Oct", month: "This month" },
-    { id: "t2", reference: "TXN-7C1D44B", method: "UPI", status: "FAILED", amountPaid: 200, detail: "UPI timed out · not charged", date: "8 Oct", month: "This month" },
-    { id: "t3", reference: "TXN-6A9E02C", method: "CARD", status: "SUCCESS", amountPaid: 1000, bonus: 75, credited: 1075, detail: "HDFC •••• 4821", date: "2 Oct", month: "This month" },
-    { id: "t4", reference: "TXN-5B7F33D", method: "NETBANKING", status: "PENDING", amountPaid: 300, detail: "Awaiting bank confirmation", date: "28 Sep", month: "September 2026" },
-    { id: "t5", reference: "TXN-4D2A18E", method: "UPI", status: "SUCCESS", amountPaid: 1500, bonus: 100, credited: 1600, detail: "tanishka@oksbi", date: "14 Sep", month: "September 2026" },
-];
+const RZP_METHOD: Record<PaymentMethodKey, "upi" | "card" | "netbanking"> = {
+    UPI: "upi",
+    CARD: "card",
+    NETBANKING: "netbanking",
+};
+
+/* map a wallet transaction to a history row */
+function toTopUpItem(t: WalletTx): TopUpItem {
+    const st = (t.status || "").toUpperCase();
+    const status: TopUpStatus =
+        st === "SUCCESS" || st === "COMPLETED" ? "SUCCESS" : st === "FAILED" || st === "REVERSED" || st === "CANCELLED" ? "FAILED" : "PENDING";
+    const d = new Date(t.createdAt);
+    const now = new Date();
+    const sameMonth = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return {
+        id: t.id,
+        reference: t.referenceId || t.id,
+        title: t.title,
+        status,
+        amountPaid: Number(t.amount) || 0,
+        detail: t.description,
+        date: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        month: sameMonth ? "This month" : d.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+    };
+}
 
 /* --------------------------------- helpers --------------------------------- */
 const U = (n: number) => `${n}cqw`;
@@ -133,16 +157,6 @@ const METHOD_TILE: Record<PaymentMethodKey, { fg: string; bg: string }> = {
     CARD: { fg: "#f0a21a", bg: "#fff1db" },
     NETBANKING: { fg: "#3b6fd6", bg: "#e6eefb" },
 };
-const METHOD_NAME: Record<PaymentMethodKey, string> = { UPI: "UPI", CARD: "Card", NETBANKING: "Net Banking" };
-
-const Coin = () => (
-    <svg viewBox="0 0 24 24" style={{ width: "1em", height: "1em", display: "block" }}>
-        <circle cx="12" cy="12" r="11" fill="#f5a300" />
-        <text x="12" y="16.5" textAnchor="middle" fontSize="13" fontWeight="800" fill="#fff" fontFamily="Arial">
-            $
-        </text>
-    </svg>
-);
 
 /* -------------------------------- component -------------------------------- */
 export default function AddMoney({
@@ -158,20 +172,86 @@ export default function AddMoney({
     const [amountText, setAmountText] = useState("500");
     const [methodId, setMethodId] = useState(METHODS[0].id);
     const [filter, setFilter] = useState<Filter>("ALL");
-    const {addMoney, addMoneyError} = useUserProfileData();
-    async function handleAddMoney(amount:number) {
-        const response = await addMoney({amount:amount});
-        if(response?.success){
-            toast.success(response.message)
-        }
-        else{
-            toast.error(addMoneyError || response?.message)
-        }
-    }
+    const router = useRouter();
+
+    /* ---- PAYMENT ---- */
+    const { topUpWallet, loadRazorpay, getWalletTopUps } = usePayment();
+    const { profile } = useMyProfile();
+    const [stage, setStage] = useState<TopUpStage | "idle">("idle");
+    const [payError, setPayError] = useState<string | null>(null);
+    const busy = stage !== "idle";
+
+    useEffect(() => {
+        loadRazorpay(); // preload so the Razorpay window opens fast
+    }, [loadRazorpay]);
+
     const amount = Number(amountText) || 0;
     const bonus = PRESETS.find((p) => p.amount === amount)?.bonus ?? 0;
-    const canPay = amount >= MIN_AMOUNT;
-    const step = (d: number) => setAmountText(String(Math.max(0, amount + d)));
+    const canPay = amount >= MIN_AMOUNT && amount <= MAX_AMOUNT && !busy;
+    const step = (d: number) => setAmountText(String(Math.min(MAX_AMOUNT, Math.max(0, amount + d))));
+
+    async function handleAddMoney(value: number) {
+        if (busy) return; // block double taps
+        if (value < MIN_AMOUNT) return setPayError(`Minimum amount is ${CURRENCY}${fmt(MIN_AMOUNT)}`);
+        if (value > MAX_AMOUNT) return setPayError(`Maximum ${CURRENCY}${fmt(MAX_AMOUNT)} ek baar mein add kar sakte ho.`);
+        setPayError(null);
+
+        const p = (profile ?? {}) as Record<string, any>;
+        const method = METHODS.find((m) => m.id === methodId)?.key ?? "UPI";
+
+        const res = await topUpWallet(value, {
+            prefill: {
+                name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+                email: p.email ?? undefined,
+                contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+                method: RZP_METHOD[method],
+            },
+            onStage: setStage,
+        });
+        setStage("idle");
+
+        if (res.ok) {
+            toast.success(`${CURRENCY}${fmt(res.amount)} wallet mein add ho gaye.`);
+            router.push("/app/home/myBalances/mywallet"); // wallet page reloads the balance on mount
+            return;
+        }
+        if (res.cancelled) return; // user closed Razorpay, stay here quietly
+        setPayError(res.message);
+        toast.error(res.message);
+    }
+
+    const payLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? "Adding to wallet…"
+                : `Add ${CURRENCY}${amount ? fmt(amount) : ""}`;
+
+    /* ---- HISTORY (real data) ---- */
+    const [history, setHistory] = useState<TopUpItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+
+    const loadHistory = useCallback(async () => {
+        setHistoryLoading(true);
+        setHistoryError(null);
+        const res = await getWalletTopUps({ filter: "ALL", page: 1, limit: 50 });
+        if (res.ok) setHistory((res.data.transactions ?? []).map((t: WalletTx) => toTopUpItem(t)));
+        else setHistoryError(res.message || "History load nahi hui.");
+        setHistoryLoading(false);
+    }, [getWalletTopUps]);
+
+    useEffect(() => {
+        loadHistory();
+    }, [loadHistory]);
+
+    const HISTORY = history;
+    const TOTAL_ADDED = useMemo(
+        () => history.filter((h) => h.status === "SUCCESS").reduce((sum, h) => sum + h.amountPaid, 0),
+        [history]
+    );
 
     const counts: Record<Filter, number> = {
         ALL: HISTORY.length,
@@ -181,7 +261,6 @@ export default function AddMoney({
     };
     const shown = HISTORY.filter((i) => filter === "ALL" || i.status === filter);
     const groups: { label: string; rows: TopUpItem[] }[] = [];
-    const router = useRouter()
     shown.forEach((i) => {
         const g = groups.find((x) => x.label === i.month);
         if (g) g.rows.push(i);
@@ -283,6 +362,7 @@ export default function AddMoney({
                                 type="button"
                                 className="wam-btn"
                                 onClick={() => { router.push("/app/home/myBalances/mywallet") }}
+                                disabled={busy}
                                 aria-label="Go back"
                                 style={{
                                     width: U(10),
@@ -444,7 +524,11 @@ export default function AddMoney({
                                                 inputMode="numeric"
                                                 aria-label="Amount"
                                                 value={amountText}
-                                                onChange={(e) => setAmountText(e.target.value.replace(/\D/g, "").slice(0, 7))}
+                                                disabled={busy}
+                                                onChange={(e) => {
+                                                    setAmountText(e.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 6));
+                                                    setPayError(null);
+                                                }}
                                                 style={{
                                                     flex: 1,
                                                     minWidth: 0,
@@ -482,6 +566,11 @@ export default function AddMoney({
                                             <p style={{ margin: `${U(2.4)} 0 0 ${U(2)}`, fontSize: U(3), color: C.green }}>
                                                 You&apos;ll get +{CURRENCY}
                                                 {fmt(bonus)} bonus coins
+                                            </p>
+                                        ) : amount > MAX_AMOUNT ? (
+                                            <p style={{ margin: `${U(2.4)} 0 0 ${U(2)}`, fontSize: U(3), color: C.red }}>
+                                                Maximum amount is {CURRENCY}
+                                                {fmt(MAX_AMOUNT)}
                                             </p>
                                         ) : amount > 0 && amount < MIN_AMOUNT ? (
                                             <p style={{ margin: `${U(2.4)} 0 0 ${U(2)}`, fontSize: U(3), color: C.red }}>
@@ -627,7 +716,32 @@ export default function AddMoney({
                                         </div>
 
                                         {/* list */}
-                                        {groups.length === 0 ? (
+                                        {historyLoading && groups.length === 0 ? (
+                                            <p style={{ margin: `${U(10)} 0`, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
+                                                Loading…
+                                            </p>
+                                        ) : historyError && groups.length === 0 ? (
+                                            <div style={{ margin: `${U(10)} 0`, textAlign: "center" }}>
+                                                <p style={{ margin: 0, fontSize: U(3.4), color: C.grey }}>{historyError}</p>
+                                                <button
+                                                    type="button"
+                                                    className="wam-btn"
+                                                    onClick={loadHistory}
+                                                    style={{
+                                                        marginTop: U(4),
+                                                        height: U(10),
+                                                        padding: `0 ${U(6)}`,
+                                                        borderRadius: U(5),
+                                                        background: C.accentSoft,
+                                                        color: C.accent,
+                                                        fontSize: U(3.5),
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    Try again
+                                                </button>
+                                            </div>
+                                        ) : groups.length === 0 ? (
                                             <p style={{ margin: `${U(10)} 0`, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
                                                 No transactions yet
                                             </p>
@@ -638,9 +752,13 @@ export default function AddMoney({
                                                     <div style={{ display: "flex", flexDirection: "column", gap: U(4) }}>
                                                         {g.rows.map((r) => {
                                                             const st = STATUS[r.status];
-                                                            const tile = r.status === "FAILED" ? { fg: C.red, bg: "#fde6e8" } : METHOD_TILE[r.method];
-                                                            const name = r.status === "FAILED" ? "Add money failed" : `Added via ${METHOD_NAME[r.method]}`;
-                                                            const detailed = r.status === "SUCCESS" && (r.bonus || r.credited);
+                                                            const tile =
+                                                                r.status === "FAILED"
+                                                                    ? { fg: C.red, bg: "#fde6e8" }
+                                                                    : r.status === "PENDING"
+                                                                      ? { fg: C.amber, bg: "#fff1db" }
+                                                                      : { fg: C.green, bg: "#e5f6ec" };
+                                                            const name = r.status === "FAILED" ? "Add money failed" : r.title || "Money added";
                                                             return (
                                                                 <article key={r.id} style={{ ...card, padding: `${U(4.4)} ${U(4.4)} ${U(4)}`, borderRadius: U(5) }}>
                                                                     <div style={{ display: "flex", alignItems: "center", gap: U(3.6) }}>
@@ -658,7 +776,7 @@ export default function AddMoney({
                                                                                 justifyContent: "center",
                                                                             }}
                                                                         >
-                                                                            <Icon name={METHOD_ICON[r.method]} />
+                                                                            <Icon name="down" />
                                                                         </span>
                                                                         <div style={{ flex: 1, minWidth: 0 }}>
                                                                             <div style={{ fontSize: U(3.9), fontWeight: 500 }}>{name}</div>
@@ -687,46 +805,6 @@ export default function AddMoney({
                                                                         </div>
                                                                     </div>
 
-                                                                    {detailed && (
-                                                                        <div
-                                                                            style={{
-                                                                                marginTop: U(4),
-                                                                                paddingTop: U(3.6),
-                                                                                borderTop: `${U(0.4)} dashed ${C.border}`,
-                                                                                display: "flex",
-                                                                                flexDirection: "column",
-                                                                                gap: U(2.4),
-                                                                                fontSize: U(3.3),
-                                                                            }}
-                                                                        >
-                                                                            <div style={{ display: "flex", justifyContent: "space-between", color: C.grey }}>
-                                                                                <span>Amount paid</span>
-                                                                                <span style={{ color: C.ink, fontWeight: 500 }}>
-                                                                                    {CURRENCY}
-                                                                                    {fmt(r.amountPaid)}
-                                                                                </span>
-                                                                            </div>
-                                                                            {!!r.bonus && (
-                                                                                <div style={{ display: "flex", justifyContent: "space-between", color: C.grey }}>
-                                                                                    <span>Bonus coins</span>
-                                                                                    <span style={{ color: C.green, fontWeight: 500 }}>
-                                                                                        +{CURRENCY}
-                                                                                        {fmt(r.bonus)}
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-                                                                            <div style={{ display: "flex", justifyContent: "space-between", color: C.grey }}>
-                                                                                <span>Credited to wallet</span>
-                                                                                <span style={{ color: C.ink, fontWeight: 500, display: "flex", alignItems: "center", gap: U(1.6) }}>
-                                                                                    <span style={{ fontSize: U(4.2), display: "flex" }}>
-                                                                                        <Coin />
-                                                                                    </span>
-                                                                                    {fmt(r.credited ?? r.amountPaid + (r.bonus ?? 0))}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
                                                                     <div style={{ marginTop: U(3.6), fontSize: U(2.9), letterSpacing: "0.04em", color: C.grey }}>
                                                                         {r.reference}
                                                                     </div>
@@ -745,23 +823,29 @@ export default function AddMoney({
                         {/* pinned action bar */}
                         {tab === "add" && (
                             <footer style={{ flex: "0 0 auto", padding: `${U(3.4)} ${U(4.2)} ${U(5)}`, background: C.page }}>
+                                {payError && (
+                                    <p role="alert" style={{ margin: `0 0 ${U(3)}`, fontSize: U(3.2), lineHeight: 1.45, color: C.red, textAlign: "center" }}>
+                                        {payError}
+                                    </p>
+                                )}
                                 <button
                                     type="button"
                                     className="wam-btn"
                                     onClick={() => handleAddMoney(amount)}
                                     disabled={!canPay}
+                                    aria-busy={busy}
                                     style={{
                                         width: "100%",
                                         height: U(13.9),
                                         borderRadius: U(3.6),
-                                        background: canPay ? C.accent : "#e6e6ea",
-                                        color: canPay ? C.white : "#8d8d8d",
+                                        background: canPay || busy ? C.accent : "#e6e6ea",
+                                        color: canPay || busy ? C.white : "#8d8d8d",
+                                        opacity: busy ? 0.8 : 1,
                                         fontSize: U(4.1),
                                         fontWeight: 500,
                                     }}
                                 >
-                                    Add {CURRENCY}
-                                    {amount ? fmt(amount) : ""}
+                                    {payLabel}
                                 </button>
                             </footer>
                         )}
