@@ -8,6 +8,7 @@ import Screen from "../shell/Screen";
 import { useConversations } from "@/app/context/ChatContext";
 import { useChatThread } from "../shared/chatMessages";
 
+
 function EmptyChat() {
   return (
     <div className="flex flex-1 items-center justify-center p-8">
@@ -19,8 +20,12 @@ function EmptyChat() {
 }
 
 export default function Page() {
-  const { conversations, activeConversationId } = useConversations();
-
+  const { conversations, activeConversationId,clearChat,clearChatError,deleteChat,deleteChatError } = useConversations();
+  function handleOnReport(){
+  }
+  function handleOnDelete(){
+  
+  }
   const active =
     conversations.find((c) => c.conversationId === activeConversationId) ??
     null;

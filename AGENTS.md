@@ -30,6 +30,13 @@ It is not wired into `next build`, so a green build proves nothing about lint.
 **Judge your work by the delta, not the exit code.** Run `npx eslint <your dirs>` and confirm
 you added nothing new; do not go fixing the baseline.
 
+### Known baseline `tsc` errors — do NOT "fix" these
+
+`npx tsc --noEmit` reports exactly these three, always, before you touch anything:
+`app/components/endpoints/steps/LoginPhone.tsx:210` (TS2322),
+`app/components/ui/PaymentButton.tsx:66` (TS2717) and `:166` (TS7006).
+A clean delta means these three and no more.
+
 ## Repo facts worth knowing up front
 
 - **`cn` is an npm package.** The house style is `import { cn } from "cn"`, *not*
@@ -133,3 +140,91 @@ Long-form project overview. **It is partly stale — trust the code over it.** S
 it claims the token lives in `localStorage` (it is a cookie), that
 career/intentions/lifestyle have no endpoints (all three have them), and its file list omits
 `OnBoardingDataContext`. Use it for orientation, not for facts that have since changed.
+
+---
+
+# WORKING CONTEXT LOG
+
+> **Maintenance protocol (read this first, every session):**
+> This section is the project's living memory so a fresh session gets up to speed in
+> seconds. **After every task, append/update the log** — add a dated entry under
+> "Session log" and correct any fact you proved wrong. Keep entries terse: what changed,
+> which files, what is still open. **Trust the code over this file**; if they disagree,
+> fix this file.
+
+## Auth & route protection (learned)
+
+- **One route gate exists: `proxy.ts` at the repo root.** Next 16 renamed `middleware.ts`
+  → `proxy.ts` (see `node_modules/next/dist/docs/.../proxy.md`). It reads the
+  `welvors_token` cookie, runs `isUsableSessionToken()` (`lib/sessionToken.ts` — decodable
+  + unexpired JWT, **no signature check**), and redirects to `/?login=1` when unusable.
+  - `matcher` currently gates: `/app`, `/app/:path*`, `/onBoarding`, `/onBoarding/:path*`,
+    **and `/events/myTickets`**. Add any new member-only route to this array.
+  - `booking-confirmation` lives at `app/app/booking-confirmation/[bookingId]/page.tsx`, so
+    it is already covered by `/app/:path*` — do **not** add a second entry.
+- **There is no auth context/provider.** Do not invent one.
+  - `app/components/authState.ts` exports `useAuth()` / `isLoggedIn()` but they check a
+    `session` cookie that is **never set** → always `false`. **Dead/misleading — do not use.**
+  - The working client flag is a local `useLoggedIn()`: `getClientToken() !== null`, synced
+    on `welvors-auth-change` + `storage`. Canonical copy at `app/events/[id]/page.tsx:242`;
+    copied into `app/events/page.tsx` (events feed) and used on the myTickets flow.
+  - Server truth: `verifySession()` from `lib/sessions.ts`; login writes the cookie via
+    `createSession()`. **Nothing dispatches `welvors-auth-change` today**, so a login within
+    the same SPA session won't re-sync these hooks until a remount/navigation.
+- **Opening the login UI from anywhere:** `document.querySelector("[data-login-trigger]")?.click()`
+  (the Navbar owns the `LoginModal`). See `app/components/Header/Header.tsx:310` for the pattern.
+- Root layout (`app/layout.tsx`) composes all providers inline — there is **no** `providers.tsx`.
+  `MyProfileProvider` (`app/app/shared/useMyProfile.tsx`) is the only token-aware provider;
+  it no-ops without a token and exposes `ensure()` to retry after login.
+
+## Events & ticketing subsystem (learned)
+
+- **`app/context/EventContext.tsx`** holds three things:
+  1. `EventProvider` / `useEventData()` — the events feed (`GET /api/admin/events/get?eventType=`).
+  2. `useEventDetails(id)` — single event (`GET /api/admin/events/details/:id`). Keyed by
+     `${id}::${reloadKey}` so stale responses can't clobber the current one.
+  3. **`useMyTickets(filter)`** — member tickets (`GET /api/user/event/my-ticket[?status=…]`),
+     added by us. Uses `authHeader()`; `filter === "ALL"` omits the query param.
+- **My-ticket response shape (verified against the live API):**
+  `{ success, message, data: { bookings: MyTicketsBooking[], pagination } }`.
+  A **booking** carries `id`, `bookingNumber`, `ticketCount`, `ticketAmount`,
+  `discountAmount`, `platformFee`, `gstAmount`, `totalAmount`, `paidAmount`, `status`,
+  `createdAt`, `tickets: MyTicket[]`, `event: MyTicketEvent`. A **ticket** carries
+  `ticketId`, `ticketType` (`MEN`/`WOMEN`/…), `ticketAmount`, `qrCodeUrl`, `status`.
+  Types exported from `EventContext.tsx`: `TicketStatus`, `TicketFilter`, `MyTicketEvent`,
+  `MyTicket`, `MyTicketsBooking`, `MyTicketsPagination`, `MyTicketsResult`.
+  `useMyTickets` returns `{ bookings, pagination, loading, error, refetch }`.
+- **`app/events/myTickets/page.tsx`** (client): booking cards in a 1/2/3-col grid, status
+  filter chips + search, loader (MoonLoader, `#C21559`) / error / empty states. Protected by
+  `proxy.ts`; "My Ticket" button on the events feed is hidden unless `loggedIn`.
+- **Font convention for the events surface:** the filter cards
+  (`app/components/ui/filterCard.tsx`) use
+  `"Inter", "Helvetica Neue", "Segoe UI", Arial, sans-serif`. The myTickets page now uses the
+  same stack everywhere via a local `FONT_STACK` const (page title + card titles use
+  `font-extrabold`, no serif). Match this on further events-UI work.
+- **Checkout/booking UI:** `components/ui/EventCheckOutModal.tsx` (gender picker + struck
+  original price), driven from `app/events/[id]/page.tsx` (`priceView`, `bucketForGender`,
+  `selectPrice`, `menOriginalPrice`/`womenOriginalPrice`). Payment success view lives at
+  `app/app/booking-confirmation/[bookingId]/page.tsx` (reads `usePaymentSuccess()` from
+  `app/context/PaymentContext.tsx`). Note its `EVENT_ROUTE` builds `/app/events/...` which
+  does not exist (real path is `/events/...`) — dead link, fix if touched.
+- **Wallet top-up:** `applyWalletTopUp(amount)` in `app/context/UserProfileDataContext.tsx`
+  does an optimistic bump + reconcile pulls; the sidebar reads
+  `balances.wallet.formattedBalance` so it updates instantly. Success path in
+  `app/app/home/myBalances/mywallet/addMoney/page.tsx`.
+
+## Session log (newest first)
+
+### 2026-10-22 — myTickets: font consistency, auth gating, types
+- `EventContext.tsx`: `useMyTickets` + types added; response mapped to
+  `data.bookings` + `pagination` (was assumed flat — corrected against live response).
+- `app/events/myTickets/page.tsx`: rewritten around `bookings` (was static `TICKETS`, then
+  transiently a flat ticket list); cards show ticket-type/ticket-count chips + booking number.
+- `proxy.ts`: added `/events/myTickets` to the matcher. `booking-confirmation` left as-is
+  (already under `/app/:path*`).
+- `app/events/page.tsx`: added local `useLoggedIn()`; "My Ticket" button now members-only.
+- `app/events/myTickets/page.tsx`: switched all fonts to the `FONT_STACK` (Inter) used by
+  the filter cards; headings de-serif'd to `font-extrabold`; removed `font-mono` chip.
+- **Open / follow-ups:** no tests exist. `welvors-auth-change` is never dispatched on real
+  login (button won't appear until remount). `booking-confirmation` `EVENT_ROUTE` is a dead
+  `/app/events/...` link. Baseline `tsc` errors (see Commands section) are pre-existing.

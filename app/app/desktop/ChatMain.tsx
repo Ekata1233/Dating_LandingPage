@@ -41,6 +41,7 @@ export interface GiftMessage {
     from: "me" | "them";
     imageUrl?: string;
     giftName: string;
+    triggerLine?:string;
     /** Emoji shown before the gift name, e.g. "☕" */
     giftEmoji?: string;
     /** Italic quoted line under the title */
@@ -65,6 +66,7 @@ export interface CardMessage {
     id: string | number;
     from: "me" | "them";
     title: string;
+    triggerLine?:string;
     subtitle?: string;
     imageUrl?: string;
     time: string;

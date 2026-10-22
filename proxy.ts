@@ -50,5 +50,6 @@ export const config = {
     "/app/:path*",
     "/onBoarding",
     "/onBoarding/:path*",
+    "/events/myTickets",
   ],
 };

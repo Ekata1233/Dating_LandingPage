@@ -474,6 +474,13 @@ export default function EventDetailsPage() {
   const p = (profile ?? {}) as Record<string, any>;
   const bucketLabel = myBucket === "men" ? "Man" : myBucket === "women" ? "Woman" : "Other";
 
+  /* Every gender's price, so the checkout modal can offer a picker and quote the
+     right amount. A bucket with no positive final price is left undefined. */
+  const menView = priceView(details.menEntryPrice, details.menDiscountedPrice, details.discountPercentage);
+  const womenView = priceView(details.womenEntryPrice, details.womenDiscountedPrice, details.discountPercentage);
+  const finalPrice = (v: number | null) =>
+    v != null && v > 0 ? Math.round(v * 100) / 100 : undefined;
+
   return (
     <main
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
@@ -497,6 +504,12 @@ export default function EventDetailsPage() {
           eventImage={details.heroImage ?? undefined}
           ticketLabel={`Ticket × 1 (${bucketLabel})`}
           ticketPrice={price.amount ?? 0}
+          menTicketPrice={finalPrice(menView.amount)}
+          womenTicketPrice={finalPrice(womenView.amount)}
+          menOriginalPrice={menView.hasDiscount ? menView.original ?? undefined : undefined}
+          womenOriginalPrice={womenView.hasDiscount ? womenView.original ?? undefined : undefined}
+          eventIntent={details.eventIntent ?? null}
+          defaultTicketGender={myBucket === "men" || myBucket === "women" ? myBucket : undefined}
           couponCode=""
           showPartner={false}
           onSuccess={({ bookingId }) => {

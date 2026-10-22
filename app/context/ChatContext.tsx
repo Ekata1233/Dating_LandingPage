@@ -18,6 +18,7 @@ import { authHeader, getClientToken } from "@/utils/token";
 
 const CHAT_CONVERSATIONS_URL = `${API_BASE_URL}/api/user/chat/conversations`; // GET ?cursor=
 const NEW_MATCHES_URL = `${API_BASE_URL}/api/user/matches/new`; // GET ?cursor=
+
 /** Appends an optional pagination cursor to a list URL. */
 const withCursor = (base: string, cursor?: string | null) =>
     cursor ? `${base}?cursor=${encodeURIComponent(cursor)}` : base;
@@ -39,9 +40,31 @@ const chatHistoryUrl = (conversationId: string, cursor?: string | null) =>
         cursor
     );
 
+/** POST — removes all messages of one conversation. */
+const clearChatUrl = (conversationId: string) =>
+    `${CHAT_CONVERSATIONS_URL}/${encodeURIComponent(conversationId)}/clear`;
+
+/** DELETE — removes one conversation entirely. */
+const deleteChatUrl = (conversationId: string) =>
+    `${CHAT_CONVERSATIONS_URL}/${encodeURIComponent(conversationId)}`;
+
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+
+export interface ClearChat {
+    conversationId: string;
+    deletedAt: string;
+}
+export interface ClearChatResponse {
+    success: boolean;
+    message?: string;
+    data?: ClearChat[];
+}
+export interface DeleteChatResponse {
+    success: boolean;
+    message?: string;
+}
 export interface Pagination {
     hasMore: boolean;
     nextCursor: string | null;
@@ -53,7 +76,6 @@ export interface MessagesResponse {
     data?: Message[];
     pagination?: Pagination;
 }
-
 
 export interface Compliment {
     id: string;
@@ -232,6 +254,17 @@ interface ChatConversationsContextData {
     loadMoreMessages: () => Promise<void>;
     messagesLoadMoreLoading: boolean;
     messagesLoadMoreError: string | null;
+
+    /* Clear / delete chat */
+    /** Removes all messages of a conversation. Resolves `true` on success. */
+    clearChat: (conversationId: string) => Promise<boolean>;
+    clearChatLoading: boolean;
+    clearChatError: string | null;
+
+    /** Deletes a conversation entirely. Resolves `true` on success. */
+    deleteChat: (conversationId: string) => Promise<boolean>;
+    deleteChatLoading: boolean;
+    deleteChatError: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -275,6 +308,14 @@ const ChatConversationsContext = createContext<ChatConversationsContextData>({
     loadMoreMessages: async () => { },
     messagesLoadMoreLoading: false,
     messagesLoadMoreError: null,
+
+    clearChat: async () => false,
+    clearChatLoading: false,
+    clearChatError: null,
+
+    deleteChat: async () => false,
+    deleteChatLoading: false,
+    deleteChatError: null,
 });
 
 /* ------------------------------------------------------------------ */
@@ -415,6 +456,15 @@ export function ChatConversationsProvider({
     const activeConversationIdRef = useRef<string | null>(null);
 
     /* ---------------------------------------------------------------- */
+    /* Clear / delete chat state                                        */
+    /* ---------------------------------------------------------------- */
+
+    const [clearChatLoading, setClearChatLoading] = useState(false);
+    const [clearChatError, setClearChatError] = useState<string | null>(null);
+    const [deleteChatLoading, setDeleteChatLoading] = useState(false);
+    const [deleteChatError, setDeleteChatError] = useState<string | null>(null);
+
+    /* ---------------------------------------------------------------- */
     /* Generic auth GET                                                 */
     /* ---------------------------------------------------------------- */
 
@@ -430,6 +480,31 @@ export function ChatConversationsProvider({
             return { data: null, error: errorMessage(err, "") || null };
         }
     }, []);
+
+    /* ---------------------------------------------------------------- */
+    /* Generic auth mutation (POST / DELETE)                            */
+    /* ---------------------------------------------------------------- */
+
+    /** Never throws. Returns the body, or the server's error message. */
+    const authMutate = useCallback(
+        async <T,>(
+            method: "post" | "delete",
+            url: string
+        ): Promise<GetResult<T>> => {
+            try {
+                const response = await axios.request<T>({
+                    method,
+                    url,
+                    headers: authHeader(),
+                });
+                return { data: response.data, error: null };
+            } catch (err) {
+                console.error("ChatConversations mutate error:", method, url, err);
+                return { data: null, error: errorMessage(err, "") || null };
+            }
+        },
+        []
+    );
 
     /* ---------------------------------------------------------------- */
     /* CONVERSATIONS (first page)                                       */
@@ -704,6 +779,110 @@ export function ChatConversationsProvider({
     );
 
     /* ---------------------------------------------------------------- */
+    /* CLEAR CHAT                                                       */
+    /*                                                                  */
+    /* Removes every message in the conversation but keeps the          */
+    /* conversation itself. Resolves `true` on success.                 */
+    /* ---------------------------------------------------------------- */
+
+    const clearChat = useCallback(
+        async (conversationId: string) => {
+            let ok = false;
+            await dedupe(`clear:${conversationId}`, async () => {
+                if (!conversationId || !getClientToken()) return;
+
+                setClearChatLoading(true);
+                setClearChatError(null);
+
+                const { data, error } = await authMutate<ClearChatResponse>(
+                    "delete",
+                    clearChatUrl(conversationId)
+                );
+                if (!mounted.current) return;
+
+                if (data?.success) {
+                    ok = true;
+
+                    /* If this thread is open, empty it. */
+                    if (activeConversationIdRef.current === conversationId) {
+                        setMessages([]);
+                        setMessagesPagination({ hasMore: false, nextCursor: null });
+                        setMessagesError(null);
+                        setMessagesLoadMoreError(null);
+                        setMessagesStatus("success");
+                    }
+
+                    /* Nothing left to be unread in a cleared chat. */
+                    setConversations((prev) =>
+                        prev.map((c) =>
+                            c.conversationId === conversationId
+                                ? { ...c, unreadCount: 0 }
+                                : c
+                        )
+                    );
+                } else {
+                    setClearChatError(
+                        data?.message || error || "Couldn't clear this chat."
+                    );
+                }
+                setClearChatLoading(false);
+            });
+            return ok;
+        },
+        [authMutate, dedupe]
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* DELETE CHAT                                                      */
+    /*                                                                  */
+    /* Removes the conversation entirely. If it was open, the thread    */
+    /* is closed. Resolves `true` on success.                           */
+    /* ---------------------------------------------------------------- */
+
+    const deleteChat = useCallback(
+        async (conversationId: string) => {
+            let ok = false;
+            await dedupe(`delete:${conversationId}`, async () => {
+                if (!conversationId || !getClientToken()) return;
+
+                setDeleteChatLoading(true);
+                setDeleteChatError(null);
+
+                const { data, error } = await authMutate<DeleteChatResponse>(
+                    "delete",
+                    deleteChatUrl(conversationId)
+                );
+                if (!mounted.current) return;
+
+                if (data?.success) {
+                    ok = true;
+
+                    setConversations((prev) =>
+                        prev.filter((c) => c.conversationId !== conversationId)
+                    );
+
+                    /* If it was open, close it and drop its thread. */
+                    if (activeConversationIdRef.current === conversationId) {
+                        setActiveConversationId(null);
+                        setMessages([]);
+                        setMessagesPagination({ hasMore: false, nextCursor: null });
+                        setMessagesError(null);
+                        setMessagesLoadMoreError(null);
+                        setMessagesStatus("idle");
+                    }
+                } else {
+                    setDeleteChatError(
+                        data?.message || error || "Couldn't delete this chat."
+                    );
+                }
+                setDeleteChatLoading(false);
+            });
+            return ok;
+        },
+        [authMutate, dedupe]
+    );
+
+    /* ---------------------------------------------------------------- */
     /* CHAT HISTORY LOAD — runs whenever the active conversation changes */
     /* ---------------------------------------------------------------- */
 
@@ -771,6 +950,14 @@ export function ChatConversationsProvider({
             loadMoreMessages,
             messagesLoadMoreLoading,
             messagesLoadMoreError,
+
+            clearChat,
+            clearChatLoading,
+            clearChatError,
+
+            deleteChat,
+            deleteChatLoading,
+            deleteChatError,
         }),
         [
             conversations,
@@ -803,6 +990,13 @@ export function ChatConversationsProvider({
             loadMoreMessages,
             messagesLoadMoreLoading,
             messagesLoadMoreError,
+
+            clearChat,
+            clearChatLoading,
+            clearChatError,
+            deleteChat,
+            deleteChatLoading,
+            deleteChatError,
         ]
     );
 
@@ -824,6 +1018,7 @@ export function useChatConversations() {
 /**
  * Conversation list. Triggers the first request if the provider couldn't make
  * it at mount (no session yet), so the page never sits on an empty state.
+ * Also exposes the clear / delete chat actions.
  */
 export function useConversations() {
     const {
@@ -839,6 +1034,12 @@ export function useConversations() {
         loadMore,
         loadMoreLoading,
         loadMoreError,
+        clearChat,
+        clearChatLoading,
+        clearChatError,
+        deleteChat,
+        deleteChatLoading,
+        deleteChatError,
     } = useChatConversations();
 
     useEffect(() => {
@@ -857,6 +1058,12 @@ export function useConversations() {
         loadMore,
         loadMoreLoading,
         loadMoreError,
+        clearChat,
+        clearChatLoading,
+        clearChatError,
+        deleteChat,
+        deleteChatLoading,
+        deleteChatError,
     };
 }
 

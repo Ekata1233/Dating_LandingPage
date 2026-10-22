@@ -5,6 +5,7 @@ import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 
 /* -------------------------------------------------------------------------- */
 /*  AddMoney                                                                  */
@@ -173,7 +174,8 @@ export default function AddMoney({
     const [methodId, setMethodId] = useState(METHODS[0].id);
     const [filter, setFilter] = useState<Filter>("ALL");
     const router = useRouter();
-
+    const { refetchWallet, applyWalletTopUp } = useUserProfileData();
+    
     /* ---- PAYMENT ---- */
     const { topUpWallet, loadRazorpay, getWalletTopUps } = usePayment();
     const { profile } = useMyProfile();
@@ -212,6 +214,8 @@ export default function AddMoney({
 
         if (res.ok) {
             toast.success(`${CURRENCY}${fmt(res.amount)} wallet mein add ho gaye.`);
+            void applyWalletTopUp(res.amount);
+            await refetchWallet();
             router.push("/app/home/myBalances/mywallet"); // wallet page reloads the balance on mount
             return;
         }
@@ -580,55 +584,7 @@ export default function AddMoney({
                                         ) : null}
 
                                         {/* methods */}
-                                        <h3 style={label}>Pay using</h3>
-                                        <div role="radiogroup" aria-label="Payment method" style={{ display: "flex", flexDirection: "column", gap: U(3.2) }}>
-                                            {METHODS.map((m) => {
-                                                const on = m.id === methodId;
-                                                const tile = METHOD_TILE[m.key];
-                                                return (
-                                                    <button
-                                                        key={m.id}
-                                                        type="button"
-                                                        role="radio"
-                                                        aria-checked={on}
-                                                        className="wam-btn"
-                                                        onClick={() => setMethodId(m.id)}
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            gap: U(4),
-                                                            height: U(14.4),
-                                                            padding: `0 ${U(4.4)}`,
-                                                            textAlign: "left",
-                                                            borderRadius: U(3.6),
-                                                            background: on ? "#fbe3e9" : C.white,
-                                                            border: `${U(0.4)} solid ${on ? C.accent : C.border}`,
-                                                            color: C.ink,
-                                                            fontSize: U(3.7),
-                                                        }}
-                                                    >
-                                                        <span
-                                                            style={{
-                                                                width: U(8.2),
-                                                                height: U(8.2),
-                                                                borderRadius: U(2.2),
-                                                                background: C.white,
-                                                                color: tile.fg,
-                                                                fontSize: U(4.6),
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                justifyContent: "center",
-                                                                boxShadow: `0 0 0 ${HAIR} ${C.border}`,
-                                                            }}
-                                                        >
-                                                            <Icon name={METHOD_ICON[m.key]} />
-                                                        </span>
-                                                        <span style={{ flex: 1, minWidth: 0 }}>{m.title}</span>
-                                                        {radio(on)}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
+                                        
                                     </>
                                 )}
 

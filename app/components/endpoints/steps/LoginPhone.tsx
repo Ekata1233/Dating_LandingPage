@@ -20,7 +20,7 @@ interface Props {
   status: Status;
   errorMsg: string;
   onSendOtp: (isResend?: boolean) => void;
-  phoneRef: React.RefObject<HTMLInputElement | null>;
+  phoneRef: React.RefObject<HTMLDivElement | null>;
   otp?: string[];
   setOtp?: React.Dispatch<React.SetStateAction<string[]>>;
   otpSent?: boolean;
@@ -189,6 +189,7 @@ export default function LoginPhone({
       </label>
 
       <div
+        ref={phoneRef}
         className="mt-2 rounded-xl border-2 px-4 py-3.5"
         style={{
           borderColor: C.ringSoft,
@@ -207,7 +208,6 @@ export default function LoginPhone({
             setPhone(value || "")
           }
           disabled={otpSent}
-          ref={phoneRef}
           placeholder="Enter your mobile number"
           className="welvors-phone-input"
           numberInputProps={{

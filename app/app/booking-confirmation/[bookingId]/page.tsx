@@ -10,6 +10,9 @@
 /*                                                                            */
 /*  Shows "Payment Successful" ONLY when booking.status === CONFIRMED and     */
 /*  payment.status === COMPLETED. Otherwise shows a pending / failed state.   */
+/*                                                                            */
+/*  Receipt shows tickets grouped gender-wise (Men / Women / Other) using     */
+/*  booking.tickets[].ticketType and booking.tickets[].ticketAmount.          */
 /* -------------------------------------------------------------------------- */
 
 import { useMemo, type ReactNode } from "react";
@@ -19,10 +22,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Calendar, Check, Clock, Download, Link2, MapPin, RefreshCw, X } from "lucide-react";
 import { PaymentSuccessData, usePaymentSuccess } from "@/app/context/PaymentContext";
 
-
-
 /* ----------------------------- config (edit) ----------------------------- */
-const MY_BOOKINGS_ROUTE = "/app/bookings"; // your "My Bookings" page
+const MY_BOOKINGS_ROUTE = "/events/myTickets"; // your "My Bookings" page
 const EVENT_ROUTE = (eventId: string) => `/app/events/${eventId}`; // your event details page
 
 /* --------------------------------- theme --------------------------------- */
@@ -84,6 +85,38 @@ function formatPaidAt(iso?: string | null): string {
 function pretty(v?: string | null): string {
   if (!v) return "";
   return v.replace(/[_-]+/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/* ---------------------------- gender helpers ---------------------------- */
+const GENDER_LABEL: Record<string, string> = {
+  MEN: "Men",
+  WOMEN: "Women",
+  OTHER: "Other",
+};
+const GENDER_ORDER = ["MEN", "WOMEN", "OTHER"];
+
+const genderLabel = (type?: string | null): string => {
+  const key = (type || "OTHER").toUpperCase();
+  return GENDER_LABEL[key] ?? pretty(key);
+};
+
+type GenderGroup = { type: string; count: number; amount: number };
+
+/** Groups tickets by ticketType → [{ type: "MEN", count: 1, amount: 6 }, ...] */
+function groupTicketsByGender(tickets: { ticketType?: string | null; ticketAmount?: number | null }[]): GenderGroup[] {
+  const map = new Map<string, GenderGroup>();
+  for (const t of tickets) {
+    const key = (t.ticketType || "OTHER").toUpperCase();
+    const g = map.get(key) ?? { type: key, count: 0, amount: 0 };
+    g.count += 1;
+    g.amount += Number(t.ticketAmount) || 0;
+    map.set(key, g);
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    const ai = GENDER_ORDER.indexOf(a.type);
+    const bi = GENDER_ORDER.indexOf(b.type);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 }
 
 type ViewState = "success" | "pending" | "failed";
@@ -210,6 +243,7 @@ export default function BookingConfirmationPage() {
   const { booking, payment, event } = data;
   const state = viewState(data);
   const tickets = booking.tickets ?? [];
+  const genderGroups = groupTicketsByGender(tickets);
   const timeStr = [formatTime(event.startTime), formatTime(event.endTime)].filter(Boolean).join(" – ");
   const dateLine = [formatEventDate(event.eventDate), timeStr].filter(Boolean).join(" · ");
   const paidVia = payment.paidVia ? pretty(payment.paidVia) : null;
@@ -267,7 +301,13 @@ export default function BookingConfirmationPage() {
                   color: state === "success" ? C.pink : state === "pending" ? C.amber : C.red,
                 }}
               >
-                {state === "success" ? <Check size={28} strokeWidth={3} /> : state === "pending" ? <Clock size={26} strokeWidth={2.6} /> : <X size={28} strokeWidth={3} />}
+                {state === "success" ? (
+                  <Check size={28} strokeWidth={3} />
+                ) : state === "pending" ? (
+                  <Clock size={26} strokeWidth={2.6} />
+                ) : (
+                  <X size={28} strokeWidth={3} />
+                )}
               </span>
             </div>
 
@@ -315,7 +355,12 @@ export default function BookingConfirmationPage() {
                 <div className="flex h-[250px] w-[250px] items-center justify-center rounded-3xl" style={{ background: C.qrBg }}>
                   {t.qrCodeUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={t.qrCodeUrl} alt={`Ticket QR ${t.ticketId}`} className="h-[200px] w-[200px]" style={{ imageRendering: "pixelated" }} />
+                    <img
+                      src={t.qrCodeUrl}
+                      alt={`Ticket QR ${t.ticketId}`}
+                      className="h-[200px] w-[200px]"
+                      style={{ imageRendering: "pixelated" }}
+                    />
                   ) : (
                     <span className="text-sm" style={{ color: C.label }}>
                       QR not available
@@ -325,8 +370,9 @@ export default function BookingConfirmationPage() {
                 <p className="mb-1 mt-6 text-center text-[16px] font-bold uppercase tracking-[0.22em]" style={{ color: C.label }}>
                   Ticket ID: {t.ticketId}
                 </p>
-                <p className="m-0 text-[14px]" style={{ color: C.label }}>
-                  {tickets.length > 1 ? `Ticket ${i + 1} of ${tickets.length} · ${pretty(t.ticketType)} · ` : ""}Show this QR at the entrance
+                <p className="m-0 text-center text-[14px]" style={{ color: C.label }}>
+                  {tickets.length > 1 ? `Ticket ${i + 1} of ${tickets.length} · ` : ""}
+                  {genderLabel(t.ticketType)} · Show this QR at the entrance
                 </p>
               </Card>
             ))}
@@ -339,8 +385,19 @@ export default function BookingConfirmationPage() {
             {payment.orderId && <ReceiptRow label="Order ID" value={payment.orderId} />}
             {paidVia && <ReceiptRow label="Paid via" value={paidVia} />}
             {payment.paidAt && <ReceiptRow label="Paid on" value={formatPaidAt(payment.paidAt)} />}
-            <ReceiptRow label={`Tickets × ${booking.ticketCount}`} value={money(booking.ticketAmount)} />
-            {booking.discountAmount > 0 && <ReceiptRow label="You saved" value={money(booking.discountAmount)} valueColor={C.green} />}
+
+            {/* gender-wise ticket rows (falls back to a single row if no ticket details) */}
+            {genderGroups.length > 0 ? (
+              genderGroups.map((g) => (
+                <ReceiptRow key={g.type} label={`${genderLabel(g.type)} tickets × ${g.count}`} value={money(g.amount)} />
+              ))
+            ) : (
+              <ReceiptRow label={`Tickets × ${booking.ticketCount}`} value={money(booking.ticketAmount)} />
+            )}
+
+            {booking.discountAmount > 0 && (
+              <ReceiptRow label="You saved" value={money(booking.discountAmount)} valueColor={C.green} />
+            )}
             <ReceiptRow label="Platform fee" value={money(booking.platformFee)} />
             <ReceiptRow label="GST" value={money(booking.gstAmount)} />
             <ReceiptRow label="Amount" value={money(paidAmount)} />
@@ -356,7 +413,10 @@ export default function BookingConfirmationPage() {
           <SectionLabel>Event details</SectionLabel>
           <Card className="px-6 py-1">
             <div className="flex items-center gap-5 py-6" style={{ borderBottom: `1px solid ${C.border}` }}>
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: C.pinkSoft, color: C.pink }}>
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: C.pinkSoft, color: C.pink }}
+              >
                 <Calendar size={22} />
               </span>
               <div className="min-w-0">
@@ -369,7 +429,10 @@ export default function BookingConfirmationPage() {
               </div>
             </div>
             <div className="flex items-center gap-5 py-6">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: C.pinkSoft, color: C.pink }}>
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: C.pinkSoft, color: C.pink }}
+              >
                 <MapPin size={22} />
               </span>
               <div className="min-w-0">

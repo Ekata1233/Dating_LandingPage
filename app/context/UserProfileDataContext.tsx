@@ -654,6 +654,21 @@ function activeByPriority<T extends { active: boolean; priority: number; name: s
         );
 }
 
+/** Currency symbols, mirroring the money() helper in MyWalletMain. */
+const CURRENCY_SYMBOL: Record<string, string> = {
+    INR: "₹",
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+};
+
+/** Formats an amount the way the API's `formattedBalance` does. */
+const formatMoney = (amount: number, currency?: string) =>
+    `${CURRENCY_SYMBOL[currency ?? "INR"] ?? ""}${Number(amount).toLocaleString(
+        "en-IN",
+        { maximumFractionDigits: 2 }
+    )}`;
+
 /* ------------------------------------------------------------------ */
 /* Context Types                                                      */
 /* ------------------------------------------------------------------ */
@@ -664,6 +679,12 @@ interface UserProfileDataContextData {
     balancesLoading: boolean;
     balancesError: string | null;
     refetchBalances: () => Promise<void>;
+
+    /**
+     * A wallet top-up landed. Updates the sidebar's "My Wallet" card
+     * immediately (optimistic) and then reconciles it with the server.
+     */
+    applyWalletTopUp: (amount: number) => Promise<void>;
 
     /**
      * Runs the one-off full load (balances, wallet, date plans, referral…) if it
@@ -807,6 +828,7 @@ const UserProfileDataContext =
         balancesLoading: true,
         balancesError: null,
         refetchBalances: async () => { },
+        applyWalletTopUp: async () => { },
         ensureLoaded: () => { },
 
         referralDashboard: null,
@@ -929,6 +951,21 @@ export function UserProfileDataProvider({
 
     const [balancesError, setBalancesError] =
         useState<string | null>(null);
+
+    /* Mirrors `balances` so async work (the wallet top-up sync) can read the
+       latest wallet figure without waiting for a re-render. */
+    const balancesRef = useRef<UserBalances | null>(null);
+
+    /* The last wallet balance the server reported, before any optimistic
+       bump. Tells "the backend credited the top-up" apart from "the balances
+       endpoint answered before that write landed". */
+    const serverWalletBalanceRef = useRef<number | null>(null);
+
+    /* A top-up credited locally but not yet confirmed by the server. */
+    const pendingWalletCreditRef = useRef<{
+        amount: number;
+        base: number;
+    } | null>(null);
 
     /* ---------------------------------------------------------------- */
     /* Referral Dashboard State                                        */
@@ -1129,9 +1166,44 @@ export function UserProfileDataProvider({
     const applyBalances = useCallback(
         (response: UserBalancesResponse | null) => {
             if (response?.success && response.data) {
-                setBalances(response.data);
+                const serverBalance = Number(
+                    response.data.wallet?.balance ?? 0
+                );
+
+                serverWalletBalanceRef.current = serverBalance;
+
+                let next = response.data;
+                const pending = pendingWalletCreditRef.current;
+
+                if (pending) {
+                    const expected = pending.base + pending.amount;
+
+                    if (serverBalance + 0.01 < expected) {
+                        /* The backend has not credited the top-up yet. Keep
+                           the optimistic figure instead of snapping back to
+                           the old amount. */
+                        next = {
+                            ...next,
+                            wallet: {
+                                ...next.wallet,
+                                balance: expected,
+                                formattedBalance: formatMoney(
+                                    expected,
+                                    next.wallet?.currency
+                                ),
+                            },
+                        };
+                    } else {
+                        /* The server knows about the credit — drop ours. */
+                        pendingWalletCreditRef.current = null;
+                    }
+                }
+
+                balancesRef.current = next;
+                setBalances(next);
                 setBalancesError(null);
             } else {
+                balancesRef.current = null;
                 setBalances(null);
 
                 setBalancesError(
@@ -1285,7 +1357,32 @@ export function UserProfileDataProvider({
     const applyWallet = useCallback(
         (response: WalletApiResponse | null) => {
             if (response?.success && response.data) {
-                setWallet(response.data);
+                let next = response.data;
+                const pending = pendingWalletCreditRef.current;
+
+                if (pending) {
+                    const expected = pending.base + pending.amount;
+                    const serverBalance = Number(
+                        next.wallet?.balance ?? 0
+                    );
+
+                    if (serverBalance + 0.01 < expected) {
+                        /* Still waiting on the backend to credit it. */
+                        next = {
+                            ...next,
+                            wallet: {
+                                ...next.wallet,
+                                balance: expected,
+                                formattedBalance: formatMoney(
+                                    expected,
+                                    next.wallet?.currency
+                                ),
+                            },
+                        };
+                    }
+                }
+
+                setWallet(next);
                 setWalletError(null);
             } else {
                 setWallet(null);
@@ -1370,6 +1467,89 @@ export function UserProfileDataProvider({
 
         applyWalletOut(response);
     }, [authGet, applyWalletOut]);
+
+    /* ---------------------------------------------------------------- */
+    /* WALLET — TOP-UP SYNC                                              */
+    /* ---------------------------------------------------------------- */
+
+    /**
+     * A wallet top-up just succeeded. The home sidebar's "My Wallet" card
+     * reads `balances`, so bump it locally first — the card updates in the
+     * same tick as the success toast — and then pull the server balance.
+     *
+     * The backend credits the wallet while handling /api/payment/verify, but
+     * /api/user/my-balances can answer before that write lands, so keep
+     * pulling for a moment until the credited amount shows up.
+     */
+    const applyWalletTopUp = useCallback(
+        async (amount: number) => {
+            const credit = Number(amount);
+
+            if (!Number.isFinite(credit) || credit <= 0) return;
+
+            const base = Number(balancesRef.current?.wallet?.balance ?? 0);
+
+            pendingWalletCreditRef.current = { amount: credit, base };
+
+            /* Optimistic: the card shows the new amount right away. */
+            setBalances((prev) => {
+                if (!prev?.wallet) return prev;
+
+                const balance = Number(prev.wallet.balance ?? 0) + credit;
+                const next = {
+                    ...prev,
+                    wallet: {
+                        ...prev.wallet,
+                        balance,
+                        formattedBalance: formatMoney(
+                            balance,
+                            prev.wallet.currency
+                        ),
+                    },
+                };
+
+                balancesRef.current = next;
+                return next;
+            });
+
+            setWallet((prev) => {
+                if (!prev?.wallet) return prev;
+
+                const balance = Number(prev.wallet.balance ?? 0) + credit;
+
+                return {
+                    ...prev,
+                    wallet: {
+                        ...prev.wallet,
+                        balance,
+                        formattedBalance: formatMoney(
+                            balance,
+                            prev.wallet.currency
+                        ),
+                    },
+                };
+            });
+
+            const expected = base + credit;
+
+            for (let attempt = 0; attempt < 4; attempt++) {
+                await Promise.all([refetchBalances(), refetchWallet()]);
+
+                const server = serverWalletBalanceRef.current;
+
+                /* Nothing to wait for, or the backend has caught up. */
+                if (server === null || server + 0.01 >= expected) {
+                    pendingWalletCreditRef.current = null;
+                    return;
+                }
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 1500)
+                );
+            }
+        },
+        [refetchBalances, refetchWallet]
+    );
 
     /* Paginated wallet fetch used by the My Wallet screen: the screen owns
        its filter/page state, so this returns the per-query payload instead
@@ -2042,6 +2222,7 @@ export function UserProfileDataProvider({
             balancesLoading,
             balancesError,
             refetchBalances,
+            applyWalletTopUp,
             ensureLoaded,
 
             /* Dashboard */
@@ -2161,6 +2342,7 @@ export function UserProfileDataProvider({
             balancesLoading,
             balancesError,
             refetchBalances,
+            applyWalletTopUp,
             ensureLoaded,
 
             referralDashboard,
