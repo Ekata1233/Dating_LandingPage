@@ -2,8 +2,10 @@
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { usePayment, type TopUpStage } from "@/app/context/PaymentContext";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 /* -------------------------------------------------------------------------- */
@@ -27,11 +29,14 @@ import { toast } from "sonner";
 /*    info.whyPeopleBuyPlans[]      -> "Why people buy plans"                 */
 /*    info.goodToKnow[]             -> "Good to know"                         */
 /*                                                                            */
-/*  Prices are wallet coins, so a coin icon is shown instead of ₹.            */
+/*  Buy button -> PaymentContext.purchaseDatePlan()                           */
+/*    create-order { purpose: "OTHER", purchaseType: "DATE_PLAN",             */
+/*                   datePlanPackageId } -> Razorpay -> verify -> refetch     */
+/*  Prices are paid in rupees via Razorpay, so they are shown with ₹.         */
 /*                                                                            */
 /*  Usage:                                                                    */
 /*    <div style={{ width: 390, height: 800 }}>                               */
-/*      <DatePlansStore fluid onPurchase={(pkg) => buy(pkg.id)} />            */
+/*      <DatePlansStore fluid />                                              */
 /*    </div>                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -78,8 +83,8 @@ export interface DatePlansStoreProps {
     footnote?: string;
     ctaLabel?: string;
 
-    /** Called when the person taps "Get plans" */
-    onPurchase?: (pkg: DatePlanPackage) => Promise<void> | void;
+    /** Optional: runs after a successful, verified purchase */
+    onPurchased?: (pkg: DatePlanPackage) => void;
 
     fluid?: boolean;
     className?: string;
@@ -106,6 +111,8 @@ const C = {
 const FONT = "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 const num = (v: string | number) => Number(v).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const rupees = (v: string | number) => `₹${num(v)}`;
+const plansWord = (n: number) => (n === 1 ? "date plan" : "date plans");
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 type IconName =
@@ -210,7 +217,7 @@ export default function DatePlansStore({
     heroImage,
     footnote = "Date Plans never expire. Unused plans stay in your wallet.",
     ctaLabel = "Get plans",
-    onPurchase,
+    onPurchased,
     fluid = false,
     className,
     style,
@@ -223,8 +230,48 @@ export default function DatePlansStore({
         refetchDatePlans: reload,
     } = useUserProfileData();
     const [pickedId, setPickedId] = useState<string | null>(null);
-    const [buying, setBuying] = useState(false);
     const router = useRouter()
+
+    /* ---- PAYMENT ---- */
+    const { purchaseDatePlan, loadRazorpay } = usePayment();
+    const { profile } = useMyProfile();
+    const [stage, setStage] = useState<TopUpStage | "idle">("idle");
+    const [payError, setPayError] = useState<string | null>(null);
+    const buying = stage !== "idle";
+    const refreshTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    /** set when money was charged but verify failed: plans before the purchase + pack */
+    const pendingCredit = useRef<{ before: number; pkg: DatePlanPackage } | null>(null);
+    const available = data?.availableDatePlan ?? 0;
+
+    const clearTimers = () => {
+        refreshTimers.current.forEach(clearTimeout);
+        refreshTimers.current = [];
+    };
+
+    useEffect(() => {
+        loadRazorpay(); // preload so Razorpay opens fast
+        return clearTimers;
+    }, [loadRazorpay]);
+
+    /** refetch date plans now and a few more times, in case the backend credits a bit later */
+    const refreshPlans = useCallback(
+        (delays: number[] = [3000]) => {
+            reload?.();
+            clearTimers();
+            refreshTimers.current = delays.map((ms) => setTimeout(() => reload?.(), ms));
+        },
+        [reload]
+    );
+
+    /* plans arrived after an unconfirmed payment -> hide the error, show success */
+    useEffect(() => {
+        const pending = pendingCredit.current;
+        if (!pending || available <= pending.before) return;
+        pendingCredit.current = null;
+        clearTimers();
+        setPayError(null);
+        toast.success(`${pending.pkg.planCount} ${plansWord(pending.pkg.planCount)} added to your wallet 📅`);
+    }, [available]);
 
     const packages = useMemo(
         () => (data?.packages ?? []).filter((p) => p.isActive).sort((a, b) => a.sortOrder - b.sortOrder),
@@ -236,16 +283,55 @@ export default function DatePlansStore({
     const selected = packages.find((p) => p.id === (pickedId ?? defaultId)) ?? null;
 
     const handlePurchase = async () => {
-        if (!selected || buying) return;
-        setBuying(true);
-        try {
-            await onPurchase?.(selected);
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Purchase failed. Please try again.");
-        } finally {
-            setBuying(false);
+        if (!selected || buying) return; // block double taps
+        setPayError(null);
+        pendingCredit.current = null;
+
+        const p = (profile ?? {}) as Record<string, any>;
+        const pkg = selected;
+        const before = available;
+
+        const res = await purchaseDatePlan(pkg.id, {
+            description: `${pkg.planCount} ${plansWord(pkg.planCount)}`,
+            prefill: {
+                name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+                email: p.email ?? undefined,
+                contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+            },
+            onStage: setStage,
+        });
+        setStage("idle");
+
+        if (res.ok) {
+            toast.success(`${pkg.planCount} ${plansWord(pkg.planCount)} added to your wallet 📅`);
+            refreshPlans();
+            onPurchased?.(pkg);
+            return;
         }
+        if (res.cancelled) return; // user closed Razorpay
+
+        if (res.paymentCaptured) {
+            // money was charged: keep checking; the effect above clears the error once plans arrive
+            pendingCredit.current = { before, pkg };
+            setPayError(res.message);
+            refreshPlans([3000, 8000, 15000, 30000, 60000]);
+            return;
+        }
+
+        setPayError(res.message);
+        toast.error(res.message);
     };
+
+    const buyLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? "Adding date plans…"
+                : selected
+                  ? `Get ${selected.planCount} ${selected.planCount === 1 ? "plan" : "plans"} for ${rupees(selected.price)}`
+                  : ctaLabel;
 
     const sectionTitle: React.CSSProperties = {
         margin: `${U(8)} 0 ${U(4)} ${U(1)}`,
@@ -370,6 +456,7 @@ export default function DatePlansStore({
                                     className="wdp-btn"
                                     aria-label="Go back"
                                     onClick={onBack}
+                                    disabled={buying}
                                     style={{
                                         position: "absolute",
                                         left: U(3.1),
@@ -500,7 +587,7 @@ export default function DatePlansStore({
                                             <span className="wdp-skel" style={{ width: U(14), height: U(10), borderRadius: U(2) }} />
                                         ) : (
                                             <span style={{ fontSize: U(11.5), fontWeight: 500, lineHeight: 1 }}>
-                                                {(data?.availableDatePlan ?? 0).toLocaleString("en-IN")}
+                                                {available.toLocaleString("en-IN")}
                                             </span>
                                         )}
                                         <span style={{ fontSize: U(5), fontWeight: 500 }}>plans</span>
@@ -563,7 +650,11 @@ export default function DatePlansStore({
                                                         role="radio"
                                                         aria-checked={active}
                                                         className="wdp-btn"
-                                                        onClick={() => setPickedId(p.id)}
+                                                        onClick={() => {
+                                                            setPickedId(p.id);
+                                                            if (!pendingCredit.current) setPayError(null);
+                                                        }}
+                                                        disabled={buying}
                                                         style={{
                                                             position: "relative",
                                                             display: "flex",
@@ -621,10 +712,7 @@ export default function DatePlansStore({
                                                                 fontWeight: 600,
                                                             }}
                                                         >
-                                                            <span style={{ fontSize: U(2.8), display: "flex" }}>
-                                                                <Coin />
-                                                            </span>
-                                                            {num(p.pricePerPlan)}/each
+                                                            {rupees(p.pricePerPlan)}/each
                                                         </span>
                                                         <span
                                                             style={{
@@ -636,10 +724,7 @@ export default function DatePlansStore({
                                                                 color: C.greyLight,
                                                             }}
                                                         >
-                                                            <span style={{ fontSize: U(2.4), display: "flex" }}>
-                                                                <Coin />
-                                                            </span>
-                                                            {num(p.price)} total
+                                                            {rupees(p.price)} total
                                                         </span>
                                                         <span
                                                             aria-hidden
@@ -748,18 +833,22 @@ export default function DatePlansStore({
                                             whiteSpace: "nowrap",
                                         }}
                                     >
-                                        <span style={{ fontSize: U(5.4), display: "flex" }}>
-                                            <Coin />
-                                        </span>
-                                        {num(selected.price)}
+                                        {rupees(selected.price)}
                                     </span>
                                 )}
                             </div>
+
+                            {payError && (
+                                <p role="alert" style={{ margin: `${U(3)} 0 0`, fontSize: U(3.1), lineHeight: 1.45, color: "#c62828", textAlign: "center" }}>
+                                    {payError}
+                                </p>
+                            )}
 
                             <button
                                 type="button"
                                 className="wdp-btn"
                                 onClick={handlePurchase}
+                                aria-busy={buying}
                                 disabled={!selected || buying}
                                 style={{
                                     marginTop: U(3.4),
@@ -771,9 +860,10 @@ export default function DatePlansStore({
                                     fontSize: U(4.1),
                                     fontWeight: 500,
                                     boxShadow: selected ? `0 ${U(1.2)} ${U(3.4)} rgba(234,122,20,.35)` : "none",
+                                    opacity: buying ? 0.85 : 1,
                                 }}
                             >
-                                {buying ? "Processing…" : ctaLabel}
+                                {buyLabel}
                             </button>
 
                             <p style={{ margin: `${U(3)} 0 0`, textAlign: "center", fontSize: U(2.9), color: C.greyLight }}>{footnote}</p>

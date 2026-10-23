@@ -2,6 +2,8 @@
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { usePayment, type TopUpStage } from "@/app/context/PaymentContext";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +11,11 @@ import { toast } from "sonner";
 /* -------------------------------------------------------------------------- */
 /*  RosesStore                                                               */
 /*                                                                            */
-/*  Backend-driven "buy a pack" screen for Roses.                */
+/*  Backend-driven "buy a pack" screen for Roses.                             */
+/*                                                                            */
+/*  Buy button -> PaymentContext.purchaseStorePack()                          */
+/*    create-order { purpose: "PURCHASE_STORE", purchaseType: "ROSE",         */
+/*                   storePackId } -> Razorpay -> verify -> refetch roses     */
 /*                                                                            */
 /*  Same rules as ReferAndEarn:                                               */
 /*   - fills 100% width / height of its PARENT                                */
@@ -121,8 +127,8 @@ export interface RosesStoreProps {
     tipTitle?: string;
     tipText?: string;
 
-    /** Called when the person taps the buy button */
-    onPurchase?: (pack: StorePack) => Promise<void> | void;
+    /** Optional: runs after a successful, verified purchase */
+    onPurchased?: (pack: StorePack) => void;
 
     fluid?: boolean;
     className?: string;
@@ -317,7 +323,7 @@ export default function RosesStore({
     availableNote,
     tipTitle,
     tipText,
-    onPurchase,
+    onPurchased,
     fluid = false,
     className,
     style,
@@ -326,7 +332,36 @@ export default function RosesStore({
     const { roses: data, rosesLoading: loading, rosesError: error, refetchRoses: onRetry } = useUserProfileData();
     const { setActiveSection } = useActiveSection();
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [buying, setBuying] = useState(false);
+
+    /* ---- PAYMENT ---- */
+    const { purchaseStorePack, loadRazorpay } = usePayment();
+    const { profile } = useMyProfile();
+    const [stage, setStage] = useState<TopUpStage | "idle">("idle");
+    const [payError, setPayError] = useState<string | null>(null);
+    const buying = stage !== "idle";
+    const refreshTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    /** set when money was charged but verify failed: roses count before the purchase + pack */
+    const pendingCredit = useRef<{ before: number; pack: StorePack } | null>(null);
+
+    const clearTimers = () => {
+        refreshTimers.current.forEach(clearTimeout);
+        refreshTimers.current = [];
+    };
+
+    useEffect(() => {
+        loadRazorpay(); // preload so Razorpay opens fast
+        return clearTimers;
+    }, [loadRazorpay]);
+
+    /** refetch roses now and a few more times, in case the backend credits a bit later */
+    const refreshRoses = useCallback(
+        (delays: number[] = [3000]) => {
+            onRetry?.();
+            clearTimers();
+            refreshTimers.current = delays.map((ms) => setTimeout(() => onRetry?.(), ms));
+        },
+        [onRetry]
+    );
 
     /* active + sorted (stable) */
     const packs = useMemo(
@@ -343,22 +378,74 @@ export default function RosesStore({
     const selected = packs.find((p) => p.id === (selectedId ?? defaultId)) ?? null;
 
     const available = getAvailable(data);
+
+    /* roses arrived after an unconfirmed payment -> hide the error, show success */
+    useEffect(() => {
+        const pending = pendingCredit.current;
+        if (!pending || available <= pending.before) return;
+        pendingCredit.current = null;
+        clearTimers();
+        setPayError(null);
+        toast.success(`${pending.pack.quantity} ${pending.pack.quantity === 1 ? "rose" : "roses"} added to your account 🌹`);
+    }, [available]);
     const note = availableNote ?? theme.availableNote;
     const pageTitle = title ?? theme.plural;
 
     const router = useRouter()
 
     const handlePurchase = async () => {
-        if (!selected || buying) return;
-        setBuying(true);
-        try {
-            await onPurchase?.(selected);
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Purchase failed. Please try again.");
-        } finally {
-            setBuying(false);
+        if (!selected || buying) return; // block double taps
+        setPayError(null);
+        pendingCredit.current = null;
+
+        const p = (profile ?? {}) as Record<string, any>;
+        const pack = selected;
+        const before = available;
+
+        const res = await purchaseStorePack(
+            { purchaseType: "ROSE", storePackId: pack.id },
+            {
+                description: `${pack.quantity} ${pack.quantity === 1 ? theme.singular : theme.plural}`,
+                prefill: {
+                    name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+                    email: p.email ?? undefined,
+                    contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+                },
+                onStage: setStage,
+            }
+        );
+        setStage("idle");
+
+        if (res.ok) {
+            toast.success(`${pack.quantity} ${pack.quantity === 1 ? theme.singular.toLowerCase() : theme.plural.toLowerCase()} added to your account 🌹`);
+            refreshRoses();
+            onPurchased?.(pack);
+            return;
         }
+        if (res.cancelled) return; // user closed Razorpay
+
+        if (res.paymentCaptured) {
+            // money was charged: keep checking; the effect above clears the error once roses arrive
+            pendingCredit.current = { before, pack };
+            setPayError(res.message);
+            refreshRoses([3000, 8000, 15000, 30000, 60000]);
+            return;
+        }
+
+        setPayError(res.message);
+        toast.error(res.message);
     };
+
+    const buyLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? `Adding ${theme.plural.toLowerCase()}…`
+                : selected
+                  ? `Get ${selected.quantity} ${selected.quantity === 1 ? theme.singular : theme.plural} for ${money(currencySymbol, selected.totalPrice)}`
+                  : "Select a pack";
 
     const sectionTitle: React.CSSProperties = {
         margin: 0,
@@ -433,6 +520,7 @@ export default function RosesStore({
                                     className="wst-btn"
                                     aria-label="Go back"
                                     onClick={onBack}
+                                    disabled={buying}
                                     style={{
                                         position: "absolute",
                                         left: U(3.1),
@@ -642,7 +730,11 @@ export default function RosesStore({
                                                         role="radio"
                                                         aria-checked={active}
                                                         className="wst-btn"
-                                                        onClick={() => setSelectedId(p.id)}
+                                                        onClick={() => {
+                                                            setSelectedId(p.id);
+                                                            if (!pendingCredit.current) setPayError(null);
+                                                        }}
+                                                        disabled={buying}
                                                         style={{
                                                             position: "relative",
                                                             display: "flex",
@@ -906,10 +998,17 @@ export default function RosesStore({
                                 </span>
                             </div>
 
+                            {payError && (
+                                <p role="alert" style={{ margin: `${U(3)} 0 0`, fontSize: U(3.1), lineHeight: 1.45, color: "#c62828", textAlign: "center" }}>
+                                    {payError}
+                                </p>
+                            )}
+
                             <button
                                 type="button"
                                 className="wst-btn"
                                 onClick={handlePurchase}
+                                aria-busy={buying}
                                 disabled={!selected || buying}
                                 style={{
                                     marginTop: U(3.4),
@@ -923,14 +1022,10 @@ export default function RosesStore({
                                     fontSize: U(4.1),
                                     fontWeight: 500,
                                     boxShadow: selected ? `0 ${U(1.2)} ${U(3.4)} ${theme.accent}59` : "none",
+                                    opacity: buying ? 0.85 : 1,
                                 }}
                             >
-                                {buying
-                                    ? "Processing…"
-                                    : selected
-                                        ? `Get ${selected.quantity} ${selected.quantity === 1 ? theme.singular : theme.plural
-                                        } for ${money(currencySymbol, selected.totalPrice)}`
-                                        : "Select a pack"}
+                                {buyLabel}
                             </button>
 
                             <p style={{ margin: `${U(3)} 0 0`, textAlign: "center", fontSize: U(2.9), color: C.greyLight }}>

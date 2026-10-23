@@ -1,8 +1,11 @@
 "use client";
 
 import { PremiumPrice, usePlanDetail } from "@/app/context/AccountSettingsContext";
-import { useParams } from "next/navigation";
-import React, { useState } from "react";
+import { usePayment, type TopUpStage } from "@/app/context/PaymentContext";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
+import { useParams, useRouter } from "next/navigation";
+import React from "react";
+import { toast } from "sonner";
 
 import Screen from "@/app/app/shell/Screen";
 
@@ -35,6 +38,11 @@ import Screen from "@/app/app/shell/Screen";
 /*  "unavailable" state instead of silently charging for a different one.     */
 /*  With no `priceId` in the route it falls back to the highlighted price.    */
 /*                                                                            */
+/*  PAYMENT. Pay -> PaymentContext.purchasePackage(price.id)                  */
+/*    create-order { purpose: "PACKAGE", packagePriceId } -> Razorpay ->      */
+/*    verify. It is a ONE-TIME payment (not a subscription), so nothing       */
+/*    auto-renews. On success: toast + onPaid() (default: go back).           */
+/*                                                                            */
 /*  MONEY. The price comes from the API; the GST row is informational only —  */
 /*  the price already INCLUDES GST, so it is shown (price − price/1.18) and   */
 /*  never added to the total. Anything that changes what is owed — a coupon,  */
@@ -49,8 +57,8 @@ import Screen from "@/app/app/shell/Screen";
 /*    <div style={{ width: "100%", height: "100vh" }}>                        */
 /*      <MembershipCheckout                                                   */
 /*        fluid                                                               */
-/*        paymentNote="powered by Google Play Billing"                        */
-/*        onPay={({ plan, price }) => startPayment(plan.id, price.id)}        */
+/*        paymentNote="Secured by Razorpay"                                   */
+/*        onPaid={({ plan, price }) => router.push("/app/home")}              */
 /*      />                                                                    */
 /*    </div>                                                                  */
 /*                                                                            */
@@ -73,7 +81,7 @@ export interface CheckoutCoupon {
     label: string;
 }
 
-/** What `onPay` reports: exactly which plan and which price option are being bought. */
+/** What `onPaid` reports: exactly which plan and which price option were bought. */
 export interface CheckoutSelection {
     plan: NonNullable<ReturnType<typeof usePlanDetail>["plan"]>;
     price: PremiumPrice;
@@ -98,7 +106,7 @@ export interface MembershipCheckoutProps {
     /** Amount to pay. Falls back to the selected price. Pass it when a coupon applies. */
     total?: number;
 
-    /** Overrides the derived "Auto-renews every N months …" line. `null` hides it. */
+    /** Overrides the derived "Valid for N months …" line. `null` hides it. */
     renewalNote?: string | null;
 
     /** Tappable coupon suggestions under the input. */
@@ -119,7 +127,8 @@ export interface MembershipCheckoutProps {
 
     onBack?: () => void;
     showBack?: boolean;
-    onPay?: (selection: CheckoutSelection) => void;
+    /** Runs after a successful, verified payment. Default: go back to the previous page. */
+    onPaid?: (selection: CheckoutSelection) => void;
 
     /**
      * Fill the parent edge to edge instead of rendering the 300px desktop
@@ -295,6 +304,7 @@ export function MembershipCheckout({
     gstPercent = 18,
     lines,
     totalLabel = "Total payable",
+    total,
     renewalNote,
     suggestedCoupons = [],
     appliedCoupon = null,
@@ -302,13 +312,13 @@ export function MembershipCheckout({
     applyingCoupon = false,
     onApplyCoupon,
     onRemoveCoupon,
-    paymentNote,
+    paymentNote = "Secured by Razorpay · UPI, cards & net banking",
     ctaLabel = "Pay",
     footnote = "You won't be charged until you confirm",
     paying = false,
     onBack,
     showBack = true,
-    onPay,
+    onPaid,
     fluid = false,
     className,
     style,
@@ -316,7 +326,7 @@ export function MembershipCheckout({
     const params = useParams<{ id: string; priceId?: string }>();
     const id = segment(params?.id);
     const priceId = segment(params?.priceId);
-    const [amountDue,setAmountDue] = useState(0)
+    const router = useRouter();
 
     const { plan, loading, error, refetch } = usePlanDetail(id as string);
 
@@ -332,6 +342,10 @@ export function MembershipCheckout({
         if (priceId) return options.find((p) => p.id === priceId);
         return options.find((p) => p.isHighlighted) ?? options[0];
     }, [plan, priceId]);
+
+    /* What is charged. The price already includes GST, so GST is NOT added again.
+       Backend charges price.price for PACKAGE, so this must match it. */
+    const amountDue: number | undefined = total ?? price?.price;
 
     const [code, setCode] = React.useState("");
 
@@ -358,33 +372,81 @@ export function MembershipCheckout({
         const rows: CheckoutLine[] = [{ label: `${plan.name} · ${monthsText(price.months)}`, value: price.price }];
         if (gstPercent > 0) {
             const gst = Math.round(price.price - price.price / (1 + gstPercent / 100));
-            setAmountDue(price.price+gst)
             rows.push({ label: `GST (${gstPercent}%, incl.)`, value: gst });
         }
         return rows;
     }, [lines, plan, price, gstPercent]);
 
+    /* ---- PAYMENT ---- */
+    const { purchasePackage, loadRazorpay } = usePayment();
+    const { profile } = useMyProfile();
+    const [stage, setStage] = React.useState<TopUpStage | "idle">("idle");
+    const [payError, setPayError] = React.useState<string | null>(null);
+    const busy = paying || stage !== "idle";
+
+    React.useEffect(() => {
+        loadRazorpay(); // preload so Razorpay opens fast
+    }, [loadRazorpay]);
+
     const canApply = code.trim().length > 0 && !applyingCoupon;
-    const ctaDisabled = !plan || !price || amountDue === undefined || paying;
+    const ctaDisabled = !plan || !price || amountDue === undefined || busy;
 
     const renewal =
         renewalNote === undefined
             ? price
-                ? `Auto-renews every ${price.months === 1 ? "month" : `${price.months} months`} · cancel anytime from Settings`
+                ? `Valid for ${monthsText(price.months)} · one-time payment, doesn't auto-renew`
                 : null
             : renewalNote;
 
-    const handleBack = () => (onBack ? onBack() : window.history.back());
+    const handleBack = () => {
+        if (busy) return;
+        onBack ? onBack() : window.history.back();
+    };
 
     const handleApply = () => {
         if (!canApply) return;
         onApplyCoupon?.(code.trim());
     };
 
-    const handlePay = () => {
-        if (!plan || !price || amountDue === undefined) return;
-        onPay?.({ plan, price, amount: amountDue });
+    const handlePay = async () => {
+        if (!plan || !price || amountDue === undefined || busy) return; // block double taps
+        setPayError(null);
+
+        const p = (profile ?? {}) as Record<string, any>;
+        const selection: CheckoutSelection = { plan, price, amount: amountDue };
+
+        const res = await purchasePackage(price.id, {
+            description: `${plan.name} · ${monthsText(price.months)}`,
+            prefill: {
+                name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+                email: p.email ?? undefined,
+                contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+            },
+            onStage: setStage,
+        });
+        setStage("idle");
+
+        if (res.ok) {
+            toast.success(`${plan.name} activated for ${monthsText(price.months)} 🎉`);
+            refetch?.();
+            if (onPaid) onPaid(selection);
+            else router.back();
+            return;
+        }
+        if (res.cancelled) return; // user closed Razorpay
+
+        setPayError(res.message);
+        if (!res.paymentCaptured) toast.error(res.message);
     };
+
+    const payLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? "Activating your membership…"
+                : null;
 
     /* A coupon that was just applied successfully no longer needs to sit in the
        input — clear it once the parent reports it as applied. */
@@ -840,10 +902,16 @@ export function MembershipCheckout({
                                     textAlign: "center",
                                 }}
                             >
+                                {payError && (
+                                    <p role="alert" style={{ margin: `0 0 ${U(3)}`, fontSize: U(3.1), lineHeight: 1.45, color: BASE.danger, fontWeight: 500 }}>
+                                        {payError}
+                                    </p>
+                                )}
                                 <button
                                     type="button"
                                     className="co-btn"
                                     disabled={ctaDisabled}
+                                    aria-busy={busy}
                                     onClick={handlePay}
                                     style={{
                                         width: "100%",
@@ -860,7 +928,9 @@ export function MembershipCheckout({
                                         boxShadow: `0 ${U(1.6)} ${U(4)} ${THEME.shadow}`,
                                     }}
                                 >
-                                    {paying ? (
+                                    {payLabel ? (
+                                        payLabel
+                                    ) : paying ? (
                                         "Processing…"
                                     ) : (
                                         <>

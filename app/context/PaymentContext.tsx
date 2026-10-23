@@ -9,6 +9,10 @@
 /*   createOrder()        POST /api/payment/create-order  (EVENT_BOOKING)     */
 /*   createWalletOrder()  POST /api/payment/create-order  (WALLET)            */
 /*   topUpWallet()        full wallet flow: order → Razorpay → verify         */
+/*   purchaseStorePack()  roses / compliments: order → Razorpay → verify      */
+/*   purchaseDatePlan()   date plan packs:     order → Razorpay → verify      */
+/*   purchaseBoost()      boost / super boost: order → Razorpay → verify      */
+/*   purchasePackage()    membership plan:     order → Razorpay → verify      */
 /*   verifyPayment()      POST /api/payment/verify                            */
 /*   getPaymentSuccess()  GET  /api/user/event-bookings/:id/payment-success   */
 /*   loadRazorpay()       loads checkout.js once                              */
@@ -82,6 +86,27 @@ export type WalletTopUpResult =
       /** true = money was charged but verify failed; webhook should credit it */
       paymentCaptured?: boolean;
     };
+
+/* ---------- store purchase (roses / compliments) ---------- */
+export type StorePurchaseType = "ROSE" | "COMPLIMENT";
+
+export interface StorePurchaseInput {
+  purchaseType: StorePurchaseType;
+  storePackId: string;
+}
+
+export type StorePurchaseResult =
+  | { ok: true; paymentId: string; razorpayPaymentId: string }
+  | { ok: false; cancelled: boolean; message: string; paymentCaptured?: boolean };
+
+/* ---------- date plan purchase ---------- */
+export type DatePlanPurchaseResult = StorePurchaseResult;
+
+/* ---------- boost purchase ---------- */
+export type BoostPurchaseResult = StorePurchaseResult;
+
+/* ---------- membership package purchase ---------- */
+export type PackagePurchaseResult = StorePurchaseResult;
 
 /* ---------- wallet top-up history ---------- */
 export interface WalletTx {
@@ -246,12 +271,12 @@ function openRazorpayCheckout(
 
       // fires per failed attempt; user can retry inside Razorpay, so don't resolve here
       rzp.on("payment.failed", (resp: any) => {
-        lastError = resp?.error?.description || "Payment fail ho gaya.";
+        lastError = resp?.error?.description || "Payment failed. Please try again.";
       });
 
       rzp.open();
     } catch {
-      done({ status: "failed", message: "Payment window open nahi hua. Dobara try karo." });
+      done({ status: "failed", message: "Couldn't open the payment window. Please try again." });
     }
   });
 }
@@ -261,7 +286,7 @@ function openRazorpayCheckout(
 async function request<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
   const token = getClientToken();
   if (!token) {
-    return { ok: false, status: 401, message: "Login token nahi mila. Dobara login karo." };
+    return { ok: false, status: 401, message: "Please log in again to continue." };
   }
 
   try {
@@ -282,19 +307,19 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<ApiResu
       const raw = typeof json?.message === "string" ? json.message : "";
       const message =
         res.status === 401
-          ? "Session expire ho gaya. Dobara login karo."
+          ? "Your session has expired. Please log in again."
           : res.status === 404
-            ? "Record nahi mila."
+            ? "Not found."
             : raw && !raw.trim().startsWith("[") && !raw.trim().startsWith("{")
               ? raw
-              : "Kuch galat hua. Dobara try karo.";
+              : "Something went wrong. Please try again.";
       if (raw && message !== raw) console.warn(`[Payment API] ${path} →`, raw);
       return { ok: false, status: res.status, message };
     }
 
     return { ok: true, data: json.data as T };
   } catch {
-    return { ok: false, status: 0, message: "Network issue. Internet check karke dobara try karo." };
+    return { ok: false, status: 0, message: "Network error. Check your internet connection and try again." };
   }
 }
 
@@ -306,6 +331,10 @@ interface PaymentContextValue {
   createWalletOrder: (amount: number) => Promise<ApiResult<WalletOrderData>>;
   topUpWallet: (amount: number, opts?: TopUpOptions) => Promise<WalletTopUpResult>;
   getWalletTopUps: (query?: WalletHistoryQuery) => Promise<ApiResult<WalletHistoryData>>;
+  purchaseStorePack: (input: StorePurchaseInput, opts?: TopUpOptions) => Promise<StorePurchaseResult>;
+  purchaseDatePlan: (datePlanPackageId: string, opts?: TopUpOptions) => Promise<DatePlanPurchaseResult>;
+  purchaseBoost: (boostOptionId: string, opts?: TopUpOptions) => Promise<BoostPurchaseResult>;
+  purchasePackage: (packagePriceId: string, opts?: TopUpOptions) => Promise<PackagePurchaseResult>;
   verifyPayment: (input: VerifyPaymentInput) => Promise<ApiResult<unknown>>;
   getPaymentSuccess: (bookingId: string) => Promise<ApiResult<PaymentSuccessData>>;
 }
@@ -357,7 +386,7 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
   const createWalletOrder = useCallback(async (amount: number): Promise<ApiResult<WalletOrderData>> => {
     // amount is in RUPEES (₹500 → 500). Backend returns paise in data.amount.
     if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
-      return { ok: false, status: 400, message: "Sahi amount daalo (sirf poore rupaye)." };
+      return { ok: false, status: 400, message: "Please enter a valid amount in whole rupees." };
     }
     return request<WalletOrderData>("/api/payment/create-order", {
       method: "POST",
@@ -365,26 +394,36 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const topUpWallet = useCallback(
-    async (amount: number, opts: TopUpOptions = {}): Promise<WalletTopUpResult> => {
+  /**
+   * Shared Razorpay flow: create order → open checkout → verify.
+   * Used by wallet top-up and store purchases.
+   */
+  const runCheckout = useCallback(
+    async (
+      create: () => Promise<ApiResult<WalletOrderData>>,
+      opts: TopUpOptions & { description: string; notes: Record<string, string>; unverifiedMessage: string }
+    ): Promise<
+      | { ok: true; paymentId: string; razorpayPaymentId: string }
+      | { ok: false; cancelled: boolean; message: string; paymentCaptured?: boolean }
+    > => {
       opts.onStage?.("creating");
 
       const loaded = await loadRazorpayScript();
       if (!loaded) {
-        return { ok: false, cancelled: false, message: "Payment gateway load nahi hua. Internet check karke dobara try karo." };
+        return { ok: false, cancelled: false, message: "Couldn't load the payment gateway. Check your internet connection and try again." };
       }
 
-      const order = await createWalletOrder(amount);
+      const order = await create();
       if (!order.ok) return { ok: false, cancelled: false, message: order.message };
 
       opts.onStage?.("awaiting");
       const outcome = await openRazorpayCheckout(order.data, {
-        description: opts.description ?? `Wallet top-up ₹${amount}`,
+        description: opts.description,
         prefill: opts.prefill,
-        notes: { purpose: "WALLET", paymentId: order.data.paymentId },
+        notes: { ...opts.notes, paymentId: order.data.paymentId },
       });
 
-      if (outcome.status === "cancelled") return { ok: false, cancelled: true, message: "Payment cancel kar diya." };
+      if (outcome.status === "cancelled") return { ok: false, cancelled: true, message: "Payment cancelled." };
       if (outcome.status === "failed") return { ok: false, cancelled: false, message: outcome.message };
 
       opts.onStage?.("verifying");
@@ -395,23 +434,132 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
       });
 
       if (!verified.ok) {
-        return {
-          ok: false,
-          cancelled: false,
-          paymentCaptured: true,
-          message:
-            "Payment receive hua par wallet update confirm nahi hua. Paisa kata hai to balance kuch minute mein update ho jayega, ya support se contact karo.",
-        };
+        return { ok: false, cancelled: false, paymentCaptured: true, message: opts.unverifiedMessage };
       }
 
-      return {
-        ok: true,
-        amount,
-        paymentId: order.data.paymentId,
-        razorpayPaymentId: outcome.razorpay_payment_id,
-      };
+      return { ok: true, paymentId: order.data.paymentId, razorpayPaymentId: outcome.razorpay_payment_id };
     },
-    [createWalletOrder, verifyPayment]
+    [verifyPayment]
+  );
+
+  const topUpWallet = useCallback(
+    async (amount: number, opts: TopUpOptions = {}): Promise<WalletTopUpResult> => {
+      const res = await runCheckout(() => createWalletOrder(amount), {
+        ...opts,
+        description: opts.description ?? `Wallet top-up ₹${amount}`,
+        notes: { purpose: "WALLET" },
+        unverifiedMessage:
+          "We received your payment but couldn't confirm the wallet update yet. If money was deducted, your balance will update in a few minutes. Otherwise, please contact support.",
+      });
+      return res.ok ? { ...res, amount } : res;
+    },
+    [runCheckout, createWalletOrder]
+  );
+
+  /* ---------------------------- store ---------------------------- */
+
+  const purchaseStorePack = useCallback(
+    async (input: StorePurchaseInput, opts: TopUpOptions = {}): Promise<StorePurchaseResult> => {
+      if (!input.storePackId) return { ok: false, cancelled: false, message: "Please select a pack." };
+      const label = input.purchaseType === "ROSE" ? "Roses" : "Compliments";
+
+      return runCheckout(
+        () =>
+          request<WalletOrderData>("/api/payment/create-order", {
+            method: "POST",
+            body: JSON.stringify({
+              purpose: "PURCHASE_STORE",
+              purchaseType: input.purchaseType,
+              storePackId: input.storePackId,
+            }),
+          }),
+        {
+          ...opts,
+          description: opts.description ?? `${label} pack`,
+          notes: { purpose: "PURCHASE_STORE", purchaseType: input.purchaseType, storePackId: input.storePackId },
+          unverifiedMessage: `We received your payment but couldn't confirm your ${label.toLowerCase()} yet. If money was deducted, they'll be added in a few minutes. Otherwise, please contact support.`,
+        }
+      );
+    },
+    [runCheckout]
+  );
+
+  /* -------------------------- date plans -------------------------- */
+
+  const purchaseDatePlan = useCallback(
+    async (datePlanPackageId: string, opts: TopUpOptions = {}): Promise<DatePlanPurchaseResult> => {
+      if (!datePlanPackageId) return { ok: false, cancelled: false, message: "Please select a pack." };
+
+      return runCheckout(
+        () =>
+          request<WalletOrderData>("/api/payment/create-order", {
+            method: "POST",
+            body: JSON.stringify({
+              purpose: "OTHER",
+              purchaseType: "DATE_PLAN",
+              datePlanPackageId,
+            }),
+          }),
+        {
+          ...opts,
+          description: opts.description ?? "Date plans",
+          notes: { purpose: "OTHER", purchaseType: "DATE_PLAN", datePlanPackageId },
+          unverifiedMessage:
+            "We received your payment but couldn't confirm your date plans yet. If money was deducted, they'll be added in a few minutes. Otherwise, please contact support.",
+        }
+      );
+    },
+    [runCheckout]
+  );
+
+  /* ---------------------------- boosts ---------------------------- */
+
+  /** Boost and Super Boost both use purpose "BOOST"; the option id decides which one. */
+  const purchaseBoost = useCallback(
+    async (boostOptionId: string, opts: TopUpOptions = {}): Promise<BoostPurchaseResult> => {
+      if (!boostOptionId) return { ok: false, cancelled: false, message: "Please select a pack." };
+
+      return runCheckout(
+        () =>
+          request<WalletOrderData>("/api/payment/create-order", {
+            method: "POST",
+            body: JSON.stringify({ purpose: "BOOST", boostOptionId }),
+          }),
+        {
+          ...opts,
+          description: opts.description ?? "Boosts",
+          notes: { purpose: "BOOST", boostOptionId },
+          unverifiedMessage:
+            "We received your payment but couldn't confirm your boosts yet. If money was deducted, they'll be added in a few minutes. Otherwise, please contact support.",
+        }
+      );
+    },
+    [runCheckout]
+  );
+
+  /* --------------------------- membership --------------------------- */
+
+  /** One-time payment for a membership plan price option. */
+  const purchasePackage = useCallback(
+    async (packagePriceId: string, opts: TopUpOptions = {}): Promise<PackagePurchaseResult> => {
+      if (!packagePriceId) return { ok: false, cancelled: false, message: "Please choose a plan." };
+
+      return runCheckout(
+        () =>
+          request<WalletOrderData>("/api/payment/create-order", {
+            method: "POST",
+            body: JSON.stringify({ purpose: "PACKAGE", packagePriceId }),
+          }),
+        {
+          ...opts,
+          description: opts.description ?? "Membership",
+          notes: { purpose: "PACKAGE", packagePriceId },
+          unverifiedMessage:
+            "We received your payment but couldn't activate your membership yet. If money was deducted, it will be activated in a few minutes. Otherwise, please contact support.",
+        }
+      );
+    },
+    [runCheckout]
   );
 
   /** GET /api/user/my-wallet?filter=ALL&page=1&limit=50&source=WALLET_TOPUP */
@@ -426,8 +574,20 @@ export function PaymentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ loadRazorpay, createOrder, createWalletOrder, topUpWallet, getWalletTopUps, verifyPayment, getPaymentSuccess }),
-    [loadRazorpay, createOrder, createWalletOrder, topUpWallet, getWalletTopUps, verifyPayment, getPaymentSuccess]
+    () => ({
+      loadRazorpay,
+      createOrder,
+      createWalletOrder,
+      topUpWallet,
+      getWalletTopUps,
+      purchaseStorePack,
+      purchaseDatePlan,
+      purchaseBoost,
+      purchasePackage,
+      verifyPayment,
+      getPaymentSuccess,
+    }),
+    [loadRazorpay, createOrder, createWalletOrder, topUpWallet, getWalletTopUps, purchaseStorePack, purchaseDatePlan, purchaseBoost, purchasePackage, verifyPayment, getPaymentSuccess]
   );
 
   return <PaymentContext.Provider value={value}>{children}</PaymentContext.Provider>;
@@ -460,7 +620,7 @@ export function usePaymentSuccess(bookingId: string | null) {
 
       const res = await getPaymentSuccess(bookingId);
       if (res.ok) setData(res.data);
-      else setError(res.status === 404 ? "Booking nahi mili." : res.message);
+      else setError(res.status === 404 ? "Booking not found." : res.message);
 
       setLoading(false);
       setRefreshing(false);

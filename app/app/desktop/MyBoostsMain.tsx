@@ -2,6 +2,8 @@
 
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { useUserProfileData } from "@/app/context/UserProfileDataContext";
+import { usePayment, type TopUpStage } from "@/app/context/PaymentContext";
+import { useMyProfile } from "@/app/app/shared/useMyProfile";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -30,9 +32,14 @@ import { toast } from "sonner";
 /*      feature, boost, superBoost    (aliases: boostValue / superBoostValue) */
 /*    durationMinutes (optional)      -> overrides "30 MIN EACH" footer text  */
 /*                                                                            */
+/*  Buy button -> PaymentContext.purchaseBoost()                              */
+/*    create-order { purpose: "BOOST", boostOptionId: <pack.id> }             */
+/*    -> Razorpay -> verify -> refetch both tabs                              */
+/*    Boost and Super Boost use the same purpose; the option id decides.      */
+/*                                                                            */
 /*  Usage:                                                                    */
 /*    <div style={{ width: 390, height: 800 }}>                               */
-/*      <BoostStore fluid onPurchase={(pack, type) => checkout(pack.id)} />   */
+/*      <BoostStore fluid />                                                  */
 /*    </div>                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -141,8 +148,8 @@ export interface BoostStoreProps {
     footnote?: string;
     ctaLabel?: string;
 
-    /** Called when the person taps Continue */
-    onPurchase?: (pack: BoostPack, type: BoostItemType) => Promise<void> | void;
+    /** Optional: runs after a successful, verified purchase */
+    onPurchased?: (pack: BoostPack, type: BoostItemType) => void;
 
     fluid?: boolean;
     className?: string;
@@ -228,6 +235,13 @@ const priceInfo = (p: BoostPack) => {
         discounted,
         percent: discounted ? Math.round((1 - total / list) * 100) : 0,
     };
+};
+
+/** finds availableBoosts / availableSuperBoosts / available… in the payload (null if the API has none) */
+const getAvailable = (data?: BoostData | null): number | null => {
+    if (!data) return null;
+    const key = Object.keys(data).find((k) => k.startsWith("available") && typeof data[k] === "number");
+    return key ? (data[key] as number) : null;
 };
 
 const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
@@ -364,7 +378,7 @@ export default function BoostStore({
     onViewPremium,
     footnote = "Boosts never expire · Use anytime",
     ctaLabel = "Continue",
-    onPurchase,
+    onPurchased,
     fluid = false,
     className,
     style,
@@ -372,7 +386,6 @@ export default function BoostStore({
     const { setActiveSection } = useActiveSection();
     const [tab, setTab] = useState<BoostItemType>(defaultTab);
     const [picked, setPicked] = useState<Partial<Record<BoostItemType, string>>>({});
-    const [buying, setBuying] = useState(false);
 
     /* both tabs are fetched up-front so switching is instant */
     const {
@@ -424,17 +437,113 @@ export default function BoostStore({
         : theme.each;
 
     const router = useRouter()
-    const handlePurchase = async () => {
-        if (!selected || buying) return;
-        setBuying(true);
-        try {
-            await onPurchase?.(selected, tab);
-        } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Purchase failed. Please try again.");
-        } finally {
-            setBuying(false);
-        }
+
+    /* ---- PAYMENT ---- */
+    const { purchaseBoost, loadRazorpay } = usePayment();
+    const { profile } = useMyProfile();
+    const [stage, setStage] = useState<TopUpStage | "idle">("idle");
+    const [payError, setPayError] = useState<string | null>(null);
+    const buying = stage !== "idle";
+    const refreshTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    /** set when money was charged but verify failed */
+    const pendingCredit = useRef<{ tab: BoostItemType; before: number; pack: BoostPack } | null>(null);
+
+    const boostAvailable = getAvailable(boost.data);
+    const superAvailable = getAvailable(superBoost.data);
+
+    const clearTimers = () => {
+        refreshTimers.current.forEach(clearTimeout);
+        refreshTimers.current = [];
     };
+
+    useEffect(() => {
+        loadRazorpay(); // preload so Razorpay opens fast
+        return clearTimers;
+    }, [loadRazorpay]);
+
+    /** refetch both tabs now and a few more times, in case the backend credits a bit later */
+    const refreshBoosts = useCallback(
+        (delays: number[] = [3000]) => {
+            const run = () => {
+                boostReload?.();
+                superBoostReload?.();
+            };
+            run();
+            clearTimers();
+            refreshTimers.current = delays.map((ms) => setTimeout(run, ms));
+        },
+        [boostReload, superBoostReload]
+    );
+
+    const packWord = (t: BoostItemType, n: number) => {
+        const th = THEMES[t];
+        return (n === 1 ? th.singular : th.plural).toLowerCase();
+    };
+
+    /* boosts arrived after an unconfirmed payment -> hide the error, show success */
+    useEffect(() => {
+        const pending = pendingCredit.current;
+        if (!pending) return;
+        const now = pending.tab === "BOOST" ? boostAvailable : superAvailable;
+        if (now == null || now <= pending.before) return;
+        pendingCredit.current = null;
+        clearTimers();
+        setPayError(null);
+        toast.success(`${pending.pack.quantity} ${packWord(pending.tab, pending.pack.quantity)} added to your account ⚡`);
+    }, [boostAvailable, superAvailable]);
+
+    const handlePurchase = async () => {
+        if (!selected || buying) return; // block double taps
+        setPayError(null);
+        pendingCredit.current = null;
+
+        const p = (profile ?? {}) as Record<string, any>;
+        const pack = selected;
+        const packTab = tab;
+        const before = packTab === "BOOST" ? boostAvailable : superAvailable;
+
+        const res = await purchaseBoost(pack.id, {
+            description: `${pack.quantity} ${pack.quantity === 1 ? THEMES[packTab].singular : THEMES[packTab].plural}`,
+            prefill: {
+                name: p.name ?? p.fullName ?? p.firstName ?? undefined,
+                email: p.email ?? undefined,
+                contact: p.phone ?? p.mobile ?? p.phoneNumber ?? undefined,
+            },
+            onStage: setStage,
+        });
+        setStage("idle");
+
+        if (res.ok) {
+            toast.success(`${pack.quantity} ${packWord(packTab, pack.quantity)} added to your account ⚡`);
+            refreshBoosts();
+            onPurchased?.(pack, packTab);
+            return;
+        }
+        if (res.cancelled) return; // user closed Razorpay
+
+        if (res.paymentCaptured) {
+            // money was charged: keep checking. If the API returns an "available…" count,
+            // the effect above clears the error as soon as the boosts arrive.
+            if (before != null) pendingCredit.current = { tab: packTab, before, pack };
+            setPayError(res.message);
+            refreshBoosts([3000, 8000, 15000, 30000, 60000]);
+            return;
+        }
+
+        setPayError(res.message);
+        toast.error(res.message);
+    };
+
+    const buyLabel =
+        stage === "creating"
+            ? "Preparing payment…"
+            : stage === "awaiting"
+              ? "Complete payment in the window…"
+              : stage === "verifying"
+                ? `Adding ${theme.plural.toLowerCase()}…`
+                : selected
+                  ? `Get ${selected.quantity} ${selected.quantity === 1 ? theme.singular : theme.plural} for ${money(currencySymbol, selected.totalPrice)}`
+                  : ctaLabel;
 
     const sectionTitle: React.CSSProperties = {
         margin: 0,
@@ -517,6 +626,7 @@ export default function BoostStore({
                                     className="wbs-btn"
                                     aria-label="Go back"
                                     onClick={onBack}
+                                    disabled={buying}
                                     style={{
                                         ...circleBtn,
                                         position: "absolute",
@@ -589,7 +699,11 @@ export default function BoostStore({
                                             aria-selected={active}
                                             type="button"
                                             className="wbs-btn"
-                                            onClick={() => setTab(key)}
+                                            onClick={() => {
+                                                setTab(key);
+                                                if (!pendingCredit.current) setPayError(null);
+                                            }}
+                                            disabled={buying}
                                             style={{
                                                 height: U(10),
                                                 display: "flex",
@@ -788,7 +902,11 @@ export default function BoostStore({
                                                         role="radio"
                                                         aria-checked={active}
                                                         className="wbs-btn"
-                                                        onClick={() => setPicked((m) => ({ ...m, [tab]: p.id }))}
+                                                        onClick={() => {
+                                                            setPicked((m) => ({ ...m, [tab]: p.id }));
+                                                            if (!pendingCredit.current) setPayError(null);
+                                                        }}
+                                                        disabled={buying}
                                                         style={{
                                                             position: "relative",
                                                             display: "flex",
@@ -1173,10 +1291,17 @@ export default function BoostStore({
                                 </span>
                             </div>
 
+                            {payError && (
+                                <p role="alert" style={{ margin: `${U(3)} 0 0`, fontSize: U(3.1), lineHeight: 1.45, color: "#c62828", textAlign: "center" }}>
+                                    {payError}
+                                </p>
+                            )}
+
                             <button
                                 type="button"
                                 className="wbs-btn"
                                 onClick={handlePurchase}
+                                aria-busy={buying}
                                 disabled={!selected || buying}
                                 style={{
                                     marginTop: U(3.4),
@@ -1192,12 +1317,13 @@ export default function BoostStore({
                                     fontSize: U(4.1),
                                     fontWeight: 500,
                                     boxShadow: selected ? `0 ${U(1.2)} ${U(3.4)} ${theme.ctaShadow}` : "none",
+                                    opacity: buying ? 0.85 : 1,
                                 }}
                             >
                                 <span style={{ fontSize: U(4.4), display: "flex" }}>
                                     <Icon name={theme.tabIcon} />
                                 </span>
-                                {buying ? "Processing…" : ctaLabel}
+                                {buyLabel}
                             </button>
 
                             <p style={{ margin: `${U(3)} 0 0`, textAlign: "center", fontSize: U(2.9), color: C.greyLight }}>
