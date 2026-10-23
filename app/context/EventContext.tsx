@@ -3,7 +3,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
+import { authHeader } from "@/utils/token";
 
+
+/* ------------------------------------------------------------------ */
+/*  URL                                                              */
+/* ------------------------------------------------------------------ */
+const MY_TICKET_URL = `${API_BASE_URL}/api/user/event/my-ticket`;
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -308,6 +314,170 @@ export function useEventDetails(eventId: string | null | undefined): EventDetail
     return {
         details: settled ? result.details : null,
         loading: Boolean(eventId) && !settled,
+        error: settled ? result.error : null,
+        refetch,
+    };
+}
+
+/* ------------------------------------------------------------------ */
+/*  My Tickets — GET /api/user/event/my-ticket[?status=…]              */
+/* ------------------------------------------------------------------ */
+
+/** Every status the backend accepts as a `?status=` filter, plus ALL. */
+export type TicketStatus =
+    | "PENDING"
+    | "PAYMENT_PENDING"
+    | "CONFIRMED"
+    | "CANCELLED"
+    | "REFUND_PENDING"
+    | "REFUNDED"
+    | "ATTENDED"
+    | "EXPIRED";
+
+export type TicketFilter = "ALL" | TicketStatus;
+
+/** Event snapshot embedded in each booking. */
+export interface MyTicketEvent {
+    id: string;
+    title: string;
+    eventType?: string | null;
+    eventDate: string;
+    startTime?: string | null;
+    endTime?: string | null;
+    venueName?: string | null;
+    fullAddress?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    heroImage?: string | null;
+}
+
+/** One admission ticket inside a booking (a booking may hold several). */
+export interface MyTicket {
+    id: string;
+    ticketId: string;
+    ticketType: string;
+    ticketAmount: number;
+    qrCodeUrl: string | null;
+    status: TicketStatus | string;
+}
+
+/** A booking for an event, with its line items and the event snapshot. */
+export interface MyTicketsBooking {
+    id: string;
+    bookingNumber: string;
+    ticketCount: number;
+    ticketAmount: number;
+    discountAmount: number;
+    platformFee: number;
+    gstAmount: number;
+    totalAmount: number;
+    paidAmount: number;
+    status: TicketStatus | string;
+    createdAt: string;
+    tickets: MyTicket[];
+    event: MyTicketEvent;
+}
+
+export interface MyTicketsPagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
+interface MyTicketsResponse {
+    success?: boolean;
+    message?: string;
+    data?: {
+        bookings: MyTicketsBooking[];
+        pagination: MyTicketsPagination;
+    };
+}
+
+export interface MyTicketsResult {
+    bookings: MyTicketsBooking[];
+    pagination: MyTicketsPagination | null;
+    loading: boolean;
+    error: string | null;
+    refetch: () => void;
+}
+
+/**
+ * Authenticated fetch of the member's tickets, optionally filtered by status.
+ * Keyed by `${filter}::${reloadKey}` (same pattern as useEventDetails) so a
+ * late response for a previous filter can never overwrite the current one and
+ * a manual refetch flips back to the loader without a synchronous setState.
+ *
+ * `filter === "ALL"` omits the query param (GET .../my-ticket).
+ */
+export function useMyTickets(filter: TicketFilter = "ALL"): MyTicketsResult {
+    const [reloadKey, setReloadKey] = useState(0);
+    const requestKey = `${filter}::${reloadKey}`;
+
+    const [result, setResult] = useState<{
+        key: string | null;
+        bookings: MyTicketsBooking[];
+        pagination: MyTicketsPagination | null;
+        error: string | null;
+    }>({ key: null, bookings: [], pagination: null, error: null });
+
+    useEffect(() => {
+        let alive = true;
+
+        (async () => {
+            const url =
+                filter === "ALL"
+                    ? MY_TICKET_URL
+                    : `${MY_TICKET_URL}?status=${encodeURIComponent(filter)}`;
+
+            try {
+                const response = await axios.get(url, { headers: authHeader() });
+                if (!alive) return;
+
+                const payload = response.data as MyTicketsResponse | null;
+
+                if (payload?.success) {
+                    setResult({
+                        key: requestKey,
+                        bookings: payload.data?.bookings ?? [],
+                        pagination: payload.data?.pagination ?? null,
+                        error: null,
+                    });
+                } else {
+                    setResult({
+                        key: requestKey,
+                        bookings: [],
+                        pagination: null,
+                        error: payload?.message || "Couldn't load your tickets.",
+                    });
+                }
+            } catch (err) {
+                if (!alive) return;
+                console.error("My tickets fetch error:", filter, err);
+                setResult({
+                    key: requestKey,
+                    bookings: [],
+                    pagination: null,
+                    error: "Couldn't load your tickets.",
+                });
+            }
+        })();
+
+        return () => {
+            alive = false;
+        };
+    }, [filter, requestKey]);
+
+    const refetch = useCallback(() => setReloadKey((key) => key + 1), []);
+
+    const settled = result.key === requestKey;
+
+    return {
+        bookings: settled ? result.bookings : [],
+        pagination: settled ? result.pagination : null,
+        loading: !settled,
         error: settled ? result.error : null,
         refetch,
     };

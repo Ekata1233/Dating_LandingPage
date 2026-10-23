@@ -81,7 +81,7 @@ export default function LoginModal({
     useState(false);
 
   const phoneRef =
-    useRef<HTMLInputElement>(null);
+    useRef<HTMLDivElement>(null);
 
   const otpRefs =
     useRef<Array<HTMLInputElement | null>>([]);
@@ -121,7 +121,9 @@ export default function LoginModal({
       "hidden";
 
     const focusTimer = setTimeout(() => {
-      phoneRef.current?.focus();
+      phoneRef.current
+        ?.querySelector("input")
+        ?.focus();
     }, 50);
 
     return () => {
@@ -475,7 +477,9 @@ export default function LoginModal({
     setErrorMsg("");
 
     setTimeout(() => {
-      phoneRef.current?.focus();
+      phoneRef.current
+        ?.querySelector("input")
+        ?.focus();
     }, 50);
   };
 

@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   MapPin,
   ChevronDown,
+  TicketCheck,
 } from "lucide-react";
 import EventCard from "../components/ui/EventCard";
 import { Event_Type, useEventData } from "../context/EventContext";
 import { MoonLoader } from "react-spinners";
 import Link from "next/link";
 import { formattedDate } from "../components/eventSection/eventSection";
+import { getClientToken } from "@/utils/token";
 
 import IconMGlowingStar from "react-fluentui-emoji/icons/modern/IconMGlowingStar";
 import IconMPeopleHugging from "react-fluentui-emoji/icons/modern/IconMPeopleHugging";
@@ -52,8 +54,27 @@ const cities = [
   "Nashik",
 ];
 
+/** Client auth flag — mirrors the pattern in app/events/[id]/page.tsx. */
+function useLoggedIn(): boolean {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setLoggedIn(getClientToken() !== null);
+    sync();
+    window.addEventListener("welvors-auth-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("welvors-auth-change", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  return loggedIn;
+}
+
 export default function EventsFeed() {
   const { events, loading, error, filter, setFilter } = useEventData();
+  const loggedIn = useLoggedIn();
 
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [selectedCity, setSelectedCity] = useState("Pune");
@@ -102,40 +123,54 @@ export default function EventsFeed() {
           Events near {selectedCity}
         </h1>
 
-        {/* CITY DROPDOWN */}
-        <div className="relative w-fit sm:ml-auto" ref={dropdownRef}>
-          <button
-            onClick={() =>
-              setIsCityDropdownOpen(!isCityDropdownOpen)
-            }
-            className="flex cursor-pointer items-center gap-1 rounded-full border border-gray-400 px-2.5 py-1"
-          >
-            <MapPin size={16} className="text-pink-400" />
+        {/* CITY DROPDOWN + MY TICKETS */}
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-fit">
+          <div className="relative flex-1 sm:flex-none" ref={dropdownRef}>
+            <button
+              onClick={() =>
+                setIsCityDropdownOpen(!isCityDropdownOpen)
+              }
+              className="flex w-full cursor-pointer items-center justify-center gap-1 rounded-full border border-gray-400 px-2.5 py-1 sm:w-auto sm:justify-start"
+            >
+              <MapPin size={16} className="text-pink-400" />
 
-            {selectedCity}
+              {selectedCity}
 
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${isCityDropdownOpen ? "rotate-180" : ""
-                }`}
-            />
-          </button>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${isCityDropdownOpen ? "rotate-180" : ""
+                  }`}
+              />
+            </button>
 
-          {isCityDropdownOpen && (
-            <div className="absolute left-0 z-50 mt-2 max-h-60 w-48 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg sm:left-auto sm:right-0">
-              {cities.map((city) => (
-                <button
-                  key={city}
-                  onClick={() => handleCitySelect(city)}
-                  className={`block w-full px-4 py-2 text-left text-sm hover:bg-pink-50 ${selectedCity === city
-                    ? "bg-pink-100 font-medium text-pink-600"
-                    : "text-gray-700"
-                    }`}
-                >
-                  {city}
-                </button>
-              ))}
-            </div>
+
+            {isCityDropdownOpen && (
+              <div className="absolute left-0 z-50 mt-2 max-h-60 w-48 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg sm:left-auto sm:right-0">
+                {cities.map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => handleCitySelect(city)}
+                    className={`block w-full px-4 py-2 text-left text-sm hover:bg-pink-50 ${selectedCity === city
+                      ? "bg-pink-100 font-medium text-pink-600"
+                      : "text-gray-700"
+                      }`}
+                  >
+                    {city}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* MY TICKETS — members only */}
+          {loggedIn && (
+            <Link
+              href="/events/myTickets"
+              className="flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-pink-500 px-2.5 py-1 text-white transition-colors hover:bg-pink-600"
+            >
+              <TicketCheck size={16} />
+              My Ticket
+            </Link>
           )}
         </div>
       </div>
