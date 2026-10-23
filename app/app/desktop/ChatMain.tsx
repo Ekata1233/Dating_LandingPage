@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -9,6 +10,9 @@ import React, { useCallback, useEffect, useState } from "react";
 /*         • GiftCard       (image, "You sent … a gift", reply progress)       */
 /*         • RoseCard       (ribbon, rose, progress bar, coins)                */
 /*         • ComplimentCard (blue chip, quoted text)                           */
+/*         • LockedBubble   (glittering placeholder — anything that is not     */
+/*                           plain text never shows its content on the web,    */
+/*                           the bubble points the member at the app)          */
 /*    3. Composer — emoji, message input, Try, attach, gift, mic/send          */
 /*    4. Dropdown menu opened from the 3 dots (Report / Block / Unmatch /      */
 /*       Clear Chat / Delete Conversation)                                     */
@@ -24,7 +28,7 @@ import React, { useCallback, useEffect, useState } from "react";
 /* ---------------------------------- types ---------------------------------- */
 export type ChatTab = "all" | "gifts" | "compliments" | "dateInvites";
 
-export type MessageKind = "text" | "gift" | CardMessage["kind"];
+export type MessageKind = "text" | "gift" | "locked" | CardMessage["kind"];
 
 export interface TextMessage {
     kind: "text";
@@ -41,7 +45,7 @@ export interface GiftMessage {
     from: "me" | "them";
     imageUrl?: string;
     giftName: string;
-    triggerLine?:string;
+    triggerLine?: string;
     /** Emoji shown before the gift name, e.g. "☕" */
     giftEmoji?: string;
     /** Italic quoted line under the title */
@@ -66,7 +70,7 @@ export interface CardMessage {
     id: string | number;
     from: "me" | "them";
     title: string;
-    triggerLine?:string;
+    triggerLine?: string;
     subtitle?: string;
     imageUrl?: string;
     time: string;
@@ -79,10 +83,27 @@ export interface CardMessage {
     coins?: number;
 }
 
-export type ChatMessage = TextMessage | GiftMessage | CardMessage;
+/**
+ * Placeholder for every message that is not plain text (photo, gift, rose,
+ * compliment, system event). The content itself is never rendered on the web —
+ * the bubble just glitters and points the member at the app.
+ */
+export interface LockedMessage {
+    kind: "locked";
+    id: string | number;
+    from: "me" | "them";
+    /** What is hidden behind the placeholder, e.g. "Photo", "Gift", "Rose". */
+    label: string;
+    time: string;
+    /** Sent / Delivered / Read / Received, same as the rich cards. */
+    status?: string;
+    read?: boolean;
+}
+
+export type ChatMessage = TextMessage | GiftMessage | CardMessage | LockedMessage;
 
 export interface ChatConversationProps {
-    userId:string,
+    userId: string,
     avatarUrl?: string;
     name?: string;
     age?: number;
@@ -453,6 +474,127 @@ const TextBubble = ({ msg }: { msg: TextMessage }) => {
     );
 };
 
+/* ------------------------------- locked (glitter) bubble ------------------------------- */
+/** Four-point sparkle + a little companion star, both twinkling in place. */
+const SparkleIcon = () => (
+    <svg viewBox="0 0 24 24" style={svgBase} fill="currentColor">
+        <path d="M10 2l1.8 6.2L18 10l-6.2 1.8L10 18l-1.8-6.2L2 10l6.2-1.8L10 2Z" />
+        <path d="M19 15.4l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9Z" opacity=".65" />
+    </svg>
+);
+
+/**
+ * Everything that is not a plain text message renders here: a shimmering
+ * bubble that hides the content and tells the member to open the app.
+ */
+const LockedBubble = ({ msg }: { msg: LockedMessage }) => {
+    const mine = msg.from === "me";
+    return (
+        <div
+            style={{
+                display: "flex",
+                justifyContent: mine ? "flex-end" : "flex-start",
+                padding: `${U(1)} ${U(5)}`,
+            }}
+        >
+            <div
+                style={{
+                    position: "relative",
+                    overflow: "hidden",
+                    maxWidth: "78%",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: U(1.4),
+                    padding: `${U(2.8)} ${U(4)}`,
+                    borderRadius: U(5),
+                    borderBottomRightRadius: mine ? U(1.2) : U(5),
+                    borderBottomLeftRadius: mine ? U(5) : U(1.2),
+                    background: mine ? C.bubbleMine : C.bubbleTheirs,
+                    border: `${HAIR} solid ${mine ? C.pinkBorder : C.border}`,
+                }}
+            >
+                {/* glitter sweep */}
+                <span
+                    aria-hidden
+                    className="chat-locked-sheen"
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        width: "45%",
+                        transform: "translateX(-140%)",
+                        pointerEvents: "none",
+                        background:
+                            "linear-gradient(100deg, transparent, rgba(255,255,255,.92), rgba(255,214,232,.7), transparent)",
+                    }}
+                />
+
+                <span
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: U(1.6),
+                        fontSize: U(3),
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        color: C.grey,
+                    }}
+                >
+                    <span
+                        className="chat-locked-spark"
+                        style={{ display: "flex", fontSize: U(4.8), color: C.pinkText }}
+                    >
+                        <SparkleIcon />
+                    </span>
+                    {msg.label}
+                </span>
+                <Link href={"https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"}>
+                    <span
+                        className="chat-locked-glitter"
+                        style={{
+                            fontSize: U(3.4),
+                            fontWeight: 700,
+                            lineHeight: 1.35,
+                            background:
+                                "linear-gradient(90deg, #8a6a80, #e0355f, #f1b400, #e0355f, #8a6a80)",
+                            backgroundSize: "300% 100%",
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            color: "transparent",
+                        }}
+                    >
+                        Open the Welvors app to view this message
+
+                    </span></Link>
+
+                <span
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: U(1.4),
+                        fontSize: U(2.5),
+                        color: C.greyLight,
+                    }}
+                >
+                    {msg.status && (
+                        <span style={{ color: mine ? C.pinkText : C.greyLight }}>{msg.status}</span>
+                    )}
+                    {msg.time}
+                    {mine && msg.read !== undefined && (
+                        <span style={{ fontSize: U(3.2), display: "flex" }}>
+                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                        </span>
+                    )}
+                </span>
+            </div>
+        </div>
+    );
+};
+
 /* --------------------------------- shared card bits --------------------------------- */
 
 /** Row wrapper that aligns a card left/right and gives it its width. */
@@ -726,8 +868,8 @@ const RoseCard = ({ msg, name }: { msg: CardMessage, name: string }) => {
                         </div>
                     )} */}
                 </div>
-                <div className="italic w-60" style={{ fontSize: U(3.2)}}>
-                    {msg.from==="me" ? `I read your whole profile before this. The ambition bit got me.` : `Sent this hoping you'd write back. The ambition bit got me.`}
+                <div className="italic w-60" style={{ fontSize: U(3.2) }}>
+                    {msg.from === "me" ? `I read your whole profile before this. The ambition bit got me.` : `Sent this hoping you'd write back. The ambition bit got me.`}
                 </div>
 
                 <div style={{ marginTop: U(4) }}>
@@ -806,16 +948,16 @@ const ComplimentCard = ({ msg }: { msg: CardMessage }) => {
                     }}
                 >
                     <span style={{ fontSize: U(2.5), lineHeight: 1 }}>💝</span>
-                    <span style={{ fontSize: U(2.5),minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: U(2.5), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         COMPLIMENT SENT
                     </span>
                 </span>
 
                 {/* quote */}
-                <div className="p-2 italic flex flex-row gap-2" style={{fontSize: U(3.9)}}>
-                        <span className="bg-pink-500 rounded-full h-5 w-1"></span>
-                        <span>{msg.title}</span>
-                    </div>
+                <div className="p-2 italic flex flex-row gap-2" style={{ fontSize: U(3.9) }}>
+                    <span className="bg-pink-500 rounded-full h-5 w-1"></span>
+                    <span>{msg.title}</span>
+                </div>
                 {msg.subtitle && (
                     <div
                         style={{
@@ -1171,7 +1313,13 @@ export default function ChatMain({
         .chat-input::placeholder { color: ${C.greyLight}; }
         .chat-input:focus-visible { outline: none; }
         @keyframes chat-menu-in { from { opacity: 0; transform: translateY(-1.2cqw) scale(.98); } to { opacity: 1; transform: none; } }
-        @media (prefers-reduced-motion: reduce) { .chat-menu-panel { animation: none !important; } }
+        .chat-locked-glitter { animation: chat-glitter 2.6s linear infinite; }
+        .chat-locked-sheen { animation: chat-sheen 3s ease-in-out infinite; }
+        .chat-locked-spark { animation: chat-spark 1.8s ease-in-out infinite; }
+        @keyframes chat-glitter { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+        @keyframes chat-sheen { 0% { transform: translateX(-140%); } 55%, 100% { transform: translateX(360%); } }
+        @keyframes chat-spark { 0%, 100% { transform: scale(.72) rotate(-14deg); opacity: .55; } 50% { transform: scale(1.18) rotate(16deg); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .chat-menu-panel, .chat-locked-glitter, .chat-locked-sheen, .chat-locked-spark { animation: none !important; } }
       `}</style>
 
                         {/* click-away layer for the dropdown */}
@@ -1236,7 +1384,7 @@ export default function ChatMain({
                                         >
                                             {name}, {age}
                                         </span>
-                                        <span
+                                        {/* <span
                                             style={{
                                                 flexShrink: 0,
                                                 padding: `${U(0.7)} ${U(2.2)}`,
@@ -1249,7 +1397,7 @@ export default function ChatMain({
                                             }}
                                         >
                                             {planLabel}
-                                        </span>
+                                        </span> */}
                                     </div>
                                     <div style={{ display: "flex", alignItems: "center", gap: U(1.4), marginTop: U(0.6) }}>
                                         <span
@@ -1418,6 +1566,7 @@ export default function ChatMain({
                                     )}
                                     {messages.map((m) => {
                                         if (m.kind === "text") return <TextBubble key={m.id} msg={m} />;
+                                        if (m.kind === "locked") return <LockedBubble key={m.id} msg={m} />;
                                         if (m.kind === "gift") return <GiftCard key={m.id} msg={m} otherName={name} />;
                                         if (m.kind === "rose") return <RoseCard name={name} key={m.id} msg={m} />;
                                         if (m.kind === "compliment") return <ComplimentCard key={m.id} msg={m} />;
@@ -1488,7 +1637,7 @@ export default function ChatMain({
                                 />
                             </div>
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 onClick={onTry}
@@ -1509,7 +1658,7 @@ export default function ChatMain({
                                     <BulbIcon />
                                 </span>
                                 Try
-                            </button>
+                            </button> */}
 
                             <button
                                 type="button"
@@ -1526,7 +1675,7 @@ export default function ChatMain({
                                 <PaperclipIcon />
                             </button>
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 aria-label="Send a gift"
@@ -1538,7 +1687,7 @@ export default function ChatMain({
                                 }}
                             >
                                 <GiftInputIcon />
-                            </button>
+                            </button> */}
 
                             <button
                                 type="button"

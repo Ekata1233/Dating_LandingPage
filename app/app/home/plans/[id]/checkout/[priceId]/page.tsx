@@ -430,7 +430,7 @@ export function MembershipCheckout({
             toast.success(`${plan.name} activated for ${monthsText(price.months)} 🎉`);
             refetch?.();
             if (onPaid) onPaid(selection);
-            else router.back();
+            else router.push("/app/home");
             return;
         }
         if (res.cancelled) return; // user closed Razorpay

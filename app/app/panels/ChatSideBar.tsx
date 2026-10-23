@@ -326,7 +326,10 @@ const Pill = ({
    they would override any Tailwind color/weight classes. */
 const StatusRow = ({ conversation }: { conversation: Conversation }) => {
     const unread = conversation.unreadCount >= 1;
-    const { messageType, content } = conversation.lastMessage;
+    const { messageType, content } = conversation.lastMessage || {
+        messageType: "TEXT" as const,
+        content: "No Messages yet.",
+    };
 
     const textStyle = (
         readColor: string,
@@ -337,21 +340,16 @@ const StatusRow = ({ conversation }: { conversation: Conversation }) => {
         fontWeight: unread ? 700 : readWeight,
     });
 
-    if (messageType === "DATE_CONFIRMED") {
+    if (messageType !== "TEXT") {
+        /* Previews follow the thread: only plain text is ever shown on the
+           web, anything else gets the glittering "open the app" line. */
         return (
-            <div style={{ display: "flex", alignItems: "center", gap: U(1.6) }}>
-                <span style={textStyle(C.green, 400)}>{content}</span>
-            </div>
-        );
-    }
-
-    if (messageType === "GIFT") {
-        return (
-            <div style={{ display: "flex", flexDirection: "column", gap: U(1.6) }}>
-                <div style={{ display: "flex ", alignItems: "center", gap: U(1.8) }}>
-                    <span style={textStyle(C.grey, 500)}>{content}</span>
-                </div>
-            </div>
+            <span
+                className="msg-locked msg-ellipsis"
+                style={{ fontSize: U(3.5), fontWeight: unread ? 700 : 500 }}
+            >
+                Open the Welvors app to view this message
+            </span>
         );
     }
 
@@ -404,6 +402,9 @@ export default function ChatSideBar({
         .msg-row:hover { background-color: #fafafa; }
         .msg-tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
         .msg-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+        .msg-locked { background-image: linear-gradient(90deg, #8a6a80, #e0355f, #f1b400, #e0355f, #8a6a80); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; animation: msg-glitter 2.6s linear infinite; }
+        @keyframes msg-glitter { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+        @media (prefers-reduced-motion: reduce) { .msg-locked { animation: none !important; } }
       `}</style>
 
             <div

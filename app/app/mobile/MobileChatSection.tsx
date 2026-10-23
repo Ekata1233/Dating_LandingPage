@@ -66,6 +66,7 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
             hasOlderMessages={chat.hasMore}
             onLoadOlderMessages={() => void chat.loadMore()}
             loadingOlderMessages={chat.loadMoreLoading}
+            onSend={chat.sendMessage}
           />
         </div>
       </div>

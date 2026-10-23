@@ -16,8 +16,8 @@ import { authHeader, getClientToken } from "@/utils/token";
 /* API URLs                                                           */
 /* ------------------------------------------------------------------ */
 
-// const DATE_PLANS_DISCOVER_URL = `${API_BASE_URL}/api/user/date-plans/discover`;
-const DATE_PLANS_DISCOVER_URL = `https://dev-api.welvors.com/api/user/date-plans/discover`;
+const DATE_PLANS_DISCOVER_URL = `${API_BASE_URL}/api/user/date-plans/discover`;
+// const DATE_PLANS_DISCOVER_URL = `https://dev-api.welvors.com/api/user/date-plans/discover`;
 
 /** Appends the optional pagination cursor to a filter's discover URL. */
 const datePlansUrl = (filter: DatePlanFilter, cursor?: string | null) => {
@@ -255,9 +255,7 @@ export function DateNowProvider({
     const authGet = useCallback(async <T,>(url: string): Promise<GetResult<T>> => {
         try {
             const response = await axios.get<T>(url, {
-                headers: {
-                    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDAwNzJiYi1kZDhkLTQ2ZGQtOTU2MC1iN2Q4MmQ0MDcwMzEiLCJzZXNzaW9uSWQiOiJjYzM2YTUwOC03ZTUyLTRjZjItYTg4NC04Mjc5MTA2NWM2MzkiLCJpYXQiOjE3OTE4OTE2ODYsImV4cCI6MTc5NDQ4MzY4Nn0.izVMnyCe10575CEzBJu6a9B9aFNV2tUiGo7ZoJEbRBM`
-                }
+                headers: authHeader()
             });
             return { data: response.data, error: null };
         } catch (err) {
