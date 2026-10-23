@@ -329,7 +329,7 @@ export default function RosesStore({
     style,
 }: RosesStoreProps) {
     const theme = ROSES_THEME;
-    const { roses: data, rosesLoading: loading, rosesError: error, refetchRoses: onRetry } = useUserProfileData();
+    const { roses: data, rosesLoading: loading, rosesError: error, refetchRoses: onRetry, applyResourceCredit } = useUserProfileData();
     const { setActiveSection } = useActiveSection();
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -418,6 +418,8 @@ export default function RosesStore({
 
         if (res.ok) {
             toast.success(`${pack.quantity} ${pack.quantity === 1 ? theme.singular.toLowerCase() : theme.plural.toLowerCase()} added to your account 🌹`);
+            router.push("/app/home")
+            void applyResourceCredit("roses", pack.quantity);
             refreshRoses();
             onPurchased?.(pack);
             return;

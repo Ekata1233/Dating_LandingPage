@@ -328,7 +328,7 @@ export default function MyTicketsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((b) => (
-              <BookingCard key={b.id} booking={b} onView={() => goToEvent(b)} />
+              <BookingCard  key={b.id} booking={b} onView={() => goToEvent(b)} />
             ))}
           </div>
         )}
@@ -350,7 +350,10 @@ function BookingCard({
   const day = formatDay(b.event?.eventDate);
   const time = formatTime(b.event?.eventDate, b.event?.startTime);
   const venue = bookingVenue(b);
-
+  const router = useRouter();
+  function handleBookingCardClick() {
+    router.replace(`/events/${b.event.id}`)
+  }
   const ticketTypes = Array.from(
     new Set(b.tickets.map((t) => humanize(t.ticketType)).filter(Boolean))
   );

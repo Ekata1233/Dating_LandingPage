@@ -20,6 +20,16 @@ npm run build            # also typechecks; does NOT run eslint
 
 Verify in this order: `npx tsc --noEmit` → `npx eslint <dirs you touched>` → `npm run build`.
 
+### Do NOT run `npm run dev` and `npm run build` at the same time
+
+Both write the generated route types (`.next/dev/types/routes.d.ts` and
+`.next/types/routes.d.ts`) and the concurrent writes leave a duplicated/garbled tail in
+them. `next build`'s typecheck then dies with a parse error *inside* `.next/…`
+(`Unexpected keyword or identifier`, `';' expected`) — it is not your code.
+
+Fix: stop the dev server, `Remove-Item -Recurse .next`, rebuild. A dev server started
+while a build is in flight will re-corrupt it, so make sure nothing restarts it.
+
 ### Lint always fails — that is the baseline
 
 `npm run lint` reports **19 errors / 118 warnings** and exits 1 before you touch anything,
@@ -30,12 +40,12 @@ It is not wired into `next build`, so a green build proves nothing about lint.
 **Judge your work by the delta, not the exit code.** Run `npx eslint <your dirs>` and confirm
 you added nothing new; do not go fixing the baseline.
 
-### Known baseline `tsc` errors — do NOT "fix" these
+### `tsc` baseline — clean (verified 2026-10-23)
 
-`npx tsc --noEmit` reports exactly these three, always, before you touch anything:
-`app/components/endpoints/steps/LoginPhone.tsx:210` (TS2322),
-`app/components/ui/PaymentButton.tsx:66` (TS2717) and `:166` (TS7006).
-A clean delta means these three and no more.
+`npx tsc --noEmit` exits 0 with no output. The three errors this section used to list
+(`LoginPhone.tsx:210` TS2322, `PaymentButton.tsx:66` TS2717, `:166` TS7006) are gone —
+checked both before and after the 2026-10-23 chat change. **A clean delta now means zero
+errors**; anything new is yours.
 
 ## Repo facts worth knowing up front
 
@@ -212,8 +222,81 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
   does an optimistic bump + reconcile pulls; the sidebar reads
   `balances.wallet.formattedBalance` so it updates instantly. Success path in
   `app/app/home/myBalances/mywallet/addMoney/page.tsx`.
+- **Other balances now sync the same way:** `applyResourceCredit(bucket, amount)` (same
+  context) optimistically bumps `roses` / `compliments` / `boosts` / `datePlans` and
+  reconciles against raw server values (`serverResourceBalanceRef`), so the home sidebar
+  updates in the same tick as the success toast. Wired into the four purchase success
+  paths: `RosesMain` (`roses`), `ComplimentsMain` (`compliments`), `DatePlansMain`
+  (`datePlans`), `MyBoostsMain` (`boosts` for the BOOST tab; SUPER just calls
+  `refetchBalances` because `my-balances` exposes one `boosts` bucket).
+- **Feed `package` badge:** `HomeMain.tsx` maps `package.name` → icon
+  (FREE/PREMIUM 🔥, VIP 👑, VIP ELITE 💠) top-right of the card. Raw `UserProfile.package`
+  is typed in `UsersContext.tsx` and mapped in `mapUserToProfile`; `mapMyProfile`,
+  `mockData`, and `admirerToProfile` default it to FREE.
 
 ## Session log (newest first)
+
+### 2026-10-23 — chat: socket.io wired in (join / send / receive)
+- `lib/chat/socket.ts` (user-authored, left untouched) owns a module singleton:
+  `connectChatSocket(token)` / `disconnectChatSocket()`, events `conversation:join`,
+  `message:send`, `message:receive`. `socket.io-client` was already in `package.json`.
+- `app/context/ChatContext.tsx` — new "REALTIME" block in `ChatConversationsProvider`
+  (the only consumer; it sits in `app/layout.tsx`, so one connection per session):
+  connect on mount when `getClientToken()` is set, join the open conversation's room on
+  every `activeConversationId` change, and `mergeLiveMessage` on `message:receive`.
+  Socket rows are a subset of the REST `Message` — `fromSocketMessage()` fills the rest
+  with `null` so they render through the same mapper. Also exposes `sendMessage(content)`
+  (emits + appends an optimistic bubble, reconciled by a `pendingSends` FIFO keyed
+  `${conversationId}|${content}`) and `socketConnected`. Incoming rows also bump the
+  conversation list (preview to top; unread++ only when the thread is not open).
+- `useChatMessages` / `useChatThread` now pass `sendMessage` + `socketConnected` through;
+  `app/app/chats/page.tsx` and `app/app/mobile/MobileChatSection.tsx` wire `onSend`.
+- **Open / follow-ups:** assumes the server echoes `message:receive` back to the sender —
+  if it only broadcasts to the counterpart, the optimistic bubble never gets a real id
+  and should be reconciled by a refetch instead. `messageType` is `"TEXT"` only per the
+  current `socket.ts`. No `conversation:leave`, no read receipts, no typing events yet
+  (user has more events to provide). Verified: `npx tsc --noEmit` 0, eslint delta 0
+  (ChatContext baseline is the 4 pre-existing `react-hooks/refs` errors), `npm run build` green.
+
+### 2026-10-23 — build: dev/build race on generated route types
+- `npm run build` died in the TypeScript phase with parse errors *inside*
+  `.next/dev/types/routes.d.ts` (garbage at the end of the generated file) — nothing in
+  `app/` was wrong. Cause: `npm run dev` was running (and was restarted mid-build); dev
+  and build both write `.next/**/types/routes.d.ts` and the writes interleave.
+- Fix: stop this project's node processes, `Remove-Item -Recurse .next`, `npm run build`
+  → green. Added the "do not run dev + build together" note under Commands.
+- **Open:** the user's dev server had to be stopped to get a clean build — they need to
+  restart `npm run dev` themselves when they want it back.
+
+### 2026-10-23 — chat: non-text messages hidden behind a glittering placeholder
+- `app/app/shared/chatMessages.ts`: `lockRichMessages()` + `RICH_LABELS` wrap the
+  `mapApiMessages()` call inside `useChatThread`, so anything that is not `kind: "text"`
+  becomes a `LockedMessage`. The rich mapping (rose/gift/image/event/compliment cards)
+  still runs — its output is swapped before the thread sees it, so nothing was deleted.
+  Note: compliments arrive as `messageType: "TEXT"` + a `compliment` object, so they land
+  as `kind: "compliment"` and are locked too.
+- `app/app/desktop/ChatMain.tsx`: added `LockedMessage` to the `ChatMessage` union and
+  `LockedBubble` (twinkling `SparkleIcon`, sweeping sheen, gradient-shimmer line
+  "Open the Welvors app to view this message", time + read receipt) — rendered from the
+  message map right after `text`. Keyframes `chat-glitter` / `chat-sheen` / `chat-spark`
+  and a `prefers-reduced-motion` off-switch live in the component's existing `<style>`.
+- `app/app/panels/ChatSideBar.tsx`: `StatusRow` preview follows the same rule; the
+  DATE_CONFIRMED / GIFT branches were replaced by a `.msg-locked` gradient line
+  (`msg-glitter` keyframe added to the list's `<style>`).
+- **Open / follow-ups:** `ChatMain`'s rich card components and `DEFAULT_MESSAGES` are now
+  unreachable for API data (still render for the bare default prop) — decide keep/delete
+  on a cleanup pass. Verified: `npx tsc --noEmit` 0 errors, `npx eslint` on the three
+  touched files = the same 10 baseline warnings, `npm run build` green. No tests.
+
+### 2026-10-23 — balance badges + instant balances after purchase
+- Added `applyResourceCredit` + `serverResourceBalanceRef` to `UserProfileDataContext.tsx`
+  so roses/compliments/boosts/date-plans update the sidebar instantly after Razorpay
+  succeeds, mirroring the wallet top-up path.
+- Wired it into `RosesMain`, `ComplimentsMain`, `DatePlansMain`, `MyBoostsMain`.
+- Added `package` to raw `UserProfile` and all `Profile` mappers (this fixed the
+  `Profile.package is missing` tsc errors left by the earlier package-badge work).
+- **Open:** SUPER-boost purchases only refetch balances (no optimistic bump) pending a
+  confirmed `my-balances.boosts` semantic for super boosts. No tests.
 
 ### 2026-10-22 — myTickets: font consistency, auth gating, types
 - `EventContext.tsx`: `useMyTickets` + types added; response mapped to

@@ -58,6 +58,7 @@ function admirerToProfile(admirer: Admirer): Profile {
         distance,
         birth_date: "",
         height: "",
+        package: { id: "", name: "FREE", startDate: null, endDate: null },
         location: "",
         lookingFor: "",
         religion: "",

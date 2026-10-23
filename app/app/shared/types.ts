@@ -30,6 +30,12 @@ export interface ProfileFact {
  * A person shown on a card. The same shape backs the discovery feed and the
  * logged-in user's own profile, so both screens can share one renderer.
  */
+export interface packageType{
+  id:string;
+  name:string;
+  startDate:string | null;
+  endDate:string | null;
+}
 export interface Profile {
   id: string;
   name: string;
@@ -39,6 +45,7 @@ export interface Profile {
   distance: string;
   birth_date:string;
   height: string;
+  package:packageType;
   location: string;
   lookingFor: string;
   religion: string;

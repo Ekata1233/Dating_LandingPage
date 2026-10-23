@@ -417,7 +417,7 @@ export default function EventDetailsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center" style={{ background: C.bg }}>
-        <MoonLoader color={C.pink} speedMultiplier={2} />
+        <MoonLoader color={C.pink} speedMultiplier={2} size={20} />
       </div>
     );
   }
@@ -1167,7 +1167,7 @@ export default function EventDetailsPage() {
           style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` }}
         >
           <Ticket size={16} />
-          Register
+          Book Now
         </button>
       </div>
 

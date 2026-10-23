@@ -483,6 +483,9 @@ export interface UserBalances {
     datePlans: BalanceItem;
 }
 
+/** The balance buckets the sidebar can show and a purchase can credit. */
+export type BalanceBucket = "roses" | "compliments" | "boosts" | "datePlans";
+
 export interface UserBalancesResponse {
     success: boolean;
     message?: string;
@@ -687,6 +690,16 @@ interface UserProfileDataContextData {
     applyWalletTopUp: (amount: number) => Promise<void>;
 
     /**
+     * A roses / compliments / boosts / date-plans purchase landed. Updates the
+     * sidebar's matching balance card immediately (optimistic) and then
+     * reconciles it with the server.
+     */
+    applyResourceCredit: (
+        bucket: BalanceBucket,
+        amount: number
+    ) => Promise<void>;
+
+    /**
      * Runs the one-off full load (balances, wallet, date plans, referral…) if it
      * hasn't run yet. The provider lives in the root layout and can mount before
      * a session exists, so screens call this on mount to nudge it awake.
@@ -829,6 +842,7 @@ const UserProfileDataContext =
         balancesError: null,
         refetchBalances: async () => { },
         applyWalletTopUp: async () => { },
+        applyResourceCredit: async () => { },
         ensureLoaded: () => { },
 
         referralDashboard: null,
@@ -966,6 +980,19 @@ export function UserProfileDataProvider({
         amount: number;
         base: number;
     } | null>(null);
+
+    /* A roses/compliments/boosts/date-plans credit applied locally but not yet
+       confirmed by `/api/user/my-balances`. Keyed by the balance bucket. */
+    const pendingResourceCreditRef = useRef<
+        Partial<Record<BalanceBucket, { amount: number; base: number }>>
+    >({});
+
+    /* The last *raw* server balance per bucket, before any optimistic bump —
+       tells "the backend credited the pack" apart from "the balances endpoint
+       answered before that write landed". */
+    const serverResourceBalanceRef = useRef<Partial<Record<BalanceBucket, number>>>(
+        {}
+    );
 
     /* ---------------------------------------------------------------- */
     /* Referral Dashboard State                                        */
@@ -1198,6 +1225,36 @@ export function UserProfileDataProvider({
                         pendingWalletCreditRef.current = null;
                     }
                 }
+
+                /* Same treatment for roses / compliments / boosts / date plans:
+                   a purchase credits the bucket, but this endpoint can answer
+                   before that write lands. Keep the optimistic figure until the
+                   server catches up, then drop the pending marker. */
+                (Object.keys(pendingResourceCreditRef.current) as BalanceBucket[]).forEach(
+                    (bucket) => {
+                        const credit = pendingResourceCreditRef.current[bucket];
+                        if (!credit) return;
+
+                        const server = Number(next[bucket]?.balance ?? 0);
+
+                        /* Remember the raw server figure so the credit-sync loop
+                           can tell a real credit from an early response. */
+                        serverResourceBalanceRef.current[bucket] = server;
+
+                        if (server + 0.01 < credit.base + credit.amount) {
+                            next = {
+                                ...next,
+                                [bucket]: {
+                                    ...next[bucket],
+                                    balance: credit.base + credit.amount,
+                                    hasBalance: true,
+                                },
+                            };
+                        } else {
+                            delete pendingResourceCreditRef.current[bucket];
+                        }
+                    }
+                );
 
                 balancesRef.current = next;
                 setBalances(next);
@@ -1549,6 +1606,65 @@ export function UserProfileDataProvider({
             }
         },
         [refetchBalances, refetchWallet]
+    );
+
+    /**
+     * A roses / compliments / boosts / date-plans purchase just succeeded. The
+     * home sidebar's balance cards read `balances`, so bump the right bucket
+     * locally first — the card updates in the same tick as the success toast —
+     * then pull the server balances until the crediting write lands.
+     *
+     * The backend credits the bucket while handling /api/payment/verify, but
+     * /api/user/my-balances can answer before that write lands, so keep pulling
+     * for a moment until the credited amount shows up.
+     */
+    const applyResourceCredit = useCallback(
+        async (bucket: BalanceBucket, amount: number) => {
+            const credit = Number(amount);
+
+            if (!Number.isFinite(credit) || credit <= 0) return;
+
+            const base = Number(balancesRef.current?.[bucket]?.balance ?? 0);
+
+            pendingResourceCreditRef.current[bucket] = {
+                amount: credit,
+                base,
+            };
+
+            /* Optimistic: the card shows the new amount right away. */
+            setBalances((prev) => {
+                if (!prev) return prev;
+
+                const balance = Number(prev[bucket]?.balance ?? 0) + credit;
+                const next = {
+                    ...prev,
+                    [bucket]: { balance, hasBalance: true },
+                };
+
+                balancesRef.current = next;
+                return next;
+            });
+
+            const expected = base + credit;
+
+            for (let attempt = 0; attempt < 4; attempt++) {
+                await refetchBalances();
+
+                const server = serverResourceBalanceRef.current[bucket];
+
+                /* Backend has caught up (or has nothing to catch up on) —
+                   drop the optimistic marker. */
+                if (server === undefined || server + 0.01 >= expected) {
+                    delete pendingResourceCreditRef.current[bucket];
+                    return;
+                }
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 1500)
+                );
+            }
+        },
+        [refetchBalances]
     );
 
     /* Paginated wallet fetch used by the My Wallet screen: the screen owns
@@ -2223,6 +2339,7 @@ export function UserProfileDataProvider({
             balancesError,
             refetchBalances,
             applyWalletTopUp,
+            applyResourceCredit,
             ensureLoaded,
 
             /* Dashboard */
@@ -2343,6 +2460,7 @@ export function UserProfileDataProvider({
             balancesError,
             refetchBalances,
             applyWalletTopUp,
+            applyResourceCredit,
             ensureLoaded,
 
             referralDashboard,

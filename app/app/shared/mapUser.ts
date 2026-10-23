@@ -201,6 +201,8 @@ export function mapUserToProfile(user: UserProfile): Profile {
     height: formatHeight(user.height),
     location,
     birth_date:user.birth_date,
+    /* The feed ships the member's plan; the card badge reads `package.name`. */
+    package: user.package ?? { id: "", name: "FREE", startDate: null, endDate: null },
     /* Not sent by the API yet. */
     lookingFor: "",
     religion: "",

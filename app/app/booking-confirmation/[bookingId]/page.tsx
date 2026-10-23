@@ -1,7 +1,7 @@
 "use client";
 
 /* -------------------------------------------------------------------------- */
-/*  Booking Confirmation page                                                 */
+/*  Booking Confirmation page  (redesigned UI – data & logic unchanged)       */
 /*                                                                            */
 /*  Place at:  app/app/booking-confirmation/[bookingId]/page.tsx              */
 /*  (any folder works — the route param must be named `bookingId`)            */
@@ -13,13 +13,33 @@
 /*                                                                            */
 /*  Receipt shows tickets grouped gender-wise (Men / Women / Other) using     */
 /*  booking.tickets[].ticketType and booking.tickets[].ticketAmount.          */
+/*                                                                            */
+/*  Layout                                                                    */
+/*   - fills the whole viewport (fixed, full height, own scroll)              */
+/*   - sticky top bar; content is centred in a 1152px column                  */
+/*   - < 1024px : single column  (status → tickets → receipt → event → CTAs)  */
+/*   - ≥ 1024px : two columns    (status + tickets | receipt + event + CTAs)  */
+/*   - 8-pt spacing scale, ≥ 48px touch targets, visible focus rings,         */
+/*     semantic landmarks, aria-live status, reduced-motion safe              */
 /* -------------------------------------------------------------------------- */
 
 import { useMemo, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MoonLoader } from "react-spinners";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Check, Clock, Download, Link2, MapPin, RefreshCw, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  Clock,
+  Download,
+  Link2,
+  MapPin,
+  Receipt,
+  RefreshCw,
+  Ticket,
+  X,
+} from "lucide-react";
 import { PaymentSuccessData, usePaymentSuccess } from "@/app/context/PaymentContext";
 
 /* ----------------------------- config (edit) ----------------------------- */
@@ -29,21 +49,24 @@ const EVENT_ROUTE = (eventId: string) => `/app/events/${eventId}`; // your event
 /* --------------------------------- theme --------------------------------- */
 const C = {
   bg: "#FAF8F5",
-  ink: "#222020",
-  body: "#6B655F",
-  label: "#8E8781",
-  border: "#EEE9E4",
+  ink: "#1F1D1D",
+  body: "#5F5953",
+  label: "#837C75",
+  border: "#ECE6E0",
   white: "#FFFFFF",
   pink: "#E85A7A",
+  pinkDeep: "#D63F63",
   pinkSoft: "#FFEAF0",
-  green: "#2FA866",
-  greenBg: "#E9F7EF",
+  green: "#23995A",
+  greenBg: "#E8F6EE",
   greenBorder: "#BFE6CF",
-  amber: "#C98512",
-  amberBg: "#FFF4E0",
+  amber: "#B97308",
+  amberBg: "#FFF3DC",
+  amberBorder: "#F3D9A4",
   red: "#C62828",
   redBg: "#FDECEC",
-  qrBg: "#F4F1EC",
+  redBorder: "#F3C4C4",
+  qrBg: "#F6F3EE",
 };
 
 /* -------------------------------- helpers -------------------------------- */
@@ -95,6 +118,12 @@ const GENDER_LABEL: Record<string, string> = {
 };
 const GENDER_ORDER = ["MEN", "WOMEN", "OTHER"];
 
+const GENDER_CHIP: Record<string, { fg: string; bg: string }> = {
+  MEN: { fg: "#2B65C4", bg: "#E8F0FD" },
+  WOMEN: { fg: "#C2305A", bg: "#FFE9F0" },
+  OTHER: { fg: "#6B3FC4", bg: "#F0E9FD" },
+};
+
 const genderLabel = (type?: string | null): string => {
   const key = (type || "OTHER").toUpperCase();
   return GENDER_LABEL[key] ?? pretty(key);
@@ -129,39 +158,76 @@ function viewState(d: PaymentSuccessData): ViewState {
   return "pending";
 }
 
+/** one place for everything that changes with the state */
+const STATE_THEME: Record<ViewState, { fg: string; soft: string; border: string }> = {
+  success: { fg: C.pink, soft: C.pinkSoft, border: "#F8CBD8" },
+  pending: { fg: C.amber, soft: C.amberBg, border: C.amberBorder },
+  failed: { fg: C.red, soft: C.redBg, border: C.redBorder },
+};
+
 /* -------------------------------- pieces --------------------------------- */
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-[28px] ${className}`}
-      style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 6px 24px -18px rgba(34,32,32,.35)" }}
+    <section
+      className={`overflow-hidden rounded-3xl ${className}`}
+      style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 1px 2px rgba(31,29,29,.04), 0 12px 32px -20px rgba(31,29,29,.28)" }}
     >
       {children}
+    </section>
+  );
+}
+
+function CardHeading({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 px-5 pb-1 pt-5 sm:px-6 sm:pt-6">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.pinkSoft, color: C.pink }}>
+        {icon}
+      </span>
+      <h2 className="m-0 text-base font-bold tracking-tight" style={{ color: C.ink }}>
+        {children}
+      </h2>
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: ReactNode }) {
+function Row({
+  label,
+  value,
+  valueColor,
+  mono,
+}: {
+  label: string;
+  value: ReactNode;
+  valueColor?: string;
+  mono?: boolean;
+}) {
   return (
-    <p className="mb-3 ml-1 mt-8 text-[13px] font-bold uppercase tracking-[0.12em]" style={{ color: C.label }}>
-      {children}
-    </p>
-  );
-}
-
-function ReceiptRow({ label, value, valueColor, last }: { label: string; value: ReactNode; valueColor?: string; last?: boolean }) {
-  return (
-    <div
-      className="flex items-center justify-between gap-4 py-4"
-      style={{ borderBottom: last ? "none" : `1px solid ${C.border}` }}
-    >
-      <span className="text-[15px]" style={{ color: C.label }}>
+    <div className="flex items-start justify-between gap-6 py-2.5">
+      <dt className="shrink-0 text-sm" style={{ color: C.label }}>
         {label}
-      </span>
-      <span className="break-all text-right text-[15px] font-bold" style={{ color: valueColor ?? C.ink }}>
+      </dt>
+      <dd
+        className={`m-0 min-w-0 break-all text-right text-sm font-semibold tabular-nums ${mono ? "font-mono text-[13px]" : ""}`}
+        style={{ color: valueColor ?? C.ink }}
+      >
         {value}
-      </span>
+      </dd>
     </div>
+  );
+}
+
+function Divider() {
+  return <div className="my-2 border-t border-dashed" style={{ borderColor: C.border }} />;
+}
+
+function Pill({ children, fg, bg, border }: { children: ReactNode; fg: string; bg: string; border?: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold"
+      style={{ color: fg, background: bg, border: border ? `1px solid ${border}` : undefined }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -202,11 +268,46 @@ export default function BookingConfirmationPage() {
     window.print();
   };
 
+  /* shared page styles (scrollbar, focus ring, entrance animation, print) */
+  const styles = (
+    <style>{`
+      #wv-page { scrollbar-width: thin; scrollbar-color: #D9D2CB transparent; -webkit-font-smoothing: antialiased; }
+      #wv-page::-webkit-scrollbar { width: 8px; }
+      #wv-page::-webkit-scrollbar-thumb { background: #D9D2CB; border-radius: 8px; }
+      #wv-page::-webkit-scrollbar-track { background: transparent; }
+      .wv-focus:focus-visible { outline: 2px solid ${C.pink}; outline-offset: 2px; }
+      .wv-btn { transition: transform .12s ease, filter .15s ease, background-color .15s ease; }
+      .wv-btn:hover { filter: brightness(1.04); }
+      .wv-btn:active { transform: scale(.985); }
+      @keyframes wv-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+      @keyframes wv-pop  { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+      @keyframes wv-ring { 0% { transform: scale(.9); opacity: .55; } 100% { transform: scale(1.35); opacity: 0; } }
+      .wv-rise { animation: wv-rise .5s cubic-bezier(.2,.7,.2,1) both; }
+      .wv-pop  { animation: wv-pop .55s cubic-bezier(.3,1.4,.5,1) .15s both; }
+      .wv-ring { animation: wv-ring 2.4s ease-out .6s infinite; }
+      @media (prefers-reduced-motion: reduce) { .wv-rise, .wv-pop, .wv-ring { animation: none !important; } }
+      @media print {
+        #wv-page { position: static !important; overflow: visible !important; }
+        body * { visibility: hidden !important; }
+        #wv-receipt, #wv-receipt * { visibility: visible !important; }
+        #wv-receipt { position: absolute; inset: 0; padding: 24px; display: block !important; }
+        #wv-receipt > * + * { margin-top: 24px; }
+        .wv-no-print { display: none !important; }
+      }
+    `}</style>
+  );
+
   /* ------------------------------ loading ------------------------------ */
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: C.bg }}>
+      <div
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4"
+        style={{ background: C.bg }}
+        role="status"
+        aria-live="polite"
+      >
         <MoonLoader color={C.pink} speedMultiplier={2} />
+        <span className="sr-only">Loading your booking</span>
       </div>
     );
   }
@@ -214,27 +315,37 @@ export default function BookingConfirmationPage() {
   /* ------------------------------- error ------------------------------- */
   if (error || !data) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: C.bg }}>
-        <p className="text-lg font-semibold" style={{ color: C.ink }}>
-          {error || "Kuch galat hua."}
-        </p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => load()}
-            className="cursor-pointer rounded-xl border-0 px-5 py-3 text-sm font-bold text-white"
-            style={{ background: C.pink }}
-          >
-            Try again
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push(MY_BOOKINGS_ROUTE)}
-            className="cursor-pointer rounded-xl px-5 py-3 text-sm font-bold"
-            style={{ background: C.white, color: C.ink, border: `1px solid ${C.border}` }}
-          >
-            My Bookings
-          </button>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" style={{ background: C.bg }}>
+        {styles}
+        <div
+          role="alert"
+          className="w-full max-w-md rounded-3xl px-6 py-10 text-center sm:px-10"
+          style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 12px 32px -20px rgba(31,29,29,.28)" }}
+        >
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={{ background: C.redBg, color: C.red }}>
+            <X size={28} strokeWidth={2.6} />
+          </span>
+          <p className="m-0 mt-6 text-lg font-bold" style={{ color: C.ink }}>
+            {error || "Kuch galat hua."}
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => load()}
+              className="wv-btn wv-focus h-12 cursor-pointer rounded-2xl border-0 px-6 text-sm font-bold text-white"
+              style={{ background: `linear-gradient(135deg, ${C.pink}, ${C.pinkDeep})` }}
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(MY_BOOKINGS_ROUTE)}
+              className="wv-btn wv-focus h-12 cursor-pointer rounded-2xl px-6 text-sm font-bold"
+              style={{ background: C.white, color: C.ink, border: `1px solid ${C.border}` }}
+            >
+              My Bookings
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -242,6 +353,7 @@ export default function BookingConfirmationPage() {
 
   const { booking, payment, event } = data;
   const state = viewState(data);
+  const theme = STATE_THEME[state];
   const tickets = booking.tickets ?? [];
   const genderGroups = groupTicketsByGender(tickets);
   const timeStr = [formatTime(event.startTime), formatTime(event.endTime)].filter(Boolean).join(" – ");
@@ -252,238 +364,317 @@ export default function BookingConfirmationPage() {
   const heading =
     state === "success" ? "Payment Successful!" : state === "pending" ? "Confirming your payment…" : "Payment not completed";
 
+  const statusLabel = state === "success" ? "Captured" : state === "pending" ? "Pending" : pretty(payment.status) || "Failed";
+
   return (
     <main
       id="wv-page"
-      className="fixed inset-0 z-[100] overflow-y-auto overflow-x-hidden pb-12"
+      className="fixed inset-0 z-[100] flex flex-col overflow-y-auto overflow-x-hidden"
       style={{ background: C.bg, color: C.ink, fontFamily: "var(--font-quicksand), 'DM Sans', system-ui, sans-serif" }}
     >
-      <style>{`
-        #wv-page { scrollbar-width: thin; scrollbar-color: #D9D2CB transparent; }
-        #wv-page::-webkit-scrollbar { width: 8px; }
-        #wv-page::-webkit-scrollbar-thumb { background: #D9D2CB; border-radius: 8px; }
-        #wv-page::-webkit-scrollbar-track { background: transparent; }
-        @media print {
-          #wv-page { position: static !important; overflow: visible !important; }
-          body * { visibility: hidden !important; }
-          #wv-receipt, #wv-receipt * { visibility: visible !important; }
-          #wv-receipt { position: absolute; inset: 0; padding: 24px; }
-          .wv-no-print { display: none !important; }
-        }
-      `}</style>
+      {styles}
 
-      <div className="mx-auto max-w-[560px] px-4">
-        {/* ------------------------------ header ------------------------------ */}
-        <header className="wv-no-print relative flex h-16 items-center justify-center">
+      {/* ------------------------------ top bar ------------------------------ */}
+      <header
+        className="wv-no-print sticky top-0 z-10 w-full"
+        style={{ background: "rgba(250,248,245,.9)", borderBottom: `1px solid ${C.border}`, backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+      >
+        <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[48px_1fr_48px] items-center px-4 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => router.push(MY_BOOKINGS_ROUTE)}
-            aria-label="Back"
-            className="absolute left-0 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0"
-            style={{ background: C.white, color: C.ink, boxShadow: "0 4px 14px -6px rgba(0,0,0,.2)" }}
+            aria-label="Back to my bookings"
+            className="wv-btn wv-focus flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0"
+            style={{ background: C.white, color: C.ink, boxShadow: "0 0 0 1px rgba(31,29,29,.06), 0 4px 12px -6px rgba(0,0,0,.2)" }}
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="m-0 text-[19px] font-bold">Booking Confirmation</h1>
-        </header>
-
-        <div id="wv-receipt">
-          {/* ------------------------------ status ------------------------------ */}
-          <section className="mt-8 flex flex-col items-center text-center">
-            <div
-              className="flex h-[120px] w-[120px] items-center justify-center rounded-full"
-              style={{ background: state === "success" ? C.pinkSoft : state === "pending" ? C.amberBg : C.redBg }}
-            >
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full"
-                style={{
-                  border: `3.5px solid ${state === "success" ? C.pink : state === "pending" ? C.amber : C.red}`,
-                  color: state === "success" ? C.pink : state === "pending" ? C.amber : C.red,
-                }}
-              >
-                {state === "success" ? (
-                  <Check size={28} strokeWidth={3} />
-                ) : state === "pending" ? (
-                  <Clock size={26} strokeWidth={2.6} />
-                ) : (
-                  <X size={28} strokeWidth={3} />
-                )}
-              </span>
-            </div>
-
-            <h2 className="mb-2 mt-7 text-[30px] font-extrabold leading-tight sm:text-[34px]">{heading}</h2>
-
-            <p className="m-0 text-[16px]" style={{ color: C.body }}>
-              {state === "success" ? (
-                <>
-                  Your spot is confirmed for the <strong style={{ color: C.ink }}>{event.title}</strong>.
-                </>
-              ) : state === "pending" ? (
-                "Payment receive hua hai, booking confirm ho rahi hai. Thodi der mein refresh karo."
-              ) : (
-                "Yeh booking confirm nahi hui. Agar paisa kata hai to 5–7 din mein refund ho jayega."
-              )}
-            </p>
-
-            {state === "success" && (
-              <span
-                className="mt-6 inline-flex rounded-full px-5 py-2 text-[15px] font-bold"
-                style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBorder}` }}
-              >
-                {money(paidAmount)} paid{paidVia ? ` · ${paidVia}` : ""}
-              </span>
-            )}
-
-            {state === "pending" && (
-              <button
-                type="button"
-                onClick={() => load(true)}
-                disabled={refreshing}
-                className="wv-no-print mt-6 inline-flex cursor-pointer items-center gap-2 rounded-full border-0 px-5 py-2.5 text-sm font-bold"
-                style={{ background: C.amberBg, color: C.amber }}
-              >
-                <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
-                {refreshing ? "Checking…" : "Refresh status"}
-              </button>
-            )}
-          </section>
-
-          {/* ------------------------------ tickets ------------------------------ */}
-          {state === "success" &&
-            tickets.map((t, i) => (
-              <Card key={t.id} className="mt-8 flex flex-col items-center px-6 pb-7 pt-10">
-                <div className="flex h-[250px] w-[250px] items-center justify-center rounded-3xl" style={{ background: C.qrBg }}>
-                  {t.qrCodeUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={t.qrCodeUrl}
-                      alt={`Ticket QR ${t.ticketId}`}
-                      className="h-[200px] w-[200px]"
-                      style={{ imageRendering: "pixelated" }}
-                    />
-                  ) : (
-                    <span className="text-sm" style={{ color: C.label }}>
-                      QR not available
-                    </span>
-                  )}
-                </div>
-                <p className="mb-1 mt-6 text-center text-[16px] font-bold uppercase tracking-[0.22em]" style={{ color: C.label }}>
-                  Ticket ID: {t.ticketId}
-                </p>
-                <p className="m-0 text-center text-[14px]" style={{ color: C.label }}>
-                  {tickets.length > 1 ? `Ticket ${i + 1} of ${tickets.length} · ` : ""}
-                  {genderLabel(t.ticketType)} · Show this QR at the entrance
-                </p>
-              </Card>
-            ))}
-
-          {/* ------------------------------ receipt ------------------------------ */}
-          <SectionLabel>Payment receipt</SectionLabel>
-          <Card className="px-6 py-1">
-            <ReceiptRow label="Booking No." value={booking.bookingNumber} />
-            {payment.transactionId && <ReceiptRow label="Transaction ID" value={payment.transactionId} />}
-            {payment.orderId && <ReceiptRow label="Order ID" value={payment.orderId} />}
-            {paidVia && <ReceiptRow label="Paid via" value={paidVia} />}
-            {payment.paidAt && <ReceiptRow label="Paid on" value={formatPaidAt(payment.paidAt)} />}
-
-            {/* gender-wise ticket rows (falls back to a single row if no ticket details) */}
-            {genderGroups.length > 0 ? (
-              genderGroups.map((g) => (
-                <ReceiptRow key={g.type} label={`${genderLabel(g.type)} tickets × ${g.count}`} value={money(g.amount)} />
-              ))
-            ) : (
-              <ReceiptRow label={`Tickets × ${booking.ticketCount}`} value={money(booking.ticketAmount)} />
-            )}
-
-            {booking.discountAmount > 0 && (
-              <ReceiptRow label="You saved" value={money(booking.discountAmount)} valueColor={C.green} />
-            )}
-            <ReceiptRow label="Platform fee" value={money(booking.platformFee)} />
-            <ReceiptRow label="GST" value={money(booking.gstAmount)} />
-            <ReceiptRow label="Amount" value={money(paidAmount)} />
-            <ReceiptRow
-              label="Status"
-              last
-              value={state === "success" ? "✓ Captured" : state === "pending" ? "Pending" : pretty(payment.status) || "Failed"}
-              valueColor={state === "success" ? C.green : state === "pending" ? C.amber : C.red}
-            />
-          </Card>
-
-          {/* ------------------------------ event ------------------------------ */}
-          <SectionLabel>Event details</SectionLabel>
-          <Card className="px-6 py-1">
-            <div className="flex items-center gap-5 py-6" style={{ borderBottom: `1px solid ${C.border}` }}>
-              <span
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-                style={{ background: C.pinkSoft, color: C.pink }}
-              >
-                <Calendar size={22} />
-              </span>
-              <div className="min-w-0">
-                <p className="m-0 text-[18px] font-bold">{event.title}</p>
-                {dateLine && (
-                  <p className="m-0 mt-1 text-[15px]" style={{ color: C.label }}>
-                    {dateLine}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-5 py-6">
-              <span
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
-                style={{ background: C.pinkSoft, color: C.pink }}
-              >
-                <MapPin size={22} />
-              </span>
-              <div className="min-w-0">
-                <p className="m-0 text-[18px] font-bold">{event.venueName || event.city || "Venue"}</p>
-                {event.fullAddress && (
-                  <p className="m-0 mt-1 text-[15px]" style={{ color: C.label }}>
-                    {event.fullAddress}
-                  </p>
-                )}
-              </div>
-            </div>
-          </Card>
+          <h1 className="m-0 text-center text-lg font-bold tracking-tight">Booking Confirmation</h1>
+          <span aria-hidden />
         </div>
+      </header>
 
-        {/* ------------------------------ actions ------------------------------ */}
-        <div className="wv-no-print mt-8 flex flex-col gap-4">
-          {state === "success" && (
-            <>
+      {/* ------------------------------ content ------------------------------ */}
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pt-10">
+        <div id="wv-receipt" className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+          {/* =========================== left column =========================== */}
+          <div className="flex min-w-0 flex-col gap-6 lg:col-span-5">
+            {/* ----------------------------- status ----------------------------- */}
+            <section
+              aria-live="polite"
+              className="wv-rise flex flex-col items-center rounded-3xl px-6 pb-8 pt-10 text-center sm:px-8"
+              style={{
+                background: `linear-gradient(180deg, ${theme.soft} 0%, ${C.white} 70%)`,
+                border: `1px solid ${theme.border}`,
+                boxShadow: "0 1px 2px rgba(31,29,29,.04), 0 12px 32px -20px rgba(31,29,29,.28)",
+              }}
+            >
+              <div className="relative flex h-28 w-28 items-center justify-center">
+                {state === "success" && (
+                  <span aria-hidden className="wv-ring absolute inset-0 rounded-full" style={{ border: `2px solid ${theme.fg}` }} />
+                )}
+                <span
+                  className="wv-pop flex h-24 w-24 items-center justify-center rounded-full"
+                  style={{ background: C.white, boxShadow: `0 0 0 8px ${theme.soft}, 0 10px 24px -10px ${theme.fg}` }}
+                >
+                  <span
+                    className="flex h-14 w-14 items-center justify-center rounded-full"
+                    style={{ background: theme.fg, color: C.white }}
+                  >
+                    {state === "success" ? (
+                      <Check size={30} strokeWidth={3.2} />
+                    ) : state === "pending" ? (
+                      <Clock size={28} strokeWidth={2.6} />
+                    ) : (
+                      <X size={30} strokeWidth={3.2} />
+                    )}
+                  </span>
+                </span>
+              </div>
+
+              <h2 className="m-0 mt-7 text-[28px] font-extrabold leading-tight tracking-tight sm:text-[32px]">{heading}</h2>
+
+              <p className="m-0 mt-3 max-w-[34ch] text-base leading-relaxed" style={{ color: C.body }}>
+                {state === "success" ? (
+                  <>
+                    Your spot is confirmed for the <strong style={{ color: C.ink }}>{event.title}</strong>.
+                  </>
+                ) : state === "pending" ? (
+                  "Payment receive hua hai, booking confirm ho rahi hai. Thodi der mein refresh karo."
+                ) : (
+                  "Yeh booking confirm nahi hui. Agar paisa kata hai to 5–7 din mein refund ho jayega."
+                )}
+              </p>
+
+              {state === "success" && (
+                <span
+                  className="mt-6 inline-flex items-center rounded-full px-5 py-2.5 text-[15px] font-bold tabular-nums"
+                  style={{ background: C.greenBg, color: C.green, border: `1px solid ${C.greenBorder}` }}
+                >
+                  {money(paidAmount)} paid{paidVia ? ` · ${paidVia}` : ""}
+                </span>
+              )}
+
+              {state === "pending" && (
+                <button
+                  type="button"
+                  onClick={() => load(true)}
+                  disabled={refreshing}
+                  className="wv-no-print wv-btn wv-focus mt-6 inline-flex h-12 cursor-pointer items-center gap-2 rounded-full px-6 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-70"
+                  style={{ background: C.amberBg, color: C.amber, border: `1px solid ${C.amberBorder}` }}
+                >
+                  <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+                  {refreshing ? "Checking…" : "Refresh status"}
+                </button>
+              )}
+            </section>
+
+            {/* ----------------------------- tickets ----------------------------- */}
+            {state === "success" &&
+              tickets.map((t, i) => {
+                const chip = GENDER_CHIP[(t.ticketType || "OTHER").toUpperCase()] ?? GENDER_CHIP.OTHER;
+                return (
+                  <Card key={t.id} className="wv-rise relative" >
+                    <div className="flex items-center justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
+                      <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: C.label }}>
+                        <Ticket size={15} />
+                        {tickets.length > 1 ? `Ticket ${i + 1} of ${tickets.length}` : "Entry ticket"}
+                      </span>
+                      <Pill fg={chip.fg} bg={chip.bg}>
+                        {genderLabel(t.ticketType)}
+                      </Pill>
+                    </div>
+
+                    <div className="flex justify-center px-5 pb-2 pt-6 sm:px-6">
+                      <div
+                        className="flex aspect-square w-full max-w-[260px] items-center justify-center rounded-2xl p-5"
+                        style={{ background: C.qrBg, border: `1px solid ${C.border}` }}
+                      >
+                        {t.qrCodeUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={t.qrCodeUrl}
+                            alt={`Ticket QR ${t.ticketId}`}
+                            className="h-full w-full object-contain"
+                            style={{ imageRendering: "pixelated", mixBlendMode: "multiply" }}
+                          />
+                        ) : (
+                          <span className="text-sm" style={{ color: C.label }}>
+                            QR not available
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* perforation */}
+                    <div className="relative my-5" aria-hidden>
+                      <div className="border-t border-dashed" style={{ borderColor: "#DDD5CD" }} />
+                      <span
+                        className="absolute -left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full"
+                        style={{ background: C.bg, border: `1px solid ${C.border}` }}
+                      />
+                      <span
+                        className="absolute -right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full"
+                        style={{ background: C.bg, border: `1px solid ${C.border}` }}
+                      />
+                    </div>
+
+                    <div className="px-5 pb-6 text-center sm:px-6">
+                      <p className="m-0 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: C.label }}>
+                        Ticket ID
+                      </p>
+                      <p className="m-0 mt-1 break-all font-mono text-base font-bold tracking-wider" style={{ color: C.ink }}>
+                        {t.ticketId}
+                      </p>
+                      <p className="m-0 mt-3 text-sm" style={{ color: C.label }}>
+                        Show this QR at the entrance
+                      </p>
+                    </div>
+                  </Card>
+                );
+              })}
+          </div>
+
+          {/* =========================== right column ========================== */}
+          <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
+            {/* ----------------------------- receipt ----------------------------- */}
+            <Card className="wv-rise">
+              <CardHeading icon={<Receipt size={18} />}>Payment receipt</CardHeading>
+
+              <dl className="m-0 px-5 pb-4 pt-3 sm:px-6">
+                <Row label="Booking No." value={booking.bookingNumber} mono />
+                {payment.transactionId && <Row label="Transaction ID" value={payment.transactionId} mono />}
+                {payment.orderId && <Row label="Order ID" value={payment.orderId} mono />}
+                {paidVia && <Row label="Paid via" value={paidVia} />}
+                {payment.paidAt && <Row label="Paid on" value={formatPaidAt(payment.paidAt)} />}
+
+                <Divider />
+
+                {/* gender-wise ticket rows (falls back to a single row if no ticket details) */}
+                {genderGroups.length > 0 ? (
+                  genderGroups.map((g) => (
+                    <Row key={g.type} label={`${genderLabel(g.type)} tickets × ${g.count}`} value={money(g.amount)} />
+                  ))
+                ) : (
+                  <Row label={`Tickets × ${booking.ticketCount}`} value={money(booking.ticketAmount)} />
+                )}
+
+                {booking.discountAmount > 0 && (
+                  <Row label="You saved" value={`−${money(booking.discountAmount)}`} valueColor={C.green} />
+                )}
+                <Row label="Platform fee" value={money(booking.platformFee)} />
+                <Row label="GST" value={money(booking.gstAmount)} />
+              </dl>
+
+              {/* total */}
+              <div
+                className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-5 sm:px-6"
+                style={{ background: theme.soft, borderTop: `1px solid ${theme.border}` }}
+              >
+                <div>
+                  <p className="m-0 text-xs font-bold uppercase tracking-[0.14em]" style={{ color: C.label }}>
+                    Amount
+                  </p>
+                  <p className="m-0 mt-1 text-[28px] font-extrabold leading-none tabular-nums tracking-tight" style={{ color: C.ink }}>
+                    {money(paidAmount)}
+                  </p>
+                </div>
+                <Pill
+                  fg={state === "success" ? C.green : state === "pending" ? C.amber : C.red}
+                  bg={C.white}
+                  border={theme.border}
+                >
+                  {state === "success" && <Check size={13} strokeWidth={3} />}
+                  {statusLabel}
+                </Pill>
+              </div>
+            </Card>
+
+            {/* ------------------------------ event ------------------------------ */}
+            <Card className="wv-rise">
+              <CardHeading icon={<Calendar size={18} />}>Event details</CardHeading>
+
+              <div className="px-5 pb-3 pt-3 sm:px-6">
+                <div className="flex items-start gap-4 py-4">
+                  <span
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    style={{ background: C.pinkSoft, color: C.pink }}
+                  >
+                    <Calendar size={22} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="m-0 text-[17px] font-bold leading-snug">{event.title}</p>
+                    {dateLine && (
+                      <p className="m-0 mt-1 text-sm leading-relaxed" style={{ color: C.body }}>
+                        {dateLine}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t" style={{ borderColor: C.border }} />
+
+                <div className="flex items-start gap-4 py-4">
+                  <span
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    style={{ background: C.pinkSoft, color: C.pink }}
+                  >
+                    <MapPin size={22} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="m-0 text-[17px] font-bold leading-snug">{event.venueName || event.city || "Venue"}</p>
+                    {event.fullAddress && (
+                      <p className="m-0 mt-1 text-sm leading-relaxed" style={{ color: C.body }}>
+                        {event.fullAddress}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* ----------------------------- actions ----------------------------- */}
+            <div className="wv-no-print flex flex-col gap-3">
+              {state === "success" && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    className="wv-btn wv-focus flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-2xl border-0 text-base font-bold text-white"
+                    style={{
+                      background: `linear-gradient(135deg, ${C.pink}, ${C.pinkDeep})`,
+                      boxShadow: "0 12px 24px -12px rgba(214,63,99,.7)",
+                    }}
+                  >
+                    <Download size={19} />
+                    Download Receipt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="wv-btn wv-focus flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-2xl text-base font-bold"
+                    style={{ background: C.white, color: C.pink, border: `1.5px solid ${C.pink}` }}
+                  >
+                    <Link2 size={19} />
+                    Share with Match
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
-                onClick={handleDownload}
-                className="flex h-16 cursor-pointer items-center justify-center gap-2 rounded-[22px] border-0 text-[19px] font-bold text-white transition hover:brightness-105"
-                style={{ background: C.pink, boxShadow: "0 12px 28px -14px rgba(232,90,122,.8)" }}
+                onClick={() => router.push(MY_BOOKINGS_ROUTE)}
+                className="wv-btn wv-focus flex h-14 cursor-pointer items-center justify-center rounded-2xl text-base font-bold"
+                style={{ background: C.white, color: C.body, border: `1px solid ${C.border}` }}
               >
-                <Download size={20} />
-                Download Receipt
+                View My Bookings
               </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex h-16 cursor-pointer items-center justify-center gap-2 rounded-[22px] text-[19px] font-bold transition hover:opacity-90"
-                style={{ background: C.white, color: C.pink, border: `2px solid ${C.pink}` }}
-              >
-                <Link2 size={20} />
-                Share with Match
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={() => router.push(MY_BOOKINGS_ROUTE)}
-            className="flex h-16 cursor-pointer items-center justify-center rounded-[22px] text-[19px] font-bold transition hover:opacity-90"
-            style={{ background: C.white, color: C.body, border: `1px solid ${C.border}` }}
-          >
-            View My Bookings
-          </button>
-          {state === "success" && (
-            <p className="m-0 text-center text-[15px]" style={{ color: C.label }}>
-              Let them know you&apos;ve secured your spot!
-            </p>
-          )}
+              {state === "success" && (
+                <p className="m-0 mt-1 text-center text-sm" style={{ color: C.label }}>
+                  Let them know you&apos;ve secured your spot!
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </main>

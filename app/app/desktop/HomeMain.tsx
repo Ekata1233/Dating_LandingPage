@@ -12,6 +12,7 @@ import {
   Calendar,
   Church,
   Heart,
+  Flame,
   Languages,
   LucideIcon,
   MapPin,
@@ -23,6 +24,31 @@ import ComplimentingModal, { GiftOption } from "@/app/components/ui/Complimentin
 
 /** Horizontal drag distance (px) that commits a like / nope. */
 const SWIPE_THRESHOLD = 88;
+
+/** Top-right package badge, keyed by the API `package.name`. */
+const PACKAGE_BADGES: Record<string, { icon: string; label: string; ring: string }> = {
+  PREMIUM: { icon: "🔥", label: "PREMIUM", ring: "border-orange-300/40" },
+  VIP: { icon: "👑", label: "VIP", ring: "border-amber-300/40" },
+  "VIP_ELITE": { icon: "💠", label: "VIP_ELITE", ring: "border-sky-300/40" },
+};
+
+const packageBadge = (name?: string | null) =>
+  PACKAGE_BADGES[(name ?? "").toUpperCase().trim().replace(/[\s_]+/g, " ")] ?? null;
+/** Flip around its own horizontal axis, then rest briefly before the next turn. */
+const FIRE_BADGE_CSS = `
+@keyframes fireFlipX {
+  0%   { transform: perspective(240px) rotateX(0deg); }
+  60%  { transform: perspective(240px) rotateX(360deg); }
+  100% { transform: perspective(240px) rotateX(360deg); }
+}
+.fire-badge-flip { animation: fireFlipX 3s ease-in-out infinite; }
+`;
+// const FIRE_BADGE_CSS = `@keyframes fireFlipY {
+//   0%   { transform: perspective(240px) rotateY(0deg); }
+//   60%  { transform: perspective(240px) rotateY(360deg); }
+//   100% { transform: perspective(240px) rotateY(360deg); }
+// }
+// .fire-badge-coin { animation: fireFlipY 3s ease-in-out infinite; }`
 
 /**
  * How long a card has to stay on screen before its deep profile is requested.
@@ -162,7 +188,6 @@ function HomeMain({
     () => (profile && details ? mergeUserDetails(profile, details) : profile),
     [profile, details]
   );
-
   /* (2) Scrolling into the card body is the clearest "open profile" signal. */
   const handleCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (e.currentTarget.scrollTop > DETAILS_SCROLL_TRIGGER_PX) requestDetails();
@@ -428,7 +453,6 @@ function HomeMain({
                 draggable={false}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-
               {/* Info overlay – bottom */}
               <div className="absolute bottom-16 left-0 right-0 p-5 z-10">
                 {/* Live presence / boost chips */}
@@ -548,6 +572,33 @@ function HomeMain({
               ))}
             </div>
           </div>
+          {/* Fire badge – top right of the card */}
+          <div className="absolute top-3 right-3 z-20 pointer-events-none">
+            <style>{FIRE_BADGE_CSS}</style>
+            {(() => {
+              const pkg = enriched?.package;
+              const badge = packageBadge(pkg?.name);
+              const isFree = !pkg || (pkg.name ?? "").toUpperCase() === "FREE";
+              if (isFree) {
+                return (
+                  <div className="fire-badge-flip  h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg hidden">
+                    {/* <Flame className="h-5 w-5 text-orange-400" fill="currentColor" /> */}
+                  </div>
+                );
+              }
+              if (!badge) return null;
+              return (
+                <div
+                  title={badge.label}
+                  className={`fire-badge-flip flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border shadow-lg ${badge.ring}`}
+                >
+                  <span className="text-[20px] leading-none" aria-label={badge.label}>
+                    {badge.icon}
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
           {/* Swipe reaction — a heart on like, a cross on reject. */}
           {swipeDir && (
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -555,10 +606,10 @@ function HomeMain({
               <span
                 aria-hidden
                 className={`text-[128px] leading-none drop-shadow-2xl ${swipeDir === "right"
-                    ? "swipe-emoji-like"
-                    : swipeDir === "left"
-                      ? "swipe-emoji-nope"
-                      : "swipe-emoji-rose"
+                  ? "swipe-emoji-like"
+                  : swipeDir === "left"
+                    ? "swipe-emoji-nope"
+                    : "swipe-emoji-rose"
                   }`}
               >
                 {swipeDir === "right" ? "\u2764\uFE0F" : swipeDir === "left" ? "\u274C" : "\u{1F339}"}

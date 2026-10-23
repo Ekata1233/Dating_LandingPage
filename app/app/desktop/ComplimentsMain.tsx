@@ -328,7 +328,7 @@ export default function ComplimentsStore({
     style,
 }: ComplimentsStoreProps) {
     const theme = COMPLIMENTS_THEME;
-    const { compliments: data, complimentsLoading: loading, complimentsError: error, refetchCompliments: onRetry } = useUserProfileData();
+    const { compliments: data, complimentsLoading: loading, complimentsError: error, refetchCompliments: onRetry, applyResourceCredit } = useUserProfileData();
     const { setActiveSection } = useActiveSection();
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -416,7 +416,10 @@ export default function ComplimentsStore({
 
         if (res.ok) {
             toast.success(`${pack.quantity} ${pack.quantity === 1 ? "compliment" : "compliments"} added to your account 💌`);
+            router.push("/app/home")
+            void applyResourceCredit("compliments", pack.quantity);
             refreshCompliments();
+            router.push("/app/home")
             onPurchased?.(pack);
             return;
         }

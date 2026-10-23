@@ -12,9 +12,10 @@ import React, {
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
 import { authHeader, getClientToken } from "@/utils/token";
+import { packageType } from "../app/shared/types";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
-const USERS_URL = `${API_BASE_URL}/api/user/feed?limit=30`;
+const USERS_URL = `${API_BASE_URL}/api/user/feed?limit=50`;
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
 
@@ -69,6 +70,7 @@ export interface UserProfile {
     lastSeen: string;
     isBoosted: boolean;
     boost: unknown | null;
+    package: packageType;
 }
 
 interface UsersApiResponse {
@@ -159,6 +161,7 @@ export interface UserFeedDetails {
     replyTime: string | null;
     bio: string | null;
     lookingFor: string | null;
+    package : packageType;
     lookingFor_subtitle: string | null;
     religion: string | null;
     community: string | null;

@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  MapPin,
-  ChevronDown,
-  TicketCheck,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { TicketCheck } from "lucide-react";
 import EventCard from "../components/ui/EventCard";
 import { Event_Type, useEventData } from "../context/EventContext";
 import { MoonLoader } from "react-spinners";
@@ -25,34 +21,14 @@ import IconMMountain from "react-fluentui-emoji/icons/modern/IconMMountain";
 import IconMGemStone from "react-fluentui-emoji/icons/modern/IconMGemStone";
 import IconMBriefcase from "react-fluentui-emoji/icons/modern/IconMBriefcase";
 import IconMRedHeart from "react-fluentui-emoji/icons/modern/IconMRedHeart";
-
+import cities from "@/public/citites.json";
 import FilterCard from "../components/ui/filterCard";
+import { CityDropdown } from "@/components/ui/CityDropdown";
 
 const eventFilters = [
   { type: "ALL", label: "All Events", icon: IconMGlowingStar, img: "https://ik.imagekit.io/aezmcynwbe/welvors/all_events.jpeg?updatedAt=1790594692140" }, { type: "SINGLES_MIXER", label: "Singles Mixer", icon: IconMPeopleHugging, img: "https://ik.imagekit.io/aezmcynwbe/welvors/singles_mixer.jpeg" }, { type: "SPEED_DATES", label: "Speed Dates", icon: IconMRevolvingHearts, img: "https://ik.imagekit.io/aezmcynwbe/welvors/speed_dates.jpeg" }, { type: "SINGLES_NIGHT", label: "Singles Night", icon: IconMNightWithStars, img: "https://ik.imagekit.io/aezmcynwbe/welvors/singles_night.jpeg" }, { type: "DINNER_DATES", label: "Dinner Dates", icon: IconMForkAndKnifeWithPlate, img: "https://ik.imagekit.io/aezmcynwbe/welvors/dinner_date.jpeg" }, { type: "ACTIVITY_MATCH", label: "Activity Match", icon: IconMOpenBook, img: "https://ik.imagekit.io/aezmcynwbe/welvors/activity.jpeg" }, { type: "PLAY_AND_MATCH", label: "Play & Match", icon: IconMVideoGame, img: "https://ik.imagekit.io/aezmcynwbe/welvors/play.jpeg" }, { type: "TRAVEL_DATES", label: "Travel Dates", icon: IconMBasketball, img: "https://ik.imagekit.io/aezmcynwbe/welvors/travel.jpeg" }, { type: "TREK_DATES", label: "Trek Dates", icon: IconMMountain, img: "https://ik.imagekit.io/aezmcynwbe/welvors/trekking.jpeg" }, { type: "THE_RESERVE", label: "The Reserve", icon: IconMGemStone, img: "https://ik.imagekit.io/aezmcynwbe/welvors/reserve.jpeg" }, { type: "PROFESSIONALS_MEET", label: "Professionals Meet", icon: IconMBriefcase, img: "https://ik.imagekit.io/aezmcynwbe/welvors/newpro.jpeg" }, { type: "OTHER_DATES", label: "Other Dates", icon: IconMRedHeart, img: "https://ik.imagekit.io/aezmcynwbe/welvors/other.jpeg" },];
 
-const cities = [
-  "Mumbai",
-  "Delhi",
-  "Bengaluru",
-  "Hyderabad",
-  "Pune",
-  "Chennai",
-  "Kolkata",
-  "Ahmedabad",
-  "Jaipur",
-  "Surat",
-  "Lucknow",
-  "Chandigarh",
-  "Nagpur",
-  "Indore",
-  "Kochi",
-  "Noida",
-  "Gurugram",
-  "Bhubaneswar",
-  "Vadodara",
-  "Nashik",
-];
+
 
 /** Client auth flag — mirrors the pattern in app/events/[id]/page.tsx. */
 function useLoggedIn(): boolean {
@@ -78,40 +54,20 @@ export default function EventsFeed() {
 
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [selectedCity, setSelectedCity] = useState("Pune");
-  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter events by selected city
   const filteredEvents = events.filter(
     (event) => event.city === selectedCity
   );
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsCityDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   function handleFilterClick(filterType: string) {
     setActiveFilter(filterType);
     setFilter(filterType);
   }
 
+  // CityDropdown closes itself after a selection, so we only update state here
   function handleCitySelect(city: string) {
     setSelectedCity(city);
-    setIsCityDropdownOpen(false);
   }
 
   return (
@@ -125,51 +81,19 @@ export default function EventsFeed() {
 
         {/* CITY DROPDOWN + MY TICKETS */}
         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-fit">
-          <div className="relative flex-1 sm:flex-none" ref={dropdownRef}>
-            <button
-              onClick={() =>
-                setIsCityDropdownOpen(!isCityDropdownOpen)
-              }
-              className="flex w-full cursor-pointer items-center justify-center gap-1 rounded-full border border-gray-400 px-2.5 py-1 sm:w-auto sm:justify-start"
-            >
-              <MapPin size={16} className="text-pink-400" />
-
-              {selectedCity}
-
-              <ChevronDown
-                size={16}
-                className={`transition-transform ${isCityDropdownOpen ? "rotate-180" : ""
-                  }`}
-              />
-            </button>
-
-
-            {isCityDropdownOpen && (
-              <div className="absolute left-0 z-50 mt-2 max-h-60 w-48 max-w-[calc(100vw-1.5rem)] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg sm:left-auto sm:right-0">
-                {cities.map((city) => (
-                  <button
-                    key={city}
-                    onClick={() => handleCitySelect(city)}
-                    className={`block w-full px-4 py-2 text-left text-sm hover:bg-pink-50 ${selectedCity === city
-                      ? "bg-pink-100 font-medium text-pink-600"
-                      : "text-gray-700"
-                      }`}
-                  >
-                    {city}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <CityDropdown
+            selectedCity={selectedCity}
+            onSelect={handleCitySelect}
+          />
 
           {/* MY TICKETS — members only */}
           {loggedIn && (
             <Link
               href="/events/myTickets"
-              className="flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-pink-500 px-2.5 py-1 text-white transition-colors hover:bg-pink-600"
+              className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-pink-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-pink-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-1"
             >
               <TicketCheck size={16} />
-              My Ticket
+              My Tickets
             </Link>
           )}
         </div>
@@ -212,7 +136,7 @@ export default function EventsFeed() {
         <div className="flex items-center justify-center">
           <MoonLoader
             color="#C21559"
-            size={25}
+            size={20}
             speedMultiplier={1}
           />
         </div>

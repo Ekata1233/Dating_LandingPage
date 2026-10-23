@@ -63,12 +63,12 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                     )}
 
                     {!waiting && error && (
-                        <div className="m-auto flex flex-col items-center gap-3 text-center">
+                        <div className="m-auto flex flex-col items-center gap-3 text-center text-black">
                             <p className="text-sm">Something went wrong loading plans.</p>
                             <button
                                 type="button"
                                 onClick={() => refetch()}
-                                className="px-4 py-2 rounded-lg border text-sm"
+                                className="px-4 py-2 rounded-lg border text-sm text-black"
                             >
                                 Try again
                             </button>
@@ -76,7 +76,7 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                     )}
 
                     {empty && (
-                        <div className="m-auto flex flex-col items-center gap-2 px-6 text-center">
+                        <div className="m-auto flex flex-col items-center text-black gap-2 px-6 text-center">
                             <p className="text-sm font-semibold">No date plans found</p>
                             <p className="text-xs opacity-70">
                                 {hasSession === false

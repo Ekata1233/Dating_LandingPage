@@ -228,6 +228,7 @@ export default function DatePlansStore({
         datePlansLoading: loading,
         datePlansError: error,
         refetchDatePlans: reload,
+        applyResourceCredit,
     } = useUserProfileData();
     const [pickedId, setPickedId] = useState<string | null>(null);
     const router = useRouter()
@@ -304,6 +305,8 @@ export default function DatePlansStore({
 
         if (res.ok) {
             toast.success(`${pkg.planCount} ${plansWord(pkg.planCount)} added to your wallet 📅`);
+            router.push("/app/home")
+            void applyResourceCredit("datePlans", pkg.planCount);
             refreshPlans();
             onPurchased?.(pkg);
             return;
