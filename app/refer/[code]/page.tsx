@@ -41,7 +41,7 @@ export default function ReferRedirectPage() {
     const [phase, setPhase] = useState<'detecting' | 'opening' | 'done'>('detecting');
     const [isAndroidDevice, setIsAndroidDevice] = useState(false);
 
-    const referrer = encodeURIComponent(`welvors_event=${code}`);
+    const referrer = encodeURIComponent(`welvors_referral=${code}`);
 
     // Plain HTTPS Play Store link. On Android this is handed to the Play Store
     // app (App Link); if that is not possible it opens the Play Store website
