@@ -21,7 +21,6 @@ import IconMMountain from "react-fluentui-emoji/icons/modern/IconMMountain";
 import IconMGemStone from "react-fluentui-emoji/icons/modern/IconMGemStone";
 import IconMBriefcase from "react-fluentui-emoji/icons/modern/IconMBriefcase";
 import IconMRedHeart from "react-fluentui-emoji/icons/modern/IconMRedHeart";
-import cities from "@/public/citites.json";
 import FilterCard from "../components/ui/filterCard";
 import { CityDropdown } from "@/components/ui/CityDropdown";
 

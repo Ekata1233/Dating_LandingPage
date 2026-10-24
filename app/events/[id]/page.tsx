@@ -362,15 +362,15 @@ export default function EventDetailsPage() {
     if (!details || !price) return;
 
     if (!loggedIn || !getClientToken()) {
-      toast.error("Book karne ke liye pehle login karo.");
+      toast.error("Please log in to book this event..");
       return;
     }
     if (!myBucket) {
-      toast.error("Profile mein gender missing hai. Pehle profile complete karo.");
+      toast.error("Your gender is missing from your profile. Please complete your profile to continue.");
       return;
     }
     if (price.amount == null || price.amount <= 0) {
-      toast.error("Is event ke liye online payment available nahi hai.");
+      toast.error("Online payment is not available for this event.");
       return;
     }
     const left =
@@ -379,7 +379,7 @@ export default function EventDetailsPage() {
         ? details.bookingStats.totalCapacity - details.bookingStats.bookedCount
         : null);
     if (left != null && left <= 0) {
-      toast.error("Event full ho chuka hai.");
+      toast.error("Sorry, this event is fully booked.");
       return;
     }
 

@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.infynod.welvors",
+      "sha256_cert_fingerprints": [
+        "1E:D6:2A:3E:23:BB:5B:49:10:1B:33:31:9D:96:5F:F9:61:A4:CF:1B:25:29:EE:EC:D6:C6:6D:17:C4:95:42:E1",
+        "AE:79:A7:DA:BA:0E:30:B3:C2:C0:6A:B5:6F:17:E8:93:3E:CA:E2:DF:21:03:0C:FB:A2:02:74:F9:89:DE:CF:39"
+      ]
+    }
+  }
+]

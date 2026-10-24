@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Welvors - Exclusive Invitation</title>
+ 
+  <!-- Open Graph / WhatsApp / Social Preview Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Join me on Welvors & Claim Your Reward!">
+  <meta property="og:description" content="Use my exclusive invite code to get rewards when you join Welvors. Tap to install!">
+  <meta property="og:image" content="https://www.welvors.com/assets/images/referral_preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+ 
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #FFF0F4 0%, #FFFFFF 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #1A1A1A;
+    }
+    .card {
+      background: #FFFFFF;
+      max-width: 420px;
+      width: 100%;
+      border-radius: 28px;
+      box-shadow: 0 14px 40px rgba(228, 58, 106, 0.12);
+      padding: 36px 28px;
+      text-align: center;
+      border: 1px solid rgba(228, 58, 106, 0.1);
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 22px;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(228, 58, 106, 0.25);
+      background: linear-gradient(135deg, #FF6F8F 0%, #E43A6A 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      color: #fff;
+      font-weight: 800;
+    }
+    h1 { font-size: 24px; font-weight: 800; color: #111; margin-bottom: 8px; }
+    p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 24px; }
+    .code-box {
+      background: #FFF4F7;
+      border: 2px dashed #E43A6A;
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .code-label { font-size: 12px; color: #E43A6A; text-transform: uppercase; font-weight: 700; text-align: left; }
+    .code-val { font-size: 22px; font-weight: 900; letter-spacing: 2px; color: #111; }
+    .copy-btn {
+      background: #E43A6A;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #cf2757; }
+    .cta-btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #E43A6A 0%, #C72052 100%);
+      color: #FFFFFF;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(228, 58, 106, 0.35);
+      transition: transform 0.15s ease;
+      margin-bottom: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    .cta-btn:active { transform: scale(0.98); }
+    .sub-text { font-size: 13px; color: #888; }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      background: #111;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+ 
+  <div class="card">
+    <div class="logo">W</div>
+    <h1>You're Invited!</h1>
+    <p>Join Welvors now with this invitation code to unlock exclusive rewards and benefits.</p>
+ 
+    <div class="code-box">
+      <div>
+        <div class="code-label">Invite Code</div>
+        <div class="code-val" id="referralCodeText">WELVORS</div>
+      </div>
+      <button class="copy-btn" id="copyBtn" onclick="copyReferralCode()">Copy</button>
+    </div>
+ 
+    <button class="cta-btn" id="openAppBtn" onclick="handleOpenApp()">Open in Welvors</button>
+    <div class="sub-text" id="statusText">Redirecting you to the app...</div>
+  </div>
+ 
+  <div id="toast" class="toast">Referral code copied to clipboard!</div>
+ 
+  <script>
+    // Extract referral code from path (/refer/XYZ) or query (?code=XYZ)
+    function getReferralCode() {
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      if (pathSegments.length >= 2 && (pathSegments[0] === 'refer' || pathSegments[0] === 'invite')) {
+        return pathSegments[1].toUpperCase();
+      }
+      const params = new URLSearchParams(window.location.search);
+      return (params.get('code') || params.get('referralCode') || 'WELVORS').toUpperCase();
+    }
+ 
+    const referralCode = getReferralCode();
+    document.getElementById('referralCodeText').innerText = referralCode;
+ 
+    // Platform detection
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+ 
+    const playStoreUrl = `https://play.google.com/store/apps/details?id=com.infynod.welvors&referrer=welvors_referral%3D${encodeURIComponent(referralCode)}`;
+    const appStoreUrl = `https://apps.apple.com/app/welvors/id6738914876`; // Replace with iOS App ID
+    const appSchemeUrl = `welvors://refer/${referralCode}`;
+ 
+    function copyReferralCode() {
+      navigator.clipboard.writeText(referralCode).then(() => {
+        showToast("Code copied: " + referralCode);
+      }).catch(() => {
+        // Fallback for older browsers
+        const el = document.createElement('textarea');
+        el.value = referralCode;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        showToast("Code copied: " + referralCode);
+      });
+    }
+ 
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+ 
+    function handleOpenApp() {
+      copyReferralCode();
+      if (isAndroid) {
+        // Try custom app scheme first
+        window.location.href = appSchemeUrl;
+        setTimeout(() => {
+          // If app doesn't open within 1.2s, redirect to Play Store with referrer
+          window.location.href = playStoreUrl;
+        }, 1200);
+      } else if (isIOS) {
+        window.location.href = appSchemeUrl;
+        setTimeout(() => {
+          window.location.href = appStoreUrl;
+        }, 1200);
+      } else {
+        // Desktop: show message
+        showToast("Open this link on your mobile phone!");
+      }
+    }
+ 
+    // Auto-attempt redirect on mobile devices when page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      // Auto-copy for convenience
+      try { navigator.clipboard.writeText(referralCode); } catch(e){}
+ 
+      if (isAndroid) {
+        document.getElementById('statusText').innerText = "Opening Welvors App / Google Play...";
+        window.location.href = appSchemeUrl;
+        setTimeout(() => {
+          window.location.href = playStoreUrl;
+        }, 1500);
+      } else if (isIOS) {
+        document.getElementById('statusText').innerText = "Opening Welvors App / App Store...";
+        window.location.href = appSchemeUrl;
+        setTimeout(() => {
+          window.location.href = appStoreUrl;
+        }, 1500);
+      } else {
+        document.getElementById('statusText').innerText = "Scan or open on your Android or iPhone";
+      }
+    });
+  </script>
+</body>
+</html>

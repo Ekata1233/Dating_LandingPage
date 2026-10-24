@@ -2155,6 +2155,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
       }
 
       if (touches(CAREER_FIELDS)) {
+        console.log("Career Payload : ",toCareerRequest(fields))
         const res = await updateCareer(toCareerRequest(fields));
         if (!res?.success) throw new SaveFailed(res?.message, "career");
         savedSections.push("Career & ambition");

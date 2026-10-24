@@ -327,11 +327,9 @@ export function ProfileProvider({
             const response = await axios.patch(BASIC_INFO_URL, data, {
                 headers: authHeader(),
             });
-            console.log("Sending Data : ",data)
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
-            console.log("Response : ",response)
             setBasicInfoError(
                 response.data?.message ||
                 "Couldn't update basic information."
@@ -363,14 +361,12 @@ export function ProfileProvider({
         try {
             setBasicInfoLoading(true);
             setBasicInfoError(null);
-            const response = await axios.patch(EDIT_BASIC_INFO_URL, data, {
+            const response = await axios.patch(EDIT_BASIC_INFO_URL, removeNullValues(data), {
                 headers: authHeader(),
             });
-            console.log("Sending Data : ",data)
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
-            console.log("Response : ",response)
             setBasicInfoError(
                 response.data?.message ||
                 "Couldn't update basic information."
@@ -525,6 +521,12 @@ export function ProfileProvider({
     /* ---------------------------------------------------------------- */
     /* UPDATE CAREER / EDUCATION + WORK                                */
     /* ---------------------------------------------------------------- */
+    //Helper function for career and work
+    const removeNullValues = (obj:CareerRequest | EditBasicInfoRequest) => {
+        return Object.fromEntries(
+            Object.entries(obj).filter(([key, value]) => value !== null)
+        );
+    };
     const updateCareer = async (
         data: CareerRequest
     ): Promise<ProfileResponse | null> => {
@@ -532,11 +534,9 @@ export function ProfileProvider({
             setCareerLoading(true);
             setCareerError(null);
 
-            console.log("Sending Data", data)
-            const response = await axios.patch(CAREER_URL, data, {
+            const response = await axios.patch(CAREER_URL, removeNullValues(data), {
                 headers: authHeader(),
             });
-            console.log("Response", response)
 
             if (response.data?.success) {
                 return response.data as ProfileResponse;

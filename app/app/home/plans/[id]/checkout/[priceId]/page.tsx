@@ -12,58 +12,24 @@ import Screen from "@/app/app/shell/Screen";
 /* -------------------------------------------------------------------------- */
 /*  MembershipCheckout                                                        */
 /*                                                                            */
-/*  One independent, fully fluid checkout screen, laid out like the plan      */
-/*  page (MembershipPlanDetails) and themed by the SAME `plan.slug`:          */
-/*      "premium"                           → pink                            */
-/*      "vip"                               → gold                            */
-/*      "vip elite" / "vip-elite" / "elite" → black + gold                    */
-/*  (case-insensitive; spaces and underscores count as hyphens; an unknown    */
-/*  slug falls back to the premium pink).                                     */
+/*  Themed by `plan.slug`: premium → pink, vip → gold, vip elite → black+gold */
+/*  (case-insensitive; unknown slug falls back to premium pink).              */
 /*                                                                            */
-/*    fixed top     header (back button, title, subtitle)                     */
-/*    scrolls       plan summary card, coupon box, price breakdown, payment   */
-/*                  note                                                      */
-/*    fixed bottom  Pay button + footnote                                     */
+/*  DATA. Route: app/plans/[id]/checkout/[priceId]/page.tsx                   */
+/*  `usePlanDetail(id)` returns the plan; the price being bought is the       */
+/*  entry of `plan.prices` whose `id` equals `priceId`. With no `priceId`     */
+/*  it falls back to the highlighted price.                                   */
 /*                                                                            */
-/*  DATA. The screen loads its own plan: the route supplies the ids —         */
-/*      app/plans/[id]/checkout/[priceId]/page.tsx                            */
-/*  — `usePlanDetail(id)` returns the plan, and the price being bought is     */
-/*  the entry of `plan.prices` whose `id` equals the `priceId` segment.       */
-/*  Everything on screen is mapped from that one price:                       */
-/*      plan.name, plan.slug          → card title, theme, icon               */
-/*      price.months                  → "3 months membership", renewal note,  */
-/*                                      breakdown label                       */
-/*      price.price                   → card price, breakdown row, total, Pay */
-/*  A `priceId` that matches nothing (or an inactive price) shows an          */
-/*  "unavailable" state instead of silently charging for a different one.     */
-/*  With no `priceId` in the route it falls back to the highlighted price.    */
+/*  MONEY (UPDATED). `price.price` is treated as the BASE price, EXCLUDING    */
+/*  tax. GST (`gstPercent`, default 18%) is calculated on top and ADDED:      */
+/*        gst   = round(price × gstPercent / 100)                             */
+/*        total = price + gst                                                 */
+/*  The breakdown shows base price, GST and the total, and the Pay button     */
+/*  shows the total. Pass `lines` / `total` to override with server-priced    */
+/*  values (coupons, other tax rules).                                        */
 /*                                                                            */
-/*  PAYMENT. Pay -> PaymentContext.purchasePackage(price.id)                  */
-/*    create-order { purpose: "PACKAGE", packagePriceId } -> Razorpay ->      */
-/*    verify. It is a ONE-TIME payment (not a subscription), so nothing       */
-/*    auto-renews. On success: toast + onPaid() (default: go back).           */
-/*                                                                            */
-/*  MONEY. The price comes from the API; the GST row is informational only —  */
-/*  the price already INCLUDES GST, so it is shown (price − price/1.18) and   */
-/*  never added to the total. Anything that changes what is owed — a coupon,  */
-/*  a tax rule — has to be priced by your server: pass the resulting `lines`  */
-/*  and `total` and they replace the defaults.                                */
-/*                                                                            */
-/*  It fills 100% width and 100% height of its PARENT. Every size inside      */
-/*  (fonts, padding, gaps, radii, icons, buttons) is measured in `cqw`, i.e.  */
-/*  1% of the parent's width, so everything scales with the parent.           */
-/*                                                                            */
-/*  Usage:                                                                    */
-/*    <div style={{ width: "100%", height: "100vh" }}>                        */
-/*      <MembershipCheckout                                                   */
-/*        fluid                                                               */
-/*        paymentNote="Secured by Razorpay"                                   */
-/*        onPaid={({ plan, price }) => router.push("/app/home")}              */
-/*      />                                                                    */
-/*    </div>                                                                  */
-/*                                                                            */
-/*  Back defaults to history.back() — pass `onBack` to route it. The coupon   */
-/*  box only renders when you pass `onApplyCoupon`.                           */
+/*  IMPORTANT: the amount the user sees must equal what Razorpay charges.     */
+/*  The create-order endpoint for PACKAGE must charge price + GST.            */
 /* -------------------------------------------------------------------------- */
 
 /* ---------------------------------- types ---------------------------------- */
@@ -85,7 +51,11 @@ export interface CheckoutCoupon {
 export interface CheckoutSelection {
     plan: NonNullable<ReturnType<typeof usePlanDetail>["plan"]>;
     price: PremiumPrice;
-    /** The amount shown on the Pay button (the `total` prop, or the price). */
+    /** Base price before tax. */
+    subtotal: number;
+    /** GST added on top of the base price. */
+    gst: number;
+    /** The amount shown on the Pay button (base price + GST, or the `total` prop). */
     amount: number;
 }
 
@@ -98,12 +68,12 @@ export interface MembershipCheckoutProps {
     /** Override the default "₹1,299" formatter (en-IN grouping). */
     formatPrice?: (n: number) => string;
 
-    /** GST % already included in the price, for the informational row. 0 hides it. */
+    /** GST % added on top of the base price. 0 disables tax. */
     gstPercent?: number;
-    /** Replaces the default breakdown rows (plan price + GST). Pass server-priced rows. */
+    /** Replaces the default breakdown rows (price + GST). Pass server-priced rows. */
     lines?: CheckoutLine[];
     totalLabel?: string;
-    /** Amount to pay. Falls back to the selected price. Pass it when a coupon applies. */
+    /** Amount to pay. Falls back to base price + GST. Pass it when a coupon applies. */
     total?: number;
 
     /** Overrides the derived "Valid for N months …" line. `null` hides it. */
@@ -127,13 +97,10 @@ export interface MembershipCheckoutProps {
 
     onBack?: () => void;
     showBack?: boolean;
-    /** Runs after a successful, verified payment. Default: go back to the previous page. */
+    /** Runs after a successful, verified payment. Default: go to /app/home. */
     onPaid?: (selection: CheckoutSelection) => void;
 
-    /**
-     * Fill the parent edge to edge instead of rendering the 300px desktop
-     * frame. The mobile shell sets this and supplies `onBack`.
-     */
+    /** Fill the parent edge to edge instead of rendering the 300px desktop frame. */
     fluid?: boolean;
 
     className?: string;
@@ -167,7 +134,6 @@ export function normalizePlanSlug(slug?: string | null): PlanSlug {
     return "premium";
 }
 
-/** The API sends no icon, so the tile's emoji is chosen by plan, like the plan page's badges. */
 const PLAN_ICON: Record<PlanSlug, string> = {
     premium: "🔥",
     vip: "👑",
@@ -175,29 +141,20 @@ const PLAN_ICON: Record<PlanSlug, string> = {
 };
 
 interface PlanTheme {
-    /** CTA background */
     gradient: string;
-    /** Apply button, focus ring, applied-coupon accents */
     accent: string;
-    /** Section accents on white */
     accentText: string;
     check: string;
-    /** Summary card fill + soft chips */
     soft: string;
-    /** Breakdown card + input borders */
     softBorder: string;
     heroPrice: string;
     heroPillBorder: string;
     heroPillColor: string;
-    /** CTA label color */
     ctaText: string;
-    /** Drop-shadow tint for the summary card + CTA */
     shadow: string;
-    /** Dark ink for the price and name on the light summary card */
     priceInk: string;
 }
 
-/* Same palette as the plan page, plus `priceInk` for text on the light card. */
 const THEMES: Record<PlanSlug, PlanTheme> = {
     premium: {
         gradient: "linear-gradient(120deg, #d93663 0%, #ec4b6c 100%)",
@@ -330,22 +287,25 @@ export function MembershipCheckout({
 
     const { plan, loading, error, refetch } = usePlanDetail(id as string);
 
-    /* Colors follow plan.slug. While the plan is still loading there is no slug
-       yet, so the first paint uses the premium pink. */
     const slug = normalizePlanSlug(plan?.slug);
     const THEME = THEMES[slug];
 
-    /* The price being bought. Derived — never copied into state — so it is
-       correct the moment `plan` arrives and can't go stale. */
     const price: PremiumPrice | undefined = React.useMemo(() => {
         const options = (plan?.prices ?? []).filter((p) => p.active);
         if (priceId) return options.find((p) => p.id === priceId);
         return options.find((p) => p.isHighlighted) ?? options[0];
     }, [plan, priceId]);
 
-    /* What is charged. The price already includes GST, so GST is NOT added again.
-       Backend charges price.price for PACKAGE, so this must match it. */
-    const amountDue: number | undefined = total ?? price?.price;
+    /* TAX. `price.price` is the base (pre-tax) amount; GST is added on top. */
+    const gstAmount: number = React.useMemo(() => {
+        if (!price || gstPercent <= 0) return 0;
+        return Math.round((price.price * gstPercent) / 100);
+    }, [price, gstPercent]);
+
+    const computedTotal: number | undefined = price ? price.price + gstAmount : undefined;
+
+    /* What is charged: base price + GST (or the server-priced `total` prop). */
+    const amountDue: number | undefined = total ?? computedTotal;
 
     const [code, setCode] = React.useState("");
 
@@ -364,18 +324,18 @@ export function MembershipCheckout({
             : ((error as { message?: string }).message ?? "Something went wrong.")
         : null;
 
-    /* Default breakdown: the plan row and the GST that the price already
-       contains. GST is informational (price − price/(1+rate)), not added. */
+    /* Default breakdown: base price, then GST added on top. */
     const breakdown: CheckoutLine[] = React.useMemo(() => {
         if (lines) return lines;
         if (!plan || !price) return [];
-        const rows: CheckoutLine[] = [{ label: `${plan.name} · ${monthsText(price.months)}`, value: price.price }];
+        const rows: CheckoutLine[] = [
+            { label: `${plan.name} · ${monthsText(price.months)}`, value: price.price },
+        ];
         if (gstPercent > 0) {
-            const gst = Math.round(price.price - price.price / (1 + gstPercent / 100));
-            rows.push({ label: `GST (${gstPercent}%, incl.)`, value: gst });
+            rows.push({ label: `GST (${gstPercent}%)`, value: gstAmount });
         }
         return rows;
-    }, [lines, plan, price, gstPercent]);
+    }, [lines, plan, price, gstPercent, gstAmount]);
 
     /* ---- PAYMENT ---- */
     const { purchasePackage, loadRazorpay } = usePayment();
@@ -385,7 +345,7 @@ export function MembershipCheckout({
     const busy = paying || stage !== "idle";
 
     React.useEffect(() => {
-        loadRazorpay(); // preload so Razorpay opens fast
+        loadRazorpay();
     }, [loadRazorpay]);
 
     const canApply = code.trim().length > 0 && !applyingCoupon;
@@ -409,11 +369,17 @@ export function MembershipCheckout({
     };
 
     const handlePay = async () => {
-        if (!plan || !price || amountDue === undefined || busy) return; // block double taps
+        if (!plan || !price || amountDue === undefined || busy) return;
         setPayError(null);
 
         const p = (profile ?? {}) as Record<string, any>;
-        const selection: CheckoutSelection = { plan, price, amount: amountDue };
+        const selection: CheckoutSelection = {
+            plan,
+            price,
+            subtotal: price.price,
+            gst: gstAmount,
+            amount: amountDue,
+        };
 
         const res = await purchasePackage(price.id, {
             description: `${plan.name} · ${monthsText(price.months)}`,
@@ -433,7 +399,7 @@ export function MembershipCheckout({
             else router.push("/app/home");
             return;
         }
-        if (res.cancelled) return; // user closed Razorpay
+        if (res.cancelled) return;
 
         setPayError(res.message);
         if (!res.paymentCaptured) toast.error(res.message);
@@ -448,8 +414,6 @@ export function MembershipCheckout({
                 ? "Activating your membership…"
                 : null;
 
-    /* A coupon that was just applied successfully no longer needs to sit in the
-       input — clear it once the parent reports it as applied. */
     React.useEffect(() => {
         if (appliedCoupon) setCode("");
     }, [appliedCoupon?.code]);
@@ -463,7 +427,7 @@ export function MembershipCheckout({
                     className={
                         fluid
                             ? "absolute inset-0 overflow-hidden"
-                            : "  mt-2 w-[320px] sm:w-[300px] h-[480px] sm:h-[520px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out "
+                            : "  h-full aspect-[300/520] max-w-full rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 ease-out "
                     }
                 >
                     <div
@@ -646,18 +610,33 @@ export function MembershipCheckout({
                                                     {monthsText(price.months)} membership
                                                 </p>
                                             </div>
-                                            <span
-                                                style={{
-                                                    flexShrink: 0,
-                                                    fontFamily: SERIF,
-                                                    fontSize: U(6.2),
-                                                    fontWeight: 700,
-                                                    lineHeight: 1,
-                                                    color: THEME.priceInk,
-                                                }}
-                                            >
-                                                {money(price.price)}
-                                            </span>
+                                            <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                                <span
+                                                    style={{
+                                                        display: "block",
+                                                        fontFamily: SERIF,
+                                                        fontSize: U(6.2),
+                                                        fontWeight: 700,
+                                                        lineHeight: 1,
+                                                        color: THEME.priceInk,
+                                                    }}
+                                                >
+                                                    {money(price.price)}
+                                                </span>
+                                                {gstPercent > 0 && (
+                                                    <span
+                                                        style={{
+                                                            display: "block",
+                                                            marginTop: U(1.2),
+                                                            fontSize: U(2.7),
+                                                            fontWeight: 600,
+                                                            color: BASE.grey,
+                                                        }}
+                                                    >
+                                                        + {gstPercent}% GST
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {renewal && (
@@ -954,8 +933,7 @@ export function MembershipCheckout({
     );
 }
 
-/* The route. Desktop keeps the framed card; mobile renders the same component
-   edge to edge so its header, back button and pay CTA fill the screen. */
+/* The route. Desktop keeps the framed card; mobile renders edge to edge. */
 export default function Page() {
     return (
         <Screen
