@@ -20,6 +20,7 @@ import {
   type MyTicketsBooking,
   type TicketFilter,
 } from "@/app/context/EventContext";
+import { useNavGuard } from "@/app/app/shared/useNavGuard";
 
 /* -------------------------------------------------------------------------- */
 /*  MyTickets                                                                 */
@@ -138,6 +139,7 @@ export default function MyTicketsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<TicketFilter>("ALL");
   const [query, setQuery] = useState("");
+  const allEvents = useNavGuard();
 
   const { bookings, loading, error, refetch } = useMyTickets(filter);
 
@@ -177,8 +179,9 @@ export default function MyTicketsPage() {
           <div className="flex flex-col gap-1.5">
             <button
               type="button"
-              onClick={() => router.push("/events")}
-              className="mb-2 inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-full border-0 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur transition hover:bg-white"
+              onClick={() => allEvents.run(() => router.push("/events"))}
+              disabled={allEvents.pending}
+              className="mb-2 inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-full border-0 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-wide backdrop-blur transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
               style={{ color: C.pink }}
             >
               <ArrowRight size={14} className="rotate-180" />
@@ -318,8 +321,9 @@ export default function MyTicketsPage() {
             </p>
             <button
               type="button"
-              onClick={() => router.push("/events")}
-              className="mt-6 cursor-pointer rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5"
+              onClick={() => allEvents.run(() => router.push("/events"))}
+              disabled={allEvents.pending}
+              className="mt-6 cursor-pointer rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` }}
             >
               Browse events
@@ -350,10 +354,10 @@ function BookingCard({
   const day = formatDay(b.event?.eventDate);
   const time = formatTime(b.event?.eventDate, b.event?.startTime);
   const venue = bookingVenue(b);
-  const router = useRouter();
-  function handleBookingCardClick() {
-    router.replace(`/events/${b.event.id}`)
-  }
+  /* One click = one navigation. The booking-confirmation page is slow to
+     mount, so lock the button on click and only show a spinner if the
+     navigation is genuinely taking time. */
+  const openTicket = useNavGuard();
   const ticketTypes = Array.from(
     new Set(b.tickets.map((t) => humanize(t.ticketType)).filter(Boolean))
   );
@@ -451,8 +455,9 @@ function BookingCard({
         <div className="mt-auto pt-5">
           <button
             type="button"
-            onClick={onView}
-            disabled={!b.event?.id || inactive}
+            onClick={() => openTicket.run(onView)}
+            disabled={!b.event?.id || inactive || openTicket.pending}
+            aria-busy={openTicket.slow || undefined}
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               background: inactive
@@ -461,8 +466,12 @@ function BookingCard({
               color: inactive ? C.label : C.white,
             }}
           >
-            <TicketCheck size={17} />
-            {inactive ? st.label : "View ticket"}
+            {openTicket.slow ? (
+              <MoonLoader size={15} color={inactive ? C.label : C.white} speedMultiplier={1.2} />
+            ) : (
+              <TicketCheck size={17} />
+            )}
+            {openTicket.slow ? "Opening…" : inactive ? st.label : "View ticket"}
           </button>
         </div>
       </div>

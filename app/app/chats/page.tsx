@@ -25,30 +25,30 @@ export default function Page() {
   const active =
   conversations.find((c) => c.conversationId === activeConversationId) ??
   null;
-  async function handleClearChat(){
-    if(active?.conversationId){
-      const response = await clearChat(active?.conversationId)
-      if(response){
-        toast.success("Chat Cleared Succesfully");
-      }
-      else{
-        toast.success("Could't Deleted Chat");
-      }
-    }
-  }
-  async function handleOnDelete(){
-      if(active?.conversationId){
-      const response = await deleteChat(active?.conversationId)
-      if(response){
-        toast.success("Chat Cleared Succesfully");
-      }
-      else{
-        toast.success("Could't Clear Chat");
-      }
-    }
-  }
-  
   const thread = useChatThread(active?.user.id ?? null);
+
+  async function handleClearChat() {
+    if (active?.conversationId) {
+      const response = await clearChat(active.conversationId);
+      if (response) {
+        toast.success("Chat cleared successfully");
+        void thread.refetch();
+      } else {
+        toast.error("Couldn't clear chat");
+      }
+    }
+  }
+
+  async function handleOnDelete() {
+    if (active?.conversationId) {
+      const response = await deleteChat(active.conversationId);
+      if (response) {
+        toast.success("Conversation deleted successfully");
+      } else {
+        toast.error("Couldn't delete conversation");
+      }
+    }
+  }
 
   const desktop = active ? (
     <ChatMain

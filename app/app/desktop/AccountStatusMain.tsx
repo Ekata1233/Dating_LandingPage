@@ -258,6 +258,7 @@ export default function AccountStatusMain({
         return (
             <main className={frameClass}>
                 <Loader label="Loading Account Status" hint="Just a moment." />
+                <div>Loading Account Status</div>
             </main>
         );
     } return (

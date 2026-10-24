@@ -292,6 +292,11 @@ const MicIcon = () => (
         <path d="M12 18v3" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
+const SendIcon = () => (
+    <svg viewBox="0 0 24 24" style={svgBase} fill="#fff">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+    </svg>
+);
 
 /** Gold coin with a little bank/treasury mark, as in the gift + rose cards. */
 const CoinIcon = () => (
@@ -448,9 +453,11 @@ const TextBubble = ({ msg }: { msg: TextMessage }) => {
                     borderBottomLeftRadius: mine ? U(5) : U(1.2),
                     background: mine ? C.bubbleMine : C.bubbleTheirs,
                     color: C.ink,
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
                 }}
             >
-                <span style={{ fontSize: U(3.6), lineHeight: 1.4 }}>{msg.text}</span>
+                <span style={{ fontSize: U(3.6), lineHeight: 1.4, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.text}</span>
                 <span
                     style={{
                         flexShrink: 0,
@@ -543,16 +550,15 @@ const LockedBubble = ({ msg }: { msg: LockedMessage }) => {
                     }}
                 >
                     <span
-                        className="chat-locked-spark"
+                        className="chat-locked-spark "
                         style={{ display: "flex", fontSize: U(4.8), color: C.pinkText }}
                     >
                         <SparkleIcon />
                     </span>
                     {msg.label}
                 </span>
-                <Link href={"https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"}>
                     <span
-                        className="chat-locked-glitter"
+                        className="chat-locked-glitter cursor-default"
                         style={{
                             fontSize: U(3.4),
                             fontWeight: 700,
@@ -568,7 +574,7 @@ const LockedBubble = ({ msg }: { msg: LockedMessage }) => {
                     >
                         Open the Welvors app to view this message
 
-                    </span></Link>
+                    </span>
 
                 <span
                     style={{
@@ -1196,6 +1202,31 @@ export default function ChatMain({
     const [tab, setTab] = useState<ChatTab>(activeTab);
     const [draft, setDraft] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = useCallback((smooth = false) => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+        }
+    }, []);
+
+    // Scroll to bottom when opening chat or when messages count changes
+    useEffect(() => {
+        scrollToBottom(false);
+    }, [userId, scrollToBottom]);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            scrollToBottom(true);
+        }
+    }, [messages.length, scrollToBottom]);
+
+    // Reset draft and menu when switching user
+    useEffect(() => {
+        setDraft("");
+        setMenuOpen(false);
+    }, [userId]);
 
     const handleTab = useCallback(
         (key: ChatTab) => {
@@ -1466,6 +1497,7 @@ export default function ChatMain({
 
                         {/* thread */}
                         <div
+                            ref={scrollContainerRef}
                             className="chat-scroll"
                             style={{
                                 flex: 1,
@@ -1584,6 +1616,7 @@ export default function ChatMain({
                                             {messagesError}
                                         </div>
                                     )}
+                                    <div ref={messagesEndRef} />
                                 </>
                             )}
                         </div>
@@ -1621,7 +1654,10 @@ export default function ChatMain({
                                     value={draft}
                                     onChange={(e) => setDraft(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSend();
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSend();
+                                        }
                                     }}
                                     placeholder={messagePlaceholder}
                                     aria-label="Message"
@@ -1705,9 +1741,10 @@ export default function ChatMain({
                                     justifyContent: "center",
                                     fontSize: U(4.4),
                                     boxShadow: `0 ${U(1)} ${U(2.6)} rgba(226,58,106,.35)`,
+                                    transition: "transform 0.15s ease",
                                 }}
                             >
-                                <MicIcon />
+                                {draft.trim() ? <SendIcon /> : <MicIcon />}
                             </button>
                         </div>
                     </div>

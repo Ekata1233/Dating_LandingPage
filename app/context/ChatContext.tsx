@@ -417,6 +417,15 @@ export function ChatConversationsProvider({
         useState<string | null>(null);
     const selectConversation = useCallback((id: string | null) => {
         setActiveConversationId(id);
+        if (id) {
+            setConversations((prev) =>
+                prev.map((c) =>
+                    c.conversationId === id && c.unreadCount > 0
+                        ? { ...c, unreadCount: 0 }
+                        : c
+                )
+            );
+        }
     }, []);
 
     const [pagination, setPagination] = useState<Pagination>({
@@ -977,6 +986,7 @@ export function ChatConversationsProvider({
     );
 
     /** Appends a live row, replacing the optimistic bubble it confirms. */
+    /** Appends a live row, replacing the optimistic bubble it confirms. */
     const mergeLiveMessage = useCallback(
         (incoming: Message) => {
             const mine = isOwnLiveMessage(incoming);
@@ -987,6 +997,10 @@ export function ChatConversationsProvider({
                 : undefined;
 
             setMessages((prev) => {
+                /* If this message does not belong to the active thread, do not put it in the thread view */
+                if (incoming.conversationId !== activeConversationIdRef.current) {
+                    return prev;
+                }
                 /* Already present (a second delivery) → nothing to do. */
                 if (prev.some((m) => m.id === incoming.id)) return prev;
 
@@ -1002,7 +1016,10 @@ export function ChatConversationsProvider({
                 const idx = prev.findIndex(
                     (c) => c.conversationId === incoming.conversationId
                 );
-                if (idx === -1) return prev;
+                if (idx === -1) {
+                    void refetchConversations();
+                    return prev;
+                }
 
                 const target = prev[idx];
                 const open = target.conversationId === activeConversationIdRef.current;
@@ -1029,7 +1046,7 @@ export function ChatConversationsProvider({
                 return sortByUpdated([updated, ...rest]);
             });
         },
-        [isOwnLiveMessage, takePendingTempId]
+        [isOwnLiveMessage, takePendingTempId, refetchConversations]
     );
 
     /* Connect once a session exists; the module keeps the singleton, so a
@@ -1049,8 +1066,7 @@ export function ChatConversationsProvider({
         };
         const onMessageReceive = (incoming: SocketChatMessage) => {
             if (!mounted.current) return;
-            /* Rows for a thread we are not looking at stay server-side. */
-            if (incoming.conversationId !== activeConversationIdRef.current) return;
+            /* Update thread and conversation list for all incoming messages */
             mergeLiveMessage(fromSocketMessage(incoming));
         };
 
@@ -1101,6 +1117,7 @@ export function ChatConversationsProvider({
             if (!socket) return false;
 
             /* Optimistic bubble first — the echo swaps it for the real row. */
+            const now = new Date().toISOString();
             const tempId = `optimistic-${Date.now()}-${Math.random()
                 .toString(36)
                 .slice(2, 8)}`;
@@ -1116,25 +1133,52 @@ export function ChatConversationsProvider({
             });
 
             if (mounted.current) {
+                // Optimistically append bubble to thread
                 setMessages((prev) =>
                     sortMessagesByCreated([
                         ...prev,
-                        /* `senderId` is a placeholder: the thread derives
-                           direction by matching the counterpart's id, so any
-                           other value already renders as "me". */
                         fromSocketMessage(
                             {
                                 id: tempId,
                                 conversationId,
                                 senderId: "me",
                                 content: trimmed,
-                                createdAt: new Date().toISOString(),
+                                createdAt: now,
                                 messageType: "TEXT",
                             },
                             "sending"
                         ),
                     ])
                 );
+
+                // Optimistically update conversation list with the new message and move to top
+                setConversations((prev) => {
+                    const idx = prev.findIndex(
+                        (c) => c.conversationId === conversationId
+                    );
+                    if (idx === -1) return prev;
+
+                    const target = prev[idx];
+                    const updated: Conversation = {
+                        ...target,
+                        lastMessage: {
+                            id: tempId,
+                            senderId: "me",
+                            content: trimmed,
+                            messageType: "TEXT",
+                            mediaUrl: null,
+                            createdAt: now,
+                            deliveredAt: null,
+                            readAt: null,
+                        },
+                        updatedAt: now,
+                    };
+
+                    const rest = prev.filter(
+                        (c) => c.conversationId !== conversationId
+                    );
+                    return sortByUpdated([updated, ...rest]);
+                });
             }
 
             return true;

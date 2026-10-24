@@ -6,6 +6,7 @@ import ChatMain from "../desktop/ChatMain";
 import ChatSideBar from "../panels/ChatSideBar";
 import { useConversations } from "@/app/context/ChatContext";
 import type { Conversation } from "@/app/context/ChatContext";
+import { toast } from "sonner";
 import { useChatThread } from "../shared/chatMessages";
 
 /* -------------------------------------------------------------------------- */
@@ -31,6 +32,8 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
     conversations,
     activeConversationId,
     selectConversation,
+    clearChat,
+    deleteChat,
     loading,
     error,
     refetch,
@@ -67,6 +70,25 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
             onLoadOlderMessages={() => void chat.loadMore()}
             loadingOlderMessages={chat.loadMoreLoading}
             onSend={chat.sendMessage}
+            onClearChat={async () => {
+              const ok = await clearChat(thread.conversationId);
+              if (ok) {
+                toast.success("Chat cleared successfully");
+                void chat.refetch();
+              } else {
+                toast.error("Couldn't clear chat");
+              }
+            }}
+            onDeleteConversation={async () => {
+              const ok = await deleteChat(thread.conversationId);
+              if (ok) {
+                toast.success("Conversation deleted successfully");
+                selectConversation(null);
+                onBackToList?.();
+              } else {
+                toast.error("Couldn't delete conversation");
+              }
+            }}
           />
         </div>
       </div>

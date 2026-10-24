@@ -37,11 +37,10 @@ const packageBadge = (name?: string | null) =>
 /** Flip around its own horizontal axis, then rest briefly before the next turn. */
 const FIRE_BADGE_CSS = `
 @keyframes fireFlipX {
-  0%   { transform: perspective(240px) rotateX(0deg); }
-  60%  { transform: perspective(240px) rotateX(360deg); }
-  100% { transform: perspective(240px) rotateX(360deg); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,120,0,0)); }
+  50%      { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(255,120,0,.75)); }
 }
-.fire-badge-flip { animation: fireFlipX 3s ease-in-out infinite; }
+.fire-badge-flip { animation: fireFlipX 1.8s ease-in-out infinite; }
 `;
 // const FIRE_BADGE_CSS = `@keyframes fireFlipY {
 //   0%   { transform: perspective(240px) rotateY(0deg); }

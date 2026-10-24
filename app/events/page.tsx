@@ -79,22 +79,26 @@ export default function EventsFeed() {
         </h1>
 
         {/* CITY DROPDOWN + MY TICKETS */}
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-fit">
-          <CityDropdown
-            selectedCity={selectedCity}
-            onSelect={handleCitySelect}
-          />
+        <div className="flex w-full items-center justify-between gap-2 sm:ml-auto sm:w-fit sm:justify-start">
+          <div className="w-fit shrink-0">
+            <CityDropdown
+              selectedCity={selectedCity}
+              onSelect={handleCitySelect}
+            />
+          </div>
 
           {/* MY TICKETS — members only */}
-          {loggedIn && (
-            <Link
-              href="/events/myTickets"
-              className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-pink-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-pink-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-1"
-            >
-              <TicketCheck size={16} />
-              My Tickets
-            </Link>
-          )}
+          <span>
+            {loggedIn && (
+              <Link
+                href="/events/myTickets"
+                className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-pink-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-pink-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-1"
+              >
+                <TicketCheck size={16} />
+                My Tickets
+              </Link>
+            )}
+          </span>
         </div>
       </div>
 

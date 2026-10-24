@@ -4,7 +4,7 @@ import {
     useConversations,
     useNewMatches,
 } from "@/app/context/ChatContext";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  Messages                                                                   */
@@ -108,12 +108,25 @@ export function ChatChrome({
     const { newMatches } = useNewMatches();
     const { conversations, selectConversation } = useConversations();
 
+    useEffect(() => {
+        setTab(activeTab);
+    }, [activeTab]);
+
     const matches: NewMatch[] = newMatches.map((m) => ({
         id: m.sender.id,
         name: m.sender.name,
         photo: m.sender.photo,
         hasGift: m.type === "GIFT",
     }));
+
+    const unreadCount = useMemo(
+        () => conversations.reduce((acc, c) => acc + (c.unreadCount > 0 ? 1 : 0), 0),
+        [conversations]
+    );
+    const onlineCount = useMemo(
+        () => conversations.reduce((acc, c) => acc + (c.user.isOnline ? 1 : 0), 0),
+        [conversations]
+    );
 
     const handleTab = useCallback(
         (key: FilterTab) => {
@@ -172,7 +185,7 @@ export function ChatChrome({
             <NewMatches matches={matches} onSelect={openMatch} />
             <nav
                 role="tablist"
-                className="msg-tabs pt-2 pb-3 px-2"
+                className="msg-tabs pt-2 pb-3 px-5"
                 style={{
                     display: "flex",
                     alignItems: "center",
@@ -183,6 +196,13 @@ export function ChatChrome({
             >
                 {tabs.map(({ key, label }) => {
                     const active = tab === key;
+                    const displayLabel =
+                        key === "unread" && unreadCount > 0
+                            ? `${label} (${unreadCount})`
+                            : key === "online" && onlineCount > 0
+                            ? `${label} (${onlineCount})`
+                            : label;
+
                     return (
                         <button
                             key={key}
@@ -201,7 +221,7 @@ export function ChatChrome({
                                 whiteSpace: "nowrap",
                             }}
                         >
-                            {label}
+                            {displayLabel}
                             {active && (
                                 <span
                                     aria-hidden
@@ -260,36 +280,60 @@ const initialsGradient = (seed: string) => {
     return `linear-gradient(135deg, ${palettes[idx][0]}, ${palettes[idx][1]})`;
 };
 
-const Avatar = ({ name, url }: { name: string; url?: string }) => (
-    <span
-        style={{
-            position: "relative",
-            width: U(15.4),
-            height: U(15.4),
-            flexShrink: 0,
-            borderRadius: "50%",
-            border: `${U(0.55)} solid #f3c6d2`,
-            overflow: "hidden",
-            background: url ? "#eee" : initialsGradient(name),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: C.white,
-            fontSize: U(5.6),
-            fontWeight: 700,
-        }}
-    >
-        {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-                src={url}
-                alt={name}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+const Avatar = ({
+    name,
+    url,
+    isOnline,
+}: {
+    name: string;
+    url?: string;
+    isOnline?: boolean;
+}) => (
+    <div style={{ position: "relative", width: U(15.4), height: U(15.4), flexShrink: 0 }}>
+        <span
+            style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                border: `${U(0.55)} solid #f3c6d2`,
+                overflow: "hidden",
+                background: url ? "#eee" : initialsGradient(name),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: C.white,
+                fontSize: U(5.6),
+                fontWeight: 700,
+            }}
+        >
+            {url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={url}
+                    alt={name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+            ) : (
+                name.trim().slice(0, 1).toUpperCase()
+            )}
+        </span>
+        {isOnline && (
+            <span
+                aria-label="Online"
+                style={{
+                    position: "absolute",
+                    bottom: U(0.3),
+                    right: U(0.3),
+                    width: U(3.8),
+                    height: U(3.8),
+                    borderRadius: "50%",
+                    background: "#2ecf6e",
+                    border: `${U(0.6)} solid #ffffff`,
+                    boxShadow: "0 0 4px rgba(46,207,110,0.5)",
+                }}
             />
-        ) : (
-            name.trim().slice(0, 1).toUpperCase()
         )}
-    </span>
+    </div>
 );
 
 /* ---------------------------------- pill ------------------------------------ */
@@ -326,10 +370,10 @@ const Pill = ({
    they would override any Tailwind color/weight classes. */
 const StatusRow = ({ conversation }: { conversation: Conversation }) => {
     const unread = conversation.unreadCount >= 1;
-    const { messageType, content } = conversation.lastMessage || {
-        messageType: "TEXT" as const,
-        content: "No Messages yet.",
-    };
+    const lastMsg = conversation.lastMessage;
+    const messageType = lastMsg?.messageType ?? "TEXT";
+    const content = lastMsg?.content ?? "No messages yet.";
+    const isMe = lastMsg?.senderId === "me";
 
     const textStyle = (
         readColor: string,
@@ -338,6 +382,11 @@ const StatusRow = ({ conversation }: { conversation: Conversation }) => {
         fontSize: U(3.5),
         color: unread ? C.ink : readColor,
         fontWeight: unread ? 700 : readWeight,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        minWidth: 0,
+        display: "block",
     });
 
     if (messageType !== "TEXT") {
@@ -346,14 +395,19 @@ const StatusRow = ({ conversation }: { conversation: Conversation }) => {
         return (
             <span
                 className="msg-locked msg-ellipsis"
-                style={{ fontSize: U(3.5), fontWeight: unread ? 700 : 500 }}
+                style={{ fontSize: U(3.5), fontWeight: unread ? 700 : 500, display: "block" }}
             >
                 Open the Welvors app to view this message
             </span>
         );
     }
 
-    return <span style={textStyle(C.grey, 500)}>{content}</span>;
+    return (
+        <span className="msg-ellipsis" style={textStyle(C.grey, 500)}>
+            {isMe && <span style={{ color: C.pinkText, fontWeight: 600 }}>You: </span>}
+            {content}
+        </span>
+    );
 };
 
 /* -------------------------------- component -------------------------------- */
@@ -369,6 +423,19 @@ export default function ChatSideBar({
 }: MessagesProps) {
     const { conversations, activeConversationId, selectConversation } =
         useConversations();
+    const [selectedTab, setSelectedTab] = useState<FilterTab>(activeTab);
+
+    useEffect(() => {
+        setSelectedTab(activeTab);
+    }, [activeTab]);
+
+    const handleTabChange = useCallback(
+        (key: FilterTab) => {
+            setSelectedTab(key);
+            onTabChange?.(key);
+        },
+        [onTabChange]
+    );
 
     const openConversation = useCallback(
         (id: string) => {
@@ -377,6 +444,54 @@ export default function ChatSideBar({
         },
         [selectConversation, onSelectConversation]
     );
+
+    const filteredConversations = useMemo(() => {
+        const sorted = [...conversations].sort((a, b) => {
+            const timeB = new Date(b.lastMessage?.createdAt || b.updatedAt || 0).getTime();
+            const timeA = new Date(a.lastMessage?.createdAt || a.updatedAt || 0).getTime();
+            return timeB - timeA;
+        });
+
+        switch (selectedTab) {
+            case "unread":
+                return sorted.filter((c) => c.unreadCount > 0);
+            case "online":
+                return sorted.filter((c) => c.user.isOnline);
+            case "dateInvites":
+                return sorted.filter(
+                    (c) =>
+                        c.lastMessage?.messageType === "DATE_CONFIRMED" ||
+                        c.lastMessage?.messageType === "RELATIONSHIP_TAG_PROPOSAL" ||
+                        Boolean(c.progress)
+                );
+            case "events":
+                return sorted.filter(
+                    (c) =>
+                        c.lastMessage?.messageType === "ENGAGEMENT" ||
+                        c.lastMessage?.messageType === "ROSE" ||
+                        c.lastMessage?.messageType === "GIFT"
+                );
+            case "all":
+            case "nearby":
+            default:
+                return sorted;
+        }
+    }, [conversations, selectedTab]);
+
+    const emptyStateText = useMemo(() => {
+        switch (selectedTab) {
+            case "unread":
+                return "No unread messages";
+            case "online":
+                return "No matches are online right now";
+            case "dateInvites":
+                return "No date invites yet";
+            case "events":
+                return "No events yet";
+            default:
+                return "No conversations yet";
+        }
+    }, [selectedTab]);
 
     return (
         <div
@@ -419,13 +534,13 @@ export default function ChatSideBar({
                 {/* header + new matches + tabs */}
                 <ChatChrome
                     tabs={tabs}
-                    activeTab={activeTab}
-                    onTabChange={onTabChange}
+                    activeTab={selectedTab}
+                    onTabChange={handleTabChange}
                 />
 
                 {/* list */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                    {conversations.length === 0 ? (
+                    {filteredConversations.length === 0 ? (
                         <div
                             style={{
                                 flex: 1,
@@ -443,106 +558,110 @@ export default function ChatSideBar({
                                     textAlign: "center",
                                 }}
                             >
-                                No conversations yet
+                                {emptyStateText}
                             </p>
                         </div>
                     ) : (
-                        conversations
-                            .toSorted(
-                                (a, b) =>
-                                    new Date(b.updatedAt).getTime() -
-                                    new Date(a.updatedAt).getTime()
-                            )
-                            .map((c, i) => (
-                                <div
-                                    key={c.conversationId}
-                                    className="msg-row bg-white"
-                                    onClick={() => openConversation(c.conversationId)}
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "flex-start",
-                                        gap: U(3.4),
-                                        padding: `${U(4)} ${U(5)}`,
-                                        borderTop:
-                                            i === 0 ? "none" : `${HAIR} solid ${C.border}`,
-                                        backgroundColor:
-                                            c.conversationId === activeConversationId
-                                                ? "#F2F2F2"
-                                                : undefined,
-                                    }}
-                                >
-                                    <Avatar name={c.user.fullName} url={c.user.profilePhoto} />
+                        filteredConversations.map((c, i) => (
+                            <div
+                                key={c.conversationId}
+                                className="msg-row bg-white"
+                                onClick={() => openConversation(c.conversationId)}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: U(3.4),
+                                    padding: `${U(4)} ${U(5)}`,
+                                    borderTop:
+                                        i === 0 ? "none" : `${HAIR} solid ${C.border}`,
+                                    backgroundColor:
+                                        c.conversationId === activeConversationId
+                                            ? "#F2F2F2"
+                                            : undefined,
+                                }}
+                            >
+                                <Avatar
+                                    name={c.user.fullName}
+                                    url={c.user.profilePhoto}
+                                    isOnline={c.user.isOnline}
+                                />
 
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap: U(2),
+                                        }}
+                                    >
                                         <div
+                                            className="justify-between"
                                             style={{
                                                 display: "flex",
                                                 alignItems: "center",
-                                                justifyContent: "space-between",
                                                 gap: U(2),
+                                                minWidth: 0,
+                                                flex: 1,
                                             }}
                                         >
-                                            <div
-                                                className="justify-between"
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: U(2),
-                                                    minWidth: 0,
-                                                    flex: 1,
-                                                }}
-                                            >
-                                                <span
-                                                    className="msg-ellipsis truncate"
-                                                    style={{ fontSize: U(3.9), fontWeight: 700 }}
-                                                >
-                                                    {c.user.fullName},&nbsp;{c.user.age}
-                                                </span>
-                                                <span className="flex">
-                                                    <Pill
-                                                        label={`${c.user.matchPercentage}% Match`}
-                                                        color={C.pinkText}
-                                                        background={C.pinkSoft}
-                                                    />
-                                                    <Pill
-                                                        label={`${c.user.trustPercentage}% Trust`}
-                                                        color={C.green}
-                                                        background={C.greenSoft}
-                                                    />
-                                                </span>
-                                            </div>
                                             <span
-                                                style={{
-                                                    flexShrink: 0,
-                                                    fontSize: U(3),
-                                                    color: C.greyLight,
-                                                    fontWeight: 500,
-                                                }}
+                                                className="msg-ellipsis truncate"
+                                                style={{ fontSize: U(3.9), fontWeight: 700 }}
                                             >
-                                                {formatTimeAgo(c.updatedAt)}
+                                                {c.user.fullName},&nbsp;{c.user.age}
+                                            </span>
+                                            <span
+                                                className="flex"
+                                                style={{ display: "flex", gap: U(1.2), flexShrink: 0 }}
+                                            >
+                                                <Pill
+                                                    label={`${c.user.matchPercentage}% Match`}
+                                                    color={C.pinkText}
+                                                    background={C.pinkSoft}
+                                                />
+                                                <Pill
+                                                    label={`${c.user.trustPercentage}% Trust`}
+                                                    color={C.green}
+                                                    background={C.greenSoft}
+                                                />
                                             </span>
                                         </div>
-
-                                        <div
-                                            className="flex justify-between"
+                                        <span
                                             style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: U(1.8),
-                                                marginTop: U(1.4),
-                                                marginBottom: U(2.4),
+                                                flexShrink: 0,
+                                                fontSize: U(3),
+                                                color: C.greyLight,
+                                                fontWeight: 500,
                                             }}
                                         >
+                                            {formatTimeAgo(c.lastMessage?.createdAt || c.updatedAt)}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap: U(1.8),
+                                            marginTop: U(1.4),
+                                            marginBottom: U(2.4),
+                                            minWidth: 0,
+                                        }}
+                                    >
+                                        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                                             <StatusRow conversation={c} />
-                                            {c.unreadCount > 0 && (
-                                                <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-[#E7477D] px-1 text-[10px] font-bold leading-none text-white">
-                                                    {c.unreadCount > 99 ? "99+" : c.unreadCount}
-                                                </span>
-                                            )}
                                         </div>
+                                        {c.unreadCount > 0 && (
+                                            <span className="inline-flex min-w-5 h-5 shrink-0 items-center justify-center rounded-full bg-[#E7477D] px-1 text-[10px] font-bold leading-none text-white">
+                                                {c.unreadCount > 99 ? "99+" : c.unreadCount}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
-                            ))
+                            </div>
+                        ))
                     )}
                 </div>
             </div>

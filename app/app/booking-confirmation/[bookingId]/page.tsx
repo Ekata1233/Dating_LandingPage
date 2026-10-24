@@ -41,10 +41,11 @@ import {
   X,
 } from "lucide-react";
 import { PaymentSuccessData, usePaymentSuccess } from "@/app/context/PaymentContext";
+import { useNavGuard } from "@/app/app/shared/useNavGuard";
 
 /* ----------------------------- config (edit) ----------------------------- */
 const MY_BOOKINGS_ROUTE = "/events/myTickets"; // your "My Bookings" page
-const EVENT_ROUTE = (eventId: string) => `/app/events/${eventId}`; // your event details page
+const EVENT_ROUTE = (eventId: string) => `/events/${eventId}`; // your event details page
 
 /* --------------------------------- theme --------------------------------- */
 const C = {
@@ -242,6 +243,11 @@ export default function BookingConfirmationPage() {
 
   const { data, loading, refreshing, error, reload: load } = usePaymentSuccess(bookingId);
 
+  /* Every route out of here goes to My Bookings (a slow page to mount) —
+     lock the buttons on first click so a double tap can't push twice. */
+  const goBookings = useNavGuard();
+  const gotoMyBookings = () => goBookings.run(() => router.push(MY_BOOKINGS_ROUTE));
+
   /* ------------------------------ actions ------------------------------ */
   const handleShare = async () => {
     if (!data) return;
@@ -306,7 +312,7 @@ export default function BookingConfirmationPage() {
         role="status"
         aria-live="polite"
       >
-        <MoonLoader color={C.pink} speedMultiplier={2} />
+        <MoonLoader color={C.pink} speedMultiplier={2} size={25} />
         <span className="sr-only">Loading your booking</span>
       </div>
     );
@@ -339,8 +345,9 @@ export default function BookingConfirmationPage() {
             </button>
             <button
               type="button"
-              onClick={() => router.push(MY_BOOKINGS_ROUTE)}
-              className="wv-btn wv-focus h-12 cursor-pointer rounded-2xl px-6 text-sm font-bold"
+              onClick={gotoMyBookings}
+              disabled={goBookings.pending}
+              className="wv-btn wv-focus h-12 cursor-pointer rounded-2xl px-6 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
               style={{ background: C.white, color: C.ink, border: `1px solid ${C.border}` }}
             >
               My Bookings
@@ -382,9 +389,10 @@ export default function BookingConfirmationPage() {
         <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[48px_1fr_48px] items-center px-4 sm:px-6 lg:px-8">
           <button
             type="button"
-            onClick={() => router.push(MY_BOOKINGS_ROUTE)}
+            onClick={gotoMyBookings}
+            disabled={goBookings.pending}
             aria-label="Back to my bookings"
-            className="wv-btn wv-focus flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0"
+            className="wv-btn wv-focus flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-0 disabled:cursor-not-allowed disabled:opacity-60"
             style={{ background: C.white, color: C.ink, boxShadow: "0 0 0 1px rgba(31,29,29,.06), 0 4px 12px -6px rgba(0,0,0,.2)" }}
           >
             <ArrowLeft size={20} />
@@ -662,11 +670,16 @@ export default function BookingConfirmationPage() {
               )}
               <button
                 type="button"
-                onClick={() => router.push(MY_BOOKINGS_ROUTE)}
-                className="wv-btn wv-focus flex h-14 cursor-pointer items-center justify-center rounded-2xl text-base font-bold"
+                onClick={gotoMyBookings}
+                disabled={goBookings.pending}
+                aria-busy={goBookings.slow || undefined}
+                className="wv-btn wv-focus flex h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl text-base font-bold disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ background: C.white, color: C.body, border: `1px solid ${C.border}` }}
               >
-                View My Bookings
+                {goBookings.slow && (
+                  <MoonLoader size={16} color={C.pinkDeep} speedMultiplier={1.2} />
+                )}
+                {goBookings.slow ? "Opening…" : "View My Bookings"}
               </button>
               {state === "success" && (
                 <p className="m-0 mt-1 text-center text-sm" style={{ color: C.label }}>
