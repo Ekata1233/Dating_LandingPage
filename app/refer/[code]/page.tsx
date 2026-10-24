@@ -65,7 +65,8 @@ export default function ReferRedirectPage() {
 
         setIsAndroidDevice(isAndroid);
 
-        // Desktop: nothing to open. Keep the loader a beat so it doesn't flash, then show the page.
+        // Desktop: no redirect. Show the page with the store buttons once the
+        // device check is done (short hold so the loader doesn't flash).
         if (!isAndroid && !isIOS) {
             const desktopTimer = setTimeout(() => setPhase('done'), 700);
             return () => clearTimeout(desktopTimer);
@@ -73,31 +74,59 @@ export default function ReferRedirectPage() {
 
         setPhase('opening');
 
-        // 1) Try the installed app. 2) If we are still here after 1.2s, go to the store.
-        window.location.href = APP_SCHEME_URL;
+        const timers: ReturnType<typeof setTimeout>[] = [];
+        const cleanups: Array<() => void> = [];
 
-        const storeUrl = isAndroid ? PLAY_STORE_FALLBACK_URL : APP_STORE_URL;
-        const redirectTimer = setTimeout(() => {
-            window.location.href = storeUrl;
-        }, 1200);
-        const loaderTimer = setTimeout(() => setPhase('done'), 2600);
+        if (isAndroid) {
+            // Android: go straight to the Welvors listing in the Play Store app.
+            // replace() keeps this redirect page out of the back-button history.
+            window.location.replace(PLAY_STORE_URL);
 
-        // If the app opened, the page loses focus / becomes hidden: don't
-        // bounce the user to the store when they come back.
-        const cancelRedirect = () => clearTimeout(redirectTimer);
-        const onVisibility = () => {
-            if (document.hidden) cancelRedirect();
-        };
-        document.addEventListener('visibilitychange', onVisibility);
-        window.addEventListener('pagehide', cancelRedirect);
-        window.addEventListener('blur', cancelRedirect);
+            // Some browsers (in-app browsers, or Chrome without a user tap) ignore
+            // intent:// links. If we're still on screen, use the HTTPS listing,
+            // which Android hands to the Play Store app (or shows in Chrome).
+            const fallbackTimer = setTimeout(() => {
+                if (!document.hidden) window.location.replace(PLAY_STORE_FALLBACK_URL);
+            }, 900);
+            timers.push(fallbackTimer);
+
+            // If the Play Store app took over, don't navigate again.
+            const cancel = () => clearTimeout(fallbackTimer);
+            const onVisibility = () => {
+                if (document.hidden) cancel();
+            };
+            document.addEventListener('visibilitychange', onVisibility);
+            window.addEventListener('pagehide', cancel);
+            cleanups.push(() => {
+                document.removeEventListener('visibilitychange', onVisibility);
+                window.removeEventListener('pagehide', cancel);
+            });
+        } else if (isIOS) {
+            // iOS: try the installed app, then fall back to the App Store.
+            window.location.href = APP_SCHEME_URL;
+            const iosTimer = setTimeout(() => {
+                window.location.replace(APP_STORE_URL);
+            }, 1200);
+            timers.push(iosTimer);
+
+            const cancel = () => clearTimeout(iosTimer);
+            const onVisibility = () => {
+                if (document.hidden) cancel();
+            };
+            document.addEventListener('visibilitychange', onVisibility);
+            window.addEventListener('pagehide', cancel);
+            cleanups.push(() => {
+                document.removeEventListener('visibilitychange', onVisibility);
+                window.removeEventListener('pagehide', cancel);
+            });
+        }
+
+        // Safety net: if nothing navigated away, reveal the page with the store buttons.
+        timers.push(setTimeout(() => setPhase('done'), 3000));
 
         return () => {
-            cancelRedirect();
-            clearTimeout(loaderTimer);
-            document.removeEventListener('visibilitychange', onVisibility);
-            window.removeEventListener('pagehide', cancelRedirect);
-            window.removeEventListener('blur', cancelRedirect);
+            timers.forEach(clearTimeout);
+            cleanups.forEach((fn) => fn());
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [code]);
@@ -106,15 +135,10 @@ export default function ReferRedirectPage() {
         <div className={`wv-root ${jakarta.className} mt-10`}>
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            {/* Moon loader */}
+            {/* Loader */}
             {phase !== 'done' && (
-                <div className="wv-loader" role="status" aria-live="polite">
+                <div className="wv-loader" role="status" aria-label="Loading">
                     <div className="wv-spinner" aria-hidden="true" />
-                    <p className="wv-loader-text">
-                        {/* {phase === 'detecting'
-                            ? 'Checking your device…'
-                            : 'Opening your invite in the Welvors app…'} */}
-                    </p>
                 </div>
             )}
 
