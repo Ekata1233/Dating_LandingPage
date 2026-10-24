@@ -236,6 +236,11 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-24 — onboarding: existing prompts data hydration & lookup
+- `app/onBoarding/stepPayloads.ts`: Added `flows.PROMPT` extraction to `seed.prompts = { answers }` in `stepDataFromDetails(details)`. Previously, prompts were omitted entirely from central hydration, leaving `form.get("answers")` empty on initial load even when the backend had answers in `onboarding-details`.
+- `app/onBoarding/steps/Prompts.tsx`: Switched to `useOnBoardingData()` (matching `Intentions.tsx`, `Lifestyle.tsx`, `Interests.tsx`, `Review.tsx`). Added prompt-question resolution map and effects to synchronize answers from `profileDetails.details?.flows?.PROMPT` and backfill any missing question titles from prompt categories if the API only stored prompt IDs and answers.
+- Verified: `npx tsc --noEmit` clean (0 errors).
+
 ### 2026-10-23 — chat: socket.io wired in (join / send / receive)
 - `lib/chat/socket.ts` (user-authored, left untouched) owns a module singleton:
   `connectChatSocket(token)` / `disconnectChatSocket()`, events `conversation:join`,
