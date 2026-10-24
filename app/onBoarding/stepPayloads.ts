@@ -389,6 +389,28 @@ export function stepDataFromDetails(
     seed.bio = { bio: flows.STORY.bio };
   }
 
+  if (Array.isArray(flows.PROMPT)) {
+    const answers = flows.PROMPT.map((entry) => {
+      const record = (entry ?? {}) as Record<string, unknown>;
+      const promptObj =
+        record.prompt && typeof record.prompt === "object"
+          ? (record.prompt as Record<string, unknown>)
+          : null;
+
+      return {
+        promptId: str(record.promptId || record.id || promptObj?.id).trim(),
+        question: str(
+          record.question || record.promptQuestion || promptObj?.question
+        ).trim(),
+        answer: str(record.answer || record.response).trim().slice(0, 200),
+      };
+    }).filter((prompt) => Boolean(prompt.promptId && prompt.answer));
+
+    if (answers.length > 0) {
+      seed.prompts = { answers };
+    }
+  }
+
   if (location?.city) {
     seed.location = { city: location.city };
   }

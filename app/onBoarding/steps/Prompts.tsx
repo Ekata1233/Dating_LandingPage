@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { StepFooter } from "../OnboardingFields";
 import {
-  usePromptCategories,
+  useOnBoardingData,
   type PromptCategory,
   type PromptItem,
 } from "../../context/OnBoardingDataContext";
@@ -61,7 +61,10 @@ const emojiFor = (name: string) => CATEGORY_EMOJI[name] ?? "💬";
 
 export default function PromptsStep() {
   const form = useStepForm("prompts");
-  const { categories, loading, error, refetch } = usePromptCategories();
+  const {
+    prompts: { categories, loading, error, refetch },
+    profileDetails,
+  } = useOnBoardingData();
 
   const answers = form.get<Answer[]>("answers") ?? [];
   const [view, setView] = React.useState<"list" | "picker">("list");
@@ -71,6 +74,64 @@ export default function PromptsStep() {
 
   const full = answers.length >= MAX_ANSWERS;
   const takenIds = React.useMemo(() => new Set(answers.map((a) => a.promptId)), [answers]);
+
+  // Fast lookup from promptId -> question text from the categories catalogue
+  const promptQuestionMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cat of categories) {
+      for (const p of cat.prompts) {
+        map.set(p.id, p.question);
+      }
+    }
+    return map;
+  }, [categories]);
+
+  // If the step mounts and form answers are not yet populated, hydrate from profileDetails
+  React.useEffect(() => {
+    if (answers.length > 0) return;
+    const raw = profileDetails.details?.flows?.PROMPT;
+    if (Array.isArray(raw) && raw.length > 0) {
+      const parsed: Answer[] = raw
+        .map((entry) => {
+          const record = (entry ?? {}) as Record<string, unknown>;
+          const promptObj =
+            record.prompt && typeof record.prompt === "object"
+              ? (record.prompt as Record<string, unknown>)
+              : null;
+          const promptId = String(record.promptId || record.id || promptObj?.id || "").trim();
+          const question = String(
+            record.question || record.promptQuestion || promptObj?.question || ""
+          ).trim();
+          const answer = String(record.answer || record.response || "").trim();
+          return {
+            promptId,
+            question,
+            answer: answer.slice(0, FALLBACK_MAX_LENGTH),
+          };
+        })
+        .filter((p) => Boolean(p.promptId && p.answer));
+
+      if (parsed.length > 0) {
+        form.set("answers", parsed);
+      }
+    }
+  }, [profileDetails.details, answers.length, form]);
+
+  // Backfill question text for any existing answer that was stored without question wording
+  React.useEffect(() => {
+    if (categories.length === 0 || answers.length === 0) return;
+    let needsUpdate = false;
+    const updated = answers.map((a) => {
+      if (!a.question && promptQuestionMap.has(a.promptId)) {
+        needsUpdate = true;
+        return { ...a, question: promptQuestionMap.get(a.promptId)! };
+      }
+      return a;
+    });
+    if (needsUpdate) {
+      form.set("answers", updated);
+    }
+  }, [categories, answers, promptQuestionMap, form]);
 
   // Default to the first category once the list has loaded.
   React.useEffect(() => {
@@ -141,22 +202,25 @@ export default function PromptsStep() {
         />
       }
     >
-      {answers.map((a) => (
-        <div key={a.promptId} className="space-y-1.5 rounded-xl border border-border bg-card p-3">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-xs font-semibold leading-snug">{a.question}</p>
-            <button
-              type="button"
-              onClick={() => remove(a.promptId)}
-              aria-label={`Remove answer for ${a.question}`}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
+      {answers.map((a) => {
+        const questionText = a.question || promptQuestionMap.get(a.promptId) || "Prompt";
+        return (
+          <div key={a.promptId} className="space-y-1.5 rounded-xl border border-border bg-card p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-semibold leading-snug">{questionText}</p>
+              <button
+                type="button"
+                onClick={() => remove(a.promptId)}
+                aria-label={`Remove answer for ${questionText}`}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="text-sm leading-relaxed text-muted-foreground">{a.answer}</p>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">{a.answer}</p>
-        </div>
-      ))}
+        );
+      })}
 
       {draftPrompt && (
         <div className="space-y-1.5 rounded-xl border border-primary bg-primary-muted p-3">
