@@ -1,5 +1,6 @@
 import Link from "next/link";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 
 /* -------------------------------------------------------------------------- */
 /*  ChatConversation                                                           */
@@ -36,6 +37,8 @@ export interface TextMessage {
     from: "me" | "them";
     text: string;
     time: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
 }
 
@@ -55,6 +58,8 @@ export interface GiftMessage {
     /** Coins the gift unlocks for the receiver */
     coinsSpent?: number;
     time: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
 }
 
@@ -76,6 +81,8 @@ export interface CardMessage {
     time: string;
     /** Shown under generic cards: Sent / Delivered / Read / Received. */
     status?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
     /** rose only */
     repliesDone?: number;
@@ -97,6 +104,8 @@ export interface LockedMessage {
     time: string;
     /** Sent / Delivered / Read / Received, same as the rich cards. */
     status?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
 }
 
@@ -472,7 +481,13 @@ const TextBubble = ({ msg }: { msg: TextMessage }) => {
                     {msg.time}
                     {mine && msg.read !== undefined && (
                         <span style={{ fontSize: U(3.2), display: "flex" }}>
-                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
                         </span>
                     )}
                 </span>
@@ -592,7 +607,13 @@ const LockedBubble = ({ msg }: { msg: LockedMessage }) => {
                     {msg.time}
                     {mine && msg.read !== undefined && (
                         <span style={{ fontSize: U(3.2), display: "flex" }}>
-                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
                         </span>
                     )}
                 </span>
@@ -790,7 +811,13 @@ const GiftCard = ({ msg, otherName }: { msg: GiftMessage; otherName: string }) =
                         {msg.time}
                         {mine && (
                             <span style={{ fontSize: U(4), display: "flex" }}>
-                                {msg.read ? <CheckDouble color="#a9a6ae" /> : <CheckSingle color="#a9a6ae" />}
+                                {msg.read ? (
+                                    <CheckDouble color={C.pinkText} />
+                                ) : msg.delivered ? (
+                                    <CheckDouble color="#9aa4b2" />
+                                ) : (
+                                    <CheckSingle color="#a9a6ae" />
+                                )}
                             </span>
                         )}
                     </div>
@@ -1092,9 +1119,15 @@ const CardBubble = ({ msg }: { msg: CardMessage }) => {
                 >
                     {msg.status && <span style={{ color: mine ? C.pinkText : C.greyLight }}>{msg.status}</span>}
                     {msg.time}
-                    {mine && (
+                    {mine && msg.read !== undefined && (
                         <span style={{ fontSize: U(3.2), display: "flex" }}>
-                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
                         </span>
                     )}
                 </span>
@@ -1202,8 +1235,13 @@ export default function ChatMain({
     const [tab, setTab] = useState<ChatTab>(activeTab);
     const [draft, setDraft] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const [emojiOpen, setEmojiOpen] = useState(false);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const caretRef = useRef<{ start: number; end: number } | null>(null);
+    const emojiWrapRef = useRef<HTMLDivElement>(null);
+    const pickerPanelRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = useCallback((smooth = false) => {
         if (messagesEndRef.current) {
@@ -1226,7 +1264,26 @@ export default function ChatMain({
     useEffect(() => {
         setDraft("");
         setMenuOpen(false);
+        setEmojiOpen(false);
+        caretRef.current = null;
     }, [userId]);
+
+    // The picker panel is pinned to the composer with left/right in CSS, so it
+    // grows and shrinks with the main screen on its own.
+
+    // Click outside the button/picker closes the picker
+    useEffect(() => {
+        if (!emojiOpen) return;
+        const onPointerDown = (e: PointerEvent) => {
+            const target = e.target as Node | null;
+            if (!target) return;
+            if (emojiWrapRef.current?.contains(target)) return;
+            if (pickerPanelRef.current?.contains(target)) return;
+            setEmojiOpen(false);
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, [emojiOpen]);
 
     const handleTab = useCallback(
         (key: ChatTab) => {
@@ -1241,9 +1298,11 @@ export default function ChatMain({
         if (!trimmed) return;
         onSend?.(trimmed);
         setDraft("");
+        caretRef.current = null;
     };
 
     const toggleMenu = () => {
+        setEmojiOpen(false);
         setMenuOpen((open) => {
             if (!open) onMenu?.();
             return !open;
@@ -1255,15 +1314,58 @@ export default function ChatMain({
         fn?.();
     };
 
+    /* ------------------------------- emoji ------------------------------- */
+
+    // Remember where the caret sits, so an emoji lands there — not at the end.
+    const captureCaret = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        const start = el.selectionStart ?? draft.length;
+        const end = el.selectionEnd ?? start;
+        caretRef.current = { start, end };
+    };
+
+    const insertEmoji = (emoji: string) => {
+        if (!emoji) return;
+        const { start, end } = caretRef.current ?? {
+            start: draft.length,
+            end: draft.length,
+        };
+        const from = Math.min(start, draft.length);
+        const to = Math.min(Math.max(end, from), draft.length);
+        const next = draft.slice(0, from) + emoji + draft.slice(to);
+        const caret = from + emoji.length;
+        caretRef.current = { start: caret, end: caret };
+        setDraft(next);
+        // Put the caret back after React writes the new value (the browser
+        // jumps it to the end otherwise). No focus() — that would pop the
+        // keyboard open on mobile after every tap.
+        requestAnimationFrame(() => {
+            const el = inputRef.current;
+            if (!el) return;
+            try {
+                el.setSelectionRange(caret, caret);
+            } catch {
+                /* input may not be focusable in this state */
+            }
+        });
+    };
+
+    const handleEmojiClick = (data: EmojiClickData) => {
+        insertEmoji(data.emoji);
+    };
+
     // close on Escape
     useEffect(() => {
-        if (!menuOpen) return;
+        if (!menuOpen && !emojiOpen) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") setMenuOpen(false);
+            if (e.key !== "Escape") return;
+            setMenuOpen(false);
+            setEmojiOpen(false);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [menuOpen]);
+    }, [menuOpen, emojiOpen]);
 
     const menuItems: MenuItem[] = [
         {
@@ -1624,6 +1726,7 @@ export default function ChatMain({
                         {/* composer */}
                         <div
                             style={{
+                                position: "relative",
                                 flexShrink: 0,
                                 display: "flex",
                                 alignItems: "center",
@@ -1632,9 +1735,33 @@ export default function ChatMain({
                                 borderTop: `${HAIR} solid ${C.border}`,
                             }}
                         >
-                            <span style={{ fontSize: U(5.2), color: "#4a4750", display: "flex", flexShrink: 0 }}>
-                                <SmileyIcon />
-                            </span>
+                            <div
+                                ref={emojiWrapRef}
+                                style={{ flexShrink: 0, display: "flex" }}
+                            >
+                                <button
+                                    type="button"
+                                    className="chat-btn"
+                                    aria-label={emojiOpen ? "Close emoji picker" : "Emoji"}
+                                    aria-expanded={emojiOpen}
+                                    aria-haspopup="dialog"
+                                    onClick={() => {
+                                        setMenuOpen(false);
+                                        setEmojiOpen((open) => !open);
+                                    }}
+                                    style={{
+                                        fontSize: U(5.2),
+                                        color: emojiOpen ? C.pink : "#4a4750",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        lineHeight: 0,
+                                        padding: 0,
+                                    }}
+                                >
+                                    <SmileyIcon />
+                                </button>
+                            </div>
 
                             <div
                                 style={{
@@ -1650,9 +1777,19 @@ export default function ChatMain({
                                 }}
                             >
                                 <input
+                                    ref={inputRef}
                                     className="chat-input"
                                     value={draft}
-                                    onChange={(e) => setDraft(e.target.value)}
+                                    onChange={(e) => {
+                                        setDraft(e.target.value);
+                                        caretRef.current = {
+                                            start: e.target.selectionStart ?? e.target.value.length,
+                                            end: e.target.selectionEnd ?? e.target.value.length,
+                                        };
+                                    }}
+                                    onClick={captureCaret}
+                                    onKeyUp={captureCaret}
+                                    onBlur={captureCaret}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
@@ -1696,7 +1833,7 @@ export default function ChatMain({
                                 Try
                             </button> */}
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 aria-label="Attach"
@@ -1709,7 +1846,7 @@ export default function ChatMain({
                                 }}
                             >
                                 <PaperclipIcon />
-                            </button>
+                            </button> */}
 
                             {/* <button
                                 type="button"
@@ -1728,8 +1865,8 @@ export default function ChatMain({
                             <button
                                 type="button"
                                 className="chat-btn"
-                                aria-label={draft.trim() ? "Send message" : "Record voice message"}
-                                onClick={draft.trim() ? handleSend : undefined}
+                                aria-label={"Send message"}
+                                onClick={handleSend}
                                 style={{
                                     flexShrink: 0,
                                     width: U(10.6),
@@ -1744,8 +1881,31 @@ export default function ChatMain({
                                     transition: "transform 0.15s ease",
                                 }}
                             >
-                                {draft.trim() ? <SendIcon /> : <MicIcon />}
+                                {<SendIcon />}
                             </button>
+
+                            {/* picker spans the main screen's full width and
+                                follows it in and out as the screen resizes */}
+                            {emojiOpen && (
+                                <div
+                                    ref={pickerPanelRef}
+                                    style={{
+                                        position: "absolute",
+                                        left: 0,
+                                        right: 0,
+                                        bottom: "calc(100% + 1cqw)",
+                                        zIndex: 25,
+                                        lineHeight: 0,
+                                    }}
+                                >
+                                    <EmojiPicker
+                                        onEmojiClick={handleEmojiClick}
+                                        height={260}
+                                        style={{ width: "100%" }}
+                                        previewConfig={{ showPreview: false }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

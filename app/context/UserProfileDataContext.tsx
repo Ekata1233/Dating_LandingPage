@@ -539,7 +539,7 @@ export interface ReferralDashboardData {
     referralCode: string;
     shareLink: string;
     stats: ReferralStats;
-    history: ReferralHistoryItem[];
+    history: ReferralHistory[];
     pagination: ReferralPagination;
 }
 
@@ -558,8 +558,20 @@ export interface FamilyOptionsResponse {
 export interface ReferralHistoryResponse {
     success: boolean;
     message?: string;
-    data?: unknown;
+    data?: ReferralHistory[];
 }
+export type ReferralHistory = {
+    id: string;
+    userId: string;
+    name: string;
+    profileImage: string;
+    joinedAt: string;
+    status: "SIGNUP_REWARDED" | "PENDING" | "";
+    signupReward: string;
+    purchaseReward: string;
+    totalReward: number;
+    rewardedAt: string | null;
+};
 
 export interface ApplyReferralRequest {
     referralCode: string;
@@ -713,7 +725,7 @@ interface UserProfileDataContextData {
     refetchReferralDashboard: () => Promise<void>;
 
     /* Referral History */
-    referralHistory: unknown;
+    referralHistory: ReferralHistory[] | [];
     referralHistoryLoading: boolean;
     referralHistoryError: string | null;
     refetchReferralHistory: () => Promise<void>;
@@ -850,7 +862,7 @@ const UserProfileDataContext =
         referralDashboardError: null,
         refetchReferralDashboard: async () => { },
 
-        referralHistory: null,
+        referralHistory: [],
         referralHistoryLoading: true,
         referralHistoryError: null,
         refetchReferralHistory: async () => { },
@@ -1012,7 +1024,7 @@ export function UserProfileDataProvider({
     /* ---------------------------------------------------------------- */
 
     const [referralHistory, setReferralHistory] =
-        useState<unknown>(null);
+        useState<ReferralHistory[]>([]);
 
     const [referralHistoryLoading, setReferralHistoryLoading] =
         useState(true);
@@ -1912,10 +1924,10 @@ export function UserProfileDataProvider({
     const applyReferralHistory = useCallback(
         (response: ReferralHistoryResponse | null) => {
             if (response?.success) {
-                setReferralHistory(response.data ?? null);
+                setReferralHistory(response.data ?? []);
                 setReferralHistoryError(null);
             } else {
-                setReferralHistory(null);
+                setReferralHistory([]);
 
                 setReferralHistoryError(
                     response?.message ||

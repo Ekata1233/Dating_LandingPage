@@ -12,6 +12,7 @@ import React, {
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
 import { authHeader, getClientToken } from "@/utils/token";
+import { PRESENCE_EVENT, type PresencePayload } from "@/lib/chat/socket";
 import { packageType } from "../app/shared/types";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
@@ -237,6 +238,23 @@ const UserDetailsContext = createContext<UserDetailsApi>({
 /*  Provider                                                          */
 /* ------------------------------------------------------------------ */
 
+/** Human-readable presence line for the feed, e.g. "Active5m ago". */
+function presenceLabel(lastSeenAt: string | null): string {
+    if (!lastSeenAt) return "Inactive";
+
+    const diff = Date.now() - new Date(lastSeenAt).getTime();
+    if (!Number.isFinite(diff) || diff < 0) return "Inactive";
+
+    const minute = 60_000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diff < minute) return "Active just now";
+    if (diff < hour) return `Active ${Math.floor(diff / minute)}m ago`;
+    if (diff < day) return `Active ${Math.floor(diff / hour)}h ago`;
+    return `Active ${Math.floor(diff / day)}d ago`;
+}
+
 export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [status, setStatus] = useState<UsersStatus>("idle");
@@ -297,6 +315,41 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         void fetchUsers();
     }, [fetchUsers]);
+
+    /* ------------------------------------------------------------------ */
+    /*  Realtime presence (chat socket → DOM event)                        */
+    /* ------------------------------------------------------------------ */
+    /*  The socket lives in `ChatContext`, which re-broadcasts the         */
+    /*  `user:online` / `user:offline` payloads on `PRESENCE_EVENT`, so   */
+    /*  feed cards flip their Online chip without a refetch.               */
+    /* ------------------------------------------------------------------ */
+
+    useEffect(() => {
+        const onPresence = (event: Event) => {
+            const payload = (event as CustomEvent<PresencePayload>).detail;
+            if (!payload?.userId || !mounted.current) return;
+
+            const online = payload.status === "ONLINE";
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === payload.userId
+                        ? {
+                            ...u,
+                            isOnline: online,
+                            last_active_at: payload.lastSeenAt,
+                            lastActiveAt: payload.lastSeenAt,
+                            lastSeen: online
+                                ? "Active just now"
+                                : presenceLabel(payload.lastSeenAt),
+                        }
+                        : u
+                )
+            );
+        };
+
+        window.addEventListener(PRESENCE_EVENT, onPresence);
+        return () => window.removeEventListener(PRESENCE_EVENT, onPresence);
+    }, []);
 
     /* ------------------------------------------------------------------ */
     /*  Per-user details cache                                            */

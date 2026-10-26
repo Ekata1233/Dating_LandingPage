@@ -5,6 +5,7 @@ import React from "react";
 import ChatMain from "../desktop/ChatMain";
 import MobileChatSection from "../mobile/MobileChatSection";
 import Screen from "../shell/Screen";
+import { lastSeenLabel } from "../panels/ChatSideBar";
 import { useConversations } from "@/app/context/ChatContext";
 import { useChatThread } from "../shared/chatMessages";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export default function Page() {
       name={active.user.fullName}
       avatarUrl={active.user.profilePhoto}
       online={active.user.isOnline}
+      lastSeenLabel={lastSeenLabel(active.user.lastSeenAt)}
       messages={thread.chatMessages}
       messagesLoading={thread.loading}
       messagesError={thread.error}

@@ -3,7 +3,7 @@
 import React from "react";
 
 import ChatMain from "../desktop/ChatMain";
-import ChatSideBar from "../panels/ChatSideBar";
+import ChatSideBar, { lastSeenLabel } from "../panels/ChatSideBar";
 import { useConversations } from "@/app/context/ChatContext";
 import type { Conversation } from "@/app/context/ChatContext";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
             name={thread.user.fullName}
             avatarUrl={thread.user.profilePhoto}
             online={thread.user.isOnline}
+            lastSeenLabel={lastSeenLabel(thread.user.lastSeenAt)}
             messages={chat.chatMessages}
             messagesLoading={chat.loading}
             messagesError={chat.error}

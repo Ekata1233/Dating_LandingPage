@@ -233,8 +233,50 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
   (FREE/PREMIUM 🔥, VIP 👑, VIP ELITE 💠) top-right of the card. Raw `UserProfile.package`
   is typed in `UsersContext.tsx` and mapped in `mapUserToProfile`; `mapMyProfile`,
   `mockData`, and `admirerToProfile` default it to FREE.
+- **Own-profile package badge:** `GET /api/user/onboarding-details` does **not** carry a
+  plan, so `mapMyProfile` hardcodes `package: FREE`. The real tier comes from
+  `GET /api/user/feed/details/:userId` (`UserFeedDetails.package`); `mergeUserDetails`
+  now merges it, and `AppRail` + `MobileProfileSection` call `useUserDetails(profile.id)`
+  to pass `pkg` into `ProfileSidebar`.
 
 ## Session log (newest first)
+
+### 2026-10-26 — profile sidebar: package badge wired to the real plan
+- **Bug:** the badge UI and `pkg` prop existed, but both callers passed
+  `profile.package.name`, and `mapMyProfile` hardcodes that to `FREE` (the onboarding
+  endpoint does not carry a plan) → badge never rendered.
+- **Fix:** `AppRail.tsx` + `MobileProfileSection.tsx` now call
+  `useUserDetails(profile.id)` (the per-user details endpoint that does ship
+  `package`) and pass `details?.package?.name` into `ProfileSidebar`, falling back to the
+  existing profile field. `mergeUserDetails` (`mapUser.ts`) also merges
+  `details.package`, so `ProfileMain` cards see the plan too.
+- Verified: `npx tsc --noEmit` 0; eslint on the touched files = only the pre-existing
+  `<img>` warning in `ProfileSidebar.tsx`. Build skipped (dev server running).
+- **Open:** assumes `GET /api/user/feed/details/:id` answers for the logged-in user's own
+  id (same call `ProfileMain` already makes). FREE correctly renders no package badge.
+  `HomeMain`'s `PACKAGE_BADGES` keys `VIP_ELITE`, but its lookup normalises `_` to a
+  space, so `VIP ELITE` never matches there — untouched, separate bug.
+
+### 2026-10-26 — chat: tick staging fix (single → grey double → pink double)
+- **Bug:** the grey "Delivered" tick never appeared — `message:delivered` was only emitted on live `message:receive` or *together with* `message:read` when the thread opened, so in the offline→online flow the sender's tick jumped ✓ → ✓✓pink.
+- **Fix (`app/context/ChatContext.tsx`):** new "COMING ONLINE" effect — while `socketConnected`, ack `message:delivered` for every conversation whose `lastMessage` is the counterpart's and has no `deliveredAt` (fires on page load and every list update; no setState, so no `set-state-in-effect` lint). The existing thread effect stays the "SEEING IT" half (`message:read`); `receiptsSent` dedupes the overlap. Stages now: sent ✓ → receiver online acks ✓✓ grey (`#9aa4b2`) → receiver opens thread → ✓✓ pink.
+- Verified: `npx tsc --noEmit` 0; eslint on ChatContext = the same 4 baseline `react-hooks/refs` errors.
+- **Open:** still assumes the server relays `message:delivered` to the sender (payload `{conversationId, messageId}`); if the server pushes `message:receive` only to joined rooms, a receiver online with the chat closed only acks on list refresh/page load. No tests.
+
+### 2026-10-26 — chat: presence (`user:online` / `user:offline` / `presence:heartbeat`)
+- `lib/chat/socket.ts`: added `PresencePayload` (`userId`, `status: "ONLINE"|"OFFLINE"`, `lastSeenAt`), `user:online`/`user:offline` on `ServerToClientEvents`, `presence:heartbeat` (no payload) on `ClientToServerEvents`, and `PRESENCE_EVENT = "welvors-presence"` — the DOM-bridge name shared with `UsersContext`.
+- `app/context/ChatContext.tsx`: new `applyPresence` updates `conversations[].user.isOnline/lastSeenAt` (sidebar avatar dots, "Online (n)" tab count, online filter and the chat header all read it) and re-dispatches on `PRESENCE_EVENT`; registered/unregistered beside the other listeners in the connect effect. New heartbeat effect: immediate ping + every `PRESENCE_HEARTBEAT_MS` (30 s) while `socketConnected` — a reconnect flips it, restarting with an immediate ping.
+- `app/context/UsersContext.tsx`: listens on `PRESENCE_EVENT`, flips `isOnline` + `last_active_at`/`lastActiveAt` and recomputes `lastSeen` (local `presenceLabel`, e.g. "Active 5m ago"), so feed/profile Online chips update live.
+- **`lastSeenLabel(lastSeenAt)` exported from `ChatSideBar.tsx`** (wraps `formatTimeAgo`); passed from `chats/page.tsx` **and** `MobileChatSection.tsx` — `ChatMain`'s header previously never received `lastSeenLabel`, so it always said "Offline"; now shows "Last seen 5m ago" etc.
+- Verified: `npx tsc --noEmit` 0; eslint delta 0 (ChatContext's 4 `react-hooks/refs`, UsersContext's 3, ChatSideBar's 2 `set-state-in-effect` and page.tsx's 2 unused-var warnings are baseline — confirmed by stash+lint). Build skipped again (dev server running).
+- **Open:** heartbeat cadence is a guess at the server's Redis TTL (30 s); no `visibilitychange` handling (browsers throttle background tabs to ~1/min, fine unless the TTL is <1 min). Feed bridge assumes `lastSeen` is a display string ("Active … ago") — verify against a real payload. No tests.
+
+### 2026-10-26 — chat: `message:delivered` / `message:read` receipts
+- `lib/chat/socket.ts`: added `MessageReceiptPayload` (`conversationId` + `messageId`, optional server-stamped `deliveredAt`/`readAt`). Both events added to `ClientToServerEvents` (per the given spec) **and** `ServerToClientEvents` — the relay back to the sender is what flips its tick. Socket `ChatMessage` gained `deliveredAt?`/`readAt?`.
+- `app/context/ChatContext.tsx`: `fromSocketMessage` no longer hardcodes both timestamps to `null`. New `emitReceipt` (deduped per `kind|messageId` by the `receiptsSent` ref; socket.io buffers packets while offline) and `applyReceipt` (stamps the thread row + conversation `lastMessage`). Emits: on `message:receive` of a non-own row → `message:delivered`; a thread effect emits `delivered`+`read` for every counterpart row in the open conversation missing a stamp (fresh history, older pages, live rows) — its deps include `conversations` because the counterpart id comes from it. Server→client `message:delivered`/`message:read` listeners update the sender.
+- Ticks: `delivered?: boolean` on all four render types in `ChatMain.tsx`; `mapApiMessages` sets it, `lockRichMessages` copies it; all four footer sites render ✓ → ✓✓ grey `#9aa4b2` (delivered) → ✓✓ pink (read). Gift card's read tick changed grey `#a9a6ae` → pink for consistency.
+- Verified: `npx tsc --noEmit` 0; eslint delta 0 on the four touched files (ChatContext's 4 `react-hooks/refs` and ChatMain's 1 `set-state-in-effect` + 11 warnings are baseline — ChatMain confirmed via stash+lint). Build skipped at the user's request (dev server running).
+- **Open:** assumes the server relays receipts to the sender — if it only accepts the client→server form, sender ticks only update on refetch. `receiptsSent` grows for one session, never cleared. No tests.
 
 ### 2026-10-24 — onboarding: existing prompts data hydration & lookup
 - `app/onBoarding/stepPayloads.ts`: Added `flows.PROMPT` extraction to `seed.prompts = { answers }` in `stepDataFromDetails(details)`. Previously, prompts were omitted entirely from central hydration, leaving `form.get("answers")` empty on initial load even when the backend had answers in `onboarding-details`.

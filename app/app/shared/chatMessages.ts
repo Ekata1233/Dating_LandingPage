@@ -91,6 +91,7 @@ export function mapApiMessages(
         from,
         title: m.compliment.message.trim() || "Compliment",
         time,
+        delivered: !!m.deliveredAt,
         status,
         read,
       };
@@ -142,6 +143,7 @@ export function mapApiMessages(
           repliesDone: metaNumber(m.metadata, "repliesDone"),
           repliesNeeded: metaNumber(m.metadata, "repliesNeeded"),
           time,
+          delivered: !!m.deliveredAt,
           read,
         };
         return gift;
@@ -170,6 +172,7 @@ export function mapApiMessages(
           from,
           text: m.content ?? "",
           time,
+          delivered: !!m.deliveredAt,
           read,
         };
         return text;
@@ -204,6 +207,7 @@ function lockRichMessages(items: ChatMessage[]): ChatMessage[] {
       label: RICH_LABELS[item.kind],
       time: item.time,
       status: "status" in item ? item.status : undefined,
+      delivered: item.delivered,
       read: item.read,
     };
     return locked;

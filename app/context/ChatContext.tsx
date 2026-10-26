@@ -14,8 +14,11 @@ import { authHeader, getClientToken } from "@/utils/token";
 import {
     connectChatSocket,
     disconnectChatSocket,
+    PRESENCE_EVENT,
     type ChatMessage as SocketChatMessage,
     type ChatSocket,
+    type MessageReceiptPayload,
+    type PresencePayload,
 } from "@/lib/chat/socket";
 
 /* ------------------------------------------------------------------ */
@@ -53,6 +56,9 @@ const clearChatUrl = (conversationId: string) =>
 /** DELETE — removes one conversation entirely. */
 const deleteChatUrl = (conversationId: string) =>
     `${CHAT_CONVERSATIONS_URL}/${encodeURIComponent(conversationId)}`;
+
+/** Cadence of `presence:heartbeat` — keeps our Redis presence key alive. */
+const PRESENCE_HEARTBEAT_MS = 30_000;
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -934,8 +940,8 @@ export function ChatConversationsProvider({
     /* `lib/chat/socket` owns a single module-level connection. This    */
     /* provider wires it to the thread state: connect once a session    */
     /* exists, join the room of the conversation that is open, and      */
-    /* append whatever the server pushes back. Later events (typing,    */
-    /* receipts, …) slot in beside `onMessageReceive`.                  */
+    /* append whatever the server pushes back. Receipts arrive beside   */
+    /* `onMessageReceive`; typing is still to come.                     */
     /* ---------------------------------------------------------------- */
 
     /** Socket rows are a subset of the REST `Message` shape; the rest stays
@@ -950,8 +956,8 @@ export function ChatConversationsProvider({
             mediaUrl: null,
             metadata: null,
             createdAt: m.createdAt,
-            deliveredAt: null,
-            readAt: null,
+            deliveredAt: m.deliveredAt ?? null,
+            readAt: m.readAt ?? null,
             compliment: null,
             rose: null,
             gift: null,
@@ -1049,6 +1055,134 @@ export function ChatConversationsProvider({
         [isOwnLiveMessage, takePendingTempId, refetchConversations]
     );
 
+    /* ---------------------------------------------------------------- */
+    /* RECEIPTS — `message:delivered` / `message:read`                   */
+    /*                                                                   */
+    /* As the receiver we emit both to the server; the server stamps the */
+    /* message and relays the same event back to the sender, whose       */
+    /* listener below flips its tick from ✓ to ✓✓.                       */
+    /* ---------------------------------------------------------------- */
+
+    /* `kind|messageId` pairs already emitted, so StrictMode's double mount
+       and effect re-runs never send the same receipt twice. */
+    const receiptsSent = useRef<Set<string>>(new Set());
+
+    /** Emits one receipt at most per `kind|messageId`. */
+    const emitReceipt = useCallback(
+        (
+            kind: "message:delivered" | "message:read",
+            conversationId: string,
+            messageId: string
+        ) => {
+            const key = `${kind}|${messageId}`;
+            if (receiptsSent.current.has(key)) return;
+
+            const socket =
+                socketRef.current ??
+                (getClientToken()
+                    ? connectChatSocket(getClientToken() as string)
+                    : null);
+            if (!socket) return;
+
+            /* socket.io queues packets while the connection is down and
+               flushes them on reconnect, so this never silently drops. */
+            receiptsSent.current.add(key);
+            socket.emit(kind, { conversationId, messageId });
+        },
+        []
+    );
+
+    /** Applies a receipt the server relayed back to us (we are the sender):
+        stamps `deliveredAt` / `readAt` on the thread row and on the
+        conversation's `lastMessage`, which is what the ticks render from. */
+    const applyReceipt = useCallback(
+        (payload: MessageReceiptPayload, kind: "delivered" | "read") => {
+            const at =
+                (kind === "delivered" ? payload.deliveredAt : payload.readAt) ??
+                new Date().toISOString();
+
+            setMessages((prev) => {
+                if (payload.conversationId !== activeConversationIdRef.current)
+                    return prev;
+
+                let touched = false;
+                const next = prev.map((m) => {
+                    if (m.id !== payload.messageId) return m;
+                    if (kind === "delivered") {
+                        if (m.deliveredAt) return m;
+                        touched = true;
+                        return { ...m, deliveredAt: at };
+                    }
+                    if (m.readAt) return m;
+                    touched = true;
+                    return { ...m, deliveredAt: m.deliveredAt ?? at, readAt: at };
+                });
+                return touched ? next : prev;
+            });
+
+            setConversations((prev) =>
+                prev.map((c) => {
+                    if (c.conversationId !== payload.conversationId) return c;
+                    const lastMessage = c.lastMessage;
+                    if (lastMessage.id !== payload.messageId) return c;
+                    if (kind === "delivered" ? lastMessage.deliveredAt : lastMessage.readAt)
+                        return c;
+
+                    return {
+                        ...c,
+                        lastMessage: {
+                            ...lastMessage,
+                            deliveredAt:
+                                kind === "delivered"
+                                    ? at
+                                    : lastMessage.deliveredAt ?? at,
+                            readAt: kind === "read" ? at : lastMessage.readAt,
+                        },
+                    };
+                })
+            );
+        },
+        []
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* PRESENCE — `user:online` / `user:offline` in, heartbeat out        */
+    /* ---------------------------------------------------------------- */
+
+    /** Applies a presence broadcast: flips that member's `isOnline` /
+        `lastSeenAt` on every conversation row — which is what the sidebar
+        avatar dot, the "Online (n)" tab count, the online filter and the
+        chat header all read — then re-broadcasts on a DOM event so the feed
+        (`UsersContext`) can update its own cards. */
+    const applyPresence = useCallback((payload: PresencePayload) => {
+        if (!mounted.current) return;
+        const online = payload.status === "ONLINE";
+
+        setConversations((prev) => {
+            let touched = false;
+            const next = prev.map((c) => {
+                if (c.user.id !== payload.userId) return c;
+                if (
+                    c.user.isOnline === online &&
+                    c.user.lastSeenAt === payload.lastSeenAt
+                )
+                    return c;
+                touched = true;
+                return {
+                    ...c,
+                    user: {
+                        ...c.user,
+                        isOnline: online,
+                        lastSeenAt: payload.lastSeenAt,
+                    },
+                };
+            });
+            return touched ? next : prev;
+        });
+
+        window.dispatchEvent(new CustomEvent(PRESENCE_EVENT, { detail: payload }));
+    }, []);
+
     /* Connect once a session exists; the module keeps the singleton, so a
        remount only refreshes the credentials and the listeners. */
     useEffect(() => {
@@ -1067,12 +1201,35 @@ export function ChatConversationsProvider({
         const onMessageReceive = (incoming: SocketChatMessage) => {
             if (!mounted.current) return;
             /* Update thread and conversation list for all incoming messages */
-            mergeLiveMessage(fromSocketMessage(incoming));
+            const row = fromSocketMessage(incoming);
+            mergeLiveMessage(row);
+            /* We are the receiver: acknowledge delivery the moment the row
+               lands. The server relays this to the sender, which is what
+               flips its tick from ✓ to ✓✓. */
+            if (!isOwnLiveMessage(row)) {
+                emitReceipt(
+                    "message:delivered",
+                    incoming.conversationId,
+                    incoming.id
+                );
+            }
+        };
+        const onMessageDelivered = (payload: MessageReceiptPayload) => {
+            if (!mounted.current) return;
+            applyReceipt(payload, "delivered");
+        };
+        const onMessageRead = (payload: MessageReceiptPayload) => {
+            if (!mounted.current) return;
+            applyReceipt(payload, "read");
         };
 
         socket.on("connect", onConnect);
         socket.on("disconnect", onDisconnect);
         socket.on("message:receive", onMessageReceive);
+        socket.on("message:delivered", onMessageDelivered);
+        socket.on("message:read", onMessageRead);
+        socket.on("user:online", applyPresence);
+        socket.on("user:offline", applyPresence);
 
         /* `connectChatSocket` may hand back an already-open socket, which
            never re-fires `connect`. Deferred a microtask so the effect body
@@ -1087,11 +1244,22 @@ export function ChatConversationsProvider({
             socket.off("connect", onConnect);
             socket.off("disconnect", onDisconnect);
             socket.off("message:receive", onMessageReceive);
+            socket.off("message:delivered", onMessageDelivered);
+            socket.off("message:read", onMessageRead);
+            socket.off("user:online", applyPresence);
+            socket.off("user:offline", applyPresence);
             socketRef.current = null;
             disconnectChatSocket();
             setSocketConnected(false);
         };
-    }, [fromSocketMessage, mergeLiveMessage]);
+    }, [
+        fromSocketMessage,
+        mergeLiveMessage,
+        isOwnLiveMessage,
+        emitReceipt,
+        applyReceipt,
+        applyPresence,
+    ]);
 
     /* Join the room of whatever conversation is open. socket.io buffers the
        emit until the connection is up, so ordering with connect is safe. */
@@ -1100,6 +1268,71 @@ export function ChatConversationsProvider({
         if (!conversationId) return;
         socketRef.current?.emit("conversation:join", { conversationId });
     }, [activeConversationId, socketConnected]);
+
+    /* `presence:heartbeat` — one ping the moment the socket is up, then one
+       every PRESENCE_HEARTBEAT_MS while it stays up, so the server keeps our
+       presence key warm in Redis. `socketConnected` flips on every reconnect,
+       which restarts the cycle with an immediate ping. */
+    useEffect(() => {
+        if (!socketConnected) return;
+        const socket = socketRef.current;
+        if (!socket) return;
+
+        socket.emit("presence:heartbeat");
+        const id = setInterval(() => {
+            socket.emit("presence:heartbeat");
+        }, PRESENCE_HEARTBEAT_MS);
+
+        return () => clearInterval(id);
+    }, [socketConnected]);
+
+    /* COMING ONLINE — the receiver's first half of the sender's tick:
+       ✓ → ✓✓ grey. While the other side was away, its client acknowledges
+       `message:delivered` the moment it is back up with a list still showing
+       an undelivered row from us — page load (offline → online) and every
+       later list update — WITHOUT opening the thread: seeing the message is
+       the separate step acked as `message:read` by the effect below. Live
+       arrivals are acked in `onMessageReceive`. */
+    useEffect(() => {
+        if (!socketConnected) return;
+
+        for (const c of conversations) {
+            const last = c.lastMessage;
+            if (!last?.id) continue;
+            if (last.senderId !== c.user.id) continue; /* our message, not theirs */
+            if (last.deliveredAt) continue;
+            emitReceipt("message:delivered", c.conversationId, last.id);
+        }
+    }, [socketConnected, conversations, emitReceipt]);
+
+    /* SEEING IT — the receiver's second half: ✓✓ grey → ✓✓ pink. Everything
+       visible in the open thread is delivered and read. Covers freshly fetched
+       history, older pages scrolled into view, and rows pushed live while the
+       thread is on screen — our own messages are skipped, and `emitReceipt`
+       dedupes so re-runs (and the come-online ack above) are free.
+       `conversations` is a dependency because the counterpart id comes from it. */
+    useEffect(() => {
+        const conversationId = activeConversationId;
+        if (!conversationId) return;
+
+        const counterpartId = conversations.find(
+            (c) => c.conversationId === conversationId
+        )?.user.id;
+        /* The conversation list may still be loading — it is a dependency,
+           so these go out as soon as it arrives. */
+        if (!counterpartId) return;
+
+        for (const m of messages) {
+            if (m.conversationId !== conversationId) continue;
+            if (m.senderId !== counterpartId) continue; /* sender's side */
+            if (!m.deliveredAt) {
+                emitReceipt("message:delivered", conversationId, m.id);
+            }
+            if (!m.readAt) {
+                emitReceipt("message:read", conversationId, m.id);
+            }
+        }
+    }, [messages, activeConversationId, conversations, emitReceipt]);
 
     /* ---------------------------------------------------------------- */
     /* SEND                                                              */

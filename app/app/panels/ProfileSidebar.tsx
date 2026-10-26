@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useCallback, useMemo } from "react";
+import React, { memo, useCallback, useEffect, useMemo } from "react";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 
 import { FALLBACK_AVATAR } from "../shared/mockData";
@@ -22,7 +22,13 @@ export interface ProfileSidebarProps {
   verified?: boolean;
   location?: string;
   isPlatinumMember?: boolean;
-  /** 0 hides the trust badge — the onboarding payload carries no score yet. */
+  /**
+   * Membership package from the API. Picks the badge:
+   * "PREMIUM" | "VIP" | "VIP_ELITE". Case-insensitive; anything else
+   * (or undefined) shows no package badge.
+   */
+  pkg?: string;
+  /** Trust badge is always shown; 0 renders "0% Trust Score". */
   trustScore?: number;
   completionPercent?: number;
   className?: string;
@@ -61,6 +67,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   verified = false,
   location,
   isPlatinumMember = false,
+  pkg,
   trustScore = 0,
   completionPercent = 0,
   className = "",
@@ -77,11 +84,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     [completionPercent]
   );
 
+  /* "vip elite", "vip-elite" and "VIP_ELITE" all resolve to the same key */
+  const pkgKey = useMemo(
+    () => (pkg ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_"),
+    [pkg]
+  );
+  useEffect(()=>{
+    console.log(pkgKey)
+  },[])
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
 
-  const dashOffset =
-    circumference * (1 - safeCompletion / 100);
+  const dashOffset = circumference * (1 - safeCompletion / 100);
 
   /* ---------------------------------------------------------------------- */
   /* Navigation                                                             */
@@ -327,6 +341,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
           padding: 2cqw 4cqw;
 
+          /* Transparent border keeps every pill the same height as the
+             bordered trust badge. */
+          box-sizing: border-box;
+          border: 1.5px solid transparent;
+
           border-radius: 999px;
 
           white-space: nowrap;
@@ -344,9 +363,48 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           box-shadow: 0 4px 10px rgba(230, 49, 124, 0.3);
         }
 
+        /* VIP — orange gradient, dark brown text + medal icon */
+        .profile-badge-vip {
+          background: linear-gradient(90deg, #f9ad4a, #ee8f10);
+          color: #6b3a05;
+
+          letter-spacing: 0.02em;
+
+          box-shadow: 0 6px 14px rgba(238, 143, 16, 0.35);
+        }
+
+        /* PREMIUM — purple to red to orange gradient, white text + star */
+        .profile-badge-premium {
+          background: linear-gradient(
+            90deg,
+            #8e1f7e 0%,
+            #e8405a 55%,
+            #f2702a 100%
+          );
+          color: #fff;
+
+          letter-spacing: 0.06em;
+
+          box-shadow: 0 6px 14px rgba(232, 64, 90, 0.3);
+        }
+
+        /* VIP ELITE — black theme with gold text + crown icon */
+        .profile-badge-vip-elite {
+          background: linear-gradient(90deg, #2a2a2e 0%, #0a0a0b 100%);
+          border-color: rgba(245, 213, 138, 0.35);
+          color: #f5d58a;
+
+          letter-spacing: 0.06em;
+
+          box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Trust — soft mint fill with a light green outline */
         .profile-badge-trust {
-          background: #d7f4e3;
+          background: #e3f7e9;
+          border-color: #b7e6c6;
           color: #1c9c52;
+          font-weight: 600;
         }
 
         .profile-badge-icon {
@@ -544,6 +602,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             gap: 4px;
             font-size: 10px;
             padding: 6px 12px;
+            border-width: 1px;
           }
 
           .profile-badge-icon {
@@ -694,34 +753,91 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </div>
         ) : null}
 
-        {/* Badges */}
-        {(isPlatinumMember || trustScore > 0) && (
-          <div className="profile-badges">
-            {isPlatinumMember && (
-              <div className="profile-badge profile-badge-platinum">
-                <svg
-                  className="profile-badge-icon"
-                  viewBox="0 0 24 24"
-                  fill="#fff"
-                  aria-hidden="true"
-                >
-                  <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2L12 2z" />
-                  <path d="M19 13l.9 2.6L22 16l-2.1.4L19 19l-.9-2.6L16 16l2.1-.4L19 13z" />
-                </svg>
+        {/* ================================================================ */}
+        {/* Badges                                                           */}
+        {/* ================================================================ */}
 
-                PLATINUM MEMBER
-              </div>
-            )}
+        <div className="profile-badges">
+          {isPlatinumMember && (
+            <div className="profile-badge profile-badge-platinum">
+              <svg
+                className="profile-badge-icon"
+                viewBox="0 0 24 24"
+                fill="#fff"
+                aria-hidden="true"
+              >
+                <path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2L12 2z" />
+                <path d="M19 13l.9 2.6L22 16l-2.1.4L19 19l-.9-2.6L16 16l2.1-.4L19 13z" />
+              </svg>
 
-            {trustScore > 0 && (
-              <div className="profile-badge profile-badge-trust">
-                <span className="profile-trust-dot" />
+              PLATINUM MEMBER
+            </div>
+          )}
 
-                {trustScore}% Trust Score
-              </div>
-            )}
+          {pkgKey == "PREMIUM" && (
+            <div className="profile-badge profile-badge-premium">
+              <svg
+                className="profile-badge-icon"
+                viewBox="0 0 24 24"
+                fill="#fff"
+                aria-hidden="true"
+              >
+                <path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6l-5.9 3.1 1.2-6.6L2.5 9.5l6.6-.9L12 2.5z" />
+              </svg>
+
+              PREMIUM
+            </div>
+          )}
+
+          {pkgKey == "VIP" && (
+            <div className="profile-badge profile-badge-vip">
+              <svg
+                className="profile-badge-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="9" r="6.5" stroke="#6b3a05" strokeWidth="2" />
+
+                <path
+                  d="M12 5.8l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2L8.8 8.1 11 7.8l1-2z"
+                  fill="#6b3a05"
+                />
+
+                <path
+                  d="M8.5 14.5L7 21l5-2.6 5 2.6-1.5-6.5"
+                  stroke="#6b3a05"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              VIP
+            </div>
+          )}
+
+          {pkgKey == "VIP_ELITE" && (
+            <div className="profile-badge profile-badge-vip-elite">
+              <svg
+                className="profile-badge-icon"
+                viewBox="0 0 24 24"
+                fill="#f5d58a"
+                aria-hidden="true"
+              >
+                <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z" />
+              </svg>
+
+              VIP ELITE
+            </div>
+          )}
+
+          {/* Trust badge — always shown, including 0% */}
+          <div className="profile-badge profile-badge-trust">
+            <span className="profile-trust-dot" />
+
+            {trustScore}% Trust Score
           </div>
-        )}
+        </div>
 
         {/* ================================================================ */}
         {/* Profile Completion                                               */}

@@ -301,5 +301,5 @@ export const DATE_TYPE_OPTIONS: FilterOption<DateType>[] = [
   { value: "drinks", label: "Drinks" },
 ];
 
-export const DEFAULT_AVAILABILITY: DateAvailability = "today";
+export const DEFAULT_AVAILABILITY: DateAvailability = "all";
 export const DEFAULT_DATE_TYPE: DateType = "all-events";

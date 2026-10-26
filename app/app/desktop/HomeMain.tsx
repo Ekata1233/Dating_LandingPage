@@ -452,11 +452,39 @@ function HomeMain({
                 draggable={false}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+              {/* Plan badge — lives on the first photo, so it scrolls away
+                  with it instead of hovering over the card. */}
+              <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                <style>{FIRE_BADGE_CSS}</style>
+                {(() => {
+                  const pkg = enriched?.package;
+                  const badge = packageBadge(pkg?.name);
+                  const isFree = !pkg || (pkg.name ?? "").toUpperCase() === "FREE";
+                  if (isFree) {
+                    return (
+                      <div className="fire-badge-flip  h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg hidden">
+                        {/* <Flame className="h-5 w-5 text-orange-400" fill="currentColor" /> */}
+                      </div>
+                    );
+                  }
+                  if (!badge) return null;
+                  return (
+                    <div
+                      title={badge.label}
+                      className={`fire-badge-flip flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border shadow-lg ${badge.ring}`}
+                    >
+                      <span className="text-[20px] leading-none" aria-label={badge.label}>
+                        {badge.icon}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
               {/* Info overlay – bottom */}
               <div className="absolute bottom-16 left-0 right-0 p-5 z-10">
                 {/* Live presence / boost chips */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  {isOnline && (
+                  {/* {isOnline && (
                     <span className="flex items-center gap-1.5 rounded-full bg-green-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                       <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       Online
@@ -466,7 +494,7 @@ function HomeMain({
                     <span className="rounded-full bg-[#a78bfa]/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                       Boosted
                     </span>
-                  )}
+                  )} */}
                   {typeof enriched.trust === "number" && (
                     <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-white flex items-center gap-1">
                       <span className="bg-blue-400 rounded-full w-[5px] h-[5px]" />
@@ -570,33 +598,6 @@ function HomeMain({
                 </div>
               ))}
             </div>
-          </div>
-          {/* Fire badge – top right of the card */}
-          <div className="absolute top-3 right-3 z-20 pointer-events-none">
-            <style>{FIRE_BADGE_CSS}</style>
-            {(() => {
-              const pkg = enriched?.package;
-              const badge = packageBadge(pkg?.name);
-              const isFree = !pkg || (pkg.name ?? "").toUpperCase() === "FREE";
-              if (isFree) {
-                return (
-                  <div className="fire-badge-flip  h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg hidden">
-                    {/* <Flame className="h-5 w-5 text-orange-400" fill="currentColor" /> */}
-                  </div>
-                );
-              }
-              if (!badge) return null;
-              return (
-                <div
-                  title={badge.label}
-                  className={`fire-badge-flip flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border shadow-lg ${badge.ring}`}
-                >
-                  <span className="text-[20px] leading-none" aria-label={badge.label}>
-                    {badge.icon}
-                  </span>
-                </div>
-              );
-            })()}
           </div>
           {/* Swipe reaction — a heart on like, a cross on reject. */}
           {swipeDir && (

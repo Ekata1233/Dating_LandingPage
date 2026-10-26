@@ -550,6 +550,9 @@ export function mergeUserDetails(base: Profile, details: UserFeedDetails): Profi
     trust: details.trust ?? base.trust,
     replyTime: firstNonEmpty(details.replyTime) || base.replyTime,
 
+    /* The feed's own profile row carries the plan; onboarding does not. */
+    package: details.package?.name ? details.package : base.package,
+
     /* Chips. */
     gender: humanizeEnum(details.gender) || base.gender,
     community: firstNonEmpty(details.community) || base.community,

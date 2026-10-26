@@ -147,7 +147,7 @@ export type AdmirerSent = AdmirerSentCardProps;
 
 /* ------------------------------- date plans -------------------------------- */
 
-export type DateAvailability = "today" | "tomorrow" | "weekend";
+export type DateAvailability = "all" | "today" | "tomorrow" | "weekend";
 
 export type DateType = "all-events" | "coffee" | "dinner" | "drinks";
 
@@ -168,6 +168,7 @@ export interface MyProfile {
   name: string;
   age: number;
   verified: boolean;
+  pkg:string;
   location: string;
   isPlatinumMember: boolean;
   trustScore: number;

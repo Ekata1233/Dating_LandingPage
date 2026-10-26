@@ -265,7 +265,7 @@ export default function BookingConfirmationPage() {
       await navigator.clipboard.writeText(`${text} ${url}`);
       toast.success("Event link copied.");
     } catch {
-      toast.error("Link copy nahi ho paaya.");
+      toast.error("Link not copied");
     }
   };
 

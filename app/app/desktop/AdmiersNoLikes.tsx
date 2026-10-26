@@ -53,10 +53,10 @@ const BENEFITS = [
 const U = (n: number) => `${n}cqw`;
 
 const C = {
-    purple: "#7c3aed",
-    purpleDeep: "#6d28d9",
-    purpleText: "#7a3fd6",
-    purpleTint: "#f4f0ff",
+    purple: "#E7477D",
+    purpleDeep: "#D6336C",
+    purpleText: "#C93668",
+    purpleTint: "#FCE8EF",
     ink: "#1f1f24",
     body: "#6b6560",
     grey: "#8f8a85",
@@ -177,8 +177,8 @@ export default function NoLikesBoost({ onBoost, onImproveProfile, fluid = false,
         @keyframes nlb-ring  { 0% { transform: scale(.78); opacity: .55; } 100% { transform: scale(1.55); opacity: 0; } }
         @keyframes nlb-twinkle { 0%,100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
         @keyframes nlb-glow  {
-            0%,100% { box-shadow: 0 ${U(2.2)} ${U(5)} rgba(124,58,237,.30); }
-            50%     { box-shadow: 0 ${U(2.6)} ${U(8.5)} rgba(124,58,237,.52); }
+            0%,100% { box-shadow: 0 ${U(2.2)} ${U(5)} rgba(231,71,125,.30); }
+            50%     { box-shadow: 0 ${U(2.6)} ${U(8.5)} rgba(231,71,125,.52); }
         }
         @keyframes nlb-shine { 0% { left: -45%; } 55%,100% { left: 130%; } }
         @keyframes nlb-arrow { 0%,100% { transform: translateX(0); } 50% { transform: translateX(.9cqw); } }
@@ -238,18 +238,18 @@ export default function NoLikesBoost({ onBoost, onImproveProfile, fluid = false,
                                 <span
                                     aria-hidden
                                     className="nlb-ring"
-                                    style={{ inset: 0, border: `${U(0.3)} solid rgba(124,58,237,.35)`, background: "rgba(124,58,237,.06)" }}
+                                    style={{ inset: 0, border: `${U(0.3)} solid rgba(231,71,125,.35)`, background: "rgba(231,71,125,.06)" }}
                                 />
                                 <span
                                     aria-hidden
                                     className="nlb-ring"
-                                    style={{ inset: 0, border: `${U(0.3)} solid rgba(124,58,237,.35)`, animationDelay: "1.5s" }}
+                                    style={{ inset: 0, border: `${U(0.3)} solid rgba(231,71,125,.35)`, animationDelay: "1.5s" }}
                                 />
                                 {/* sparkles */}
-                                <span aria-hidden className="nlb-spark" style={{ top: U(1), left: U(2), width: U(1.2), height: U(1.2), background: "#a78bfa" }} />
-                                <span aria-hidden className="nlb-spark" style={{ top: U(5), right: U(0.4), width: U(1.6), height: U(1.6), background: "#c4b5fd", animationDelay: ".8s" }} />
-                                <span aria-hidden className="nlb-spark" style={{ bottom: U(2), left: U(0.6), width: U(1.4), height: U(1.4), background: "#ddd6fe", animationDelay: "1.5s" }} />
-                                <span aria-hidden className="nlb-spark" style={{ bottom: U(0.8), right: U(4), width: U(1), height: U(1), background: "#a78bfa", animationDelay: "2.1s" }} />
+                                <span aria-hidden className="nlb-spark" style={{ top: U(1), left: U(2), width: U(1.2), height: U(1.2), background: "#F17FA5" }} />
+                                <span aria-hidden className="nlb-spark" style={{ top: U(5), right: U(0.4), width: U(1.6), height: U(1.6), background: "#F6A9C3", animationDelay: ".8s" }} />
+                                <span aria-hidden className="nlb-spark" style={{ bottom: U(2), left: U(0.6), width: U(1.4), height: U(1.4), background: "#FAD0DE", animationDelay: "1.5s" }} />
+                                <span aria-hidden className="nlb-spark" style={{ bottom: U(0.8), right: U(4), width: U(1), height: U(1), background: "#F17FA5", animationDelay: "2.1s" }} />
 
                                 <div
                                     className="nlb-anim nlb-badge"
@@ -259,8 +259,8 @@ export default function NoLikesBoost({ onBoost, onImproveProfile, fluid = false,
                                         width: U(15),
                                         height: U(15),
                                         borderRadius: "50%",
-                                        background: "radial-gradient(circle at 30% 25%, #9b6bff 0%, #7c3aed 55%, #6428d4 100%)",
-                                        boxShadow: `0 0 0 ${U(1.2)} rgba(124,58,237,.18), 0 ${U(1.6)} ${U(4)} rgba(124,58,237,.38)`,
+                                        background: "radial-gradient(circle at 30% 25%, #F56F9A 0%, #E7477D 55%, #C93668 100%)",
+                                        boxShadow: `0 0 0 ${U(1.2)} rgba(231,71,125,.18), 0 ${U(1.6)} ${U(4)} rgba(231,71,125,.38)`,
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
@@ -398,7 +398,7 @@ export default function NoLikesBoost({ onBoost, onImproveProfile, fluid = false,
                                     width: "100%",
                                     height: U(11.9),
                                     borderRadius: U(6),
-                                    background: "linear-gradient(100deg, #8b5cf6 0%, #7c3aed 45%, #6d28d9 100%)",
+                                    background: "linear-gradient(100deg, #F17FA5 0%, #E7477D 45%, #D6336C 100%)",
                                     color: C.white,
                                     fontSize: U(3.8),
                                     fontWeight: 700,

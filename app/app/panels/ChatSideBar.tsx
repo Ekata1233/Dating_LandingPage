@@ -268,6 +268,18 @@ export function formatTimeAgo(timestamp: string) {
     return `${Math.floor(diff / year)}y`;
 }
 
+/**
+ * Chat-header line for an offline member: "Last seen 5m ago", built from the
+ * same formatter the conversation rows use. Falls back to "Offline" when the
+ * API never sent a `lastSeenAt`.
+ */
+export function lastSeenLabel(lastSeenAt: string | null | undefined): string {
+    if (!lastSeenAt) return "Offline";
+    const ago = formatTimeAgo(lastSeenAt);
+    if (!ago) return "Offline";
+    return ago === "now" ? "Last seen just now" : `Last seen ${ago} ago`;
+}
+
 /* --------------------------------- avatar ----------------------------------- */
 const initialsGradient = (seed: string) => {
     const palettes = [
@@ -484,10 +496,6 @@ export default function ChatSideBar({
                 return "No unread messages";
             case "online":
                 return "No matches are online right now";
-            case "dateInvites":
-                return "No date invites yet";
-            case "events":
-                return "No events yet";
             default:
                 return "No conversations yet";
         }
@@ -611,7 +619,7 @@ export default function ChatSideBar({
                                             >
                                                 {c.user.fullName},&nbsp;{c.user.age}
                                             </span>
-                                            <span
+                                            {/* <span
                                                 className="flex"
                                                 style={{ display: "flex", gap: U(1.2), flexShrink: 0 }}
                                             >
@@ -625,7 +633,7 @@ export default function ChatSideBar({
                                                     color={C.green}
                                                     background={C.greenSoft}
                                                 />
-                                            </span>
+                                            </span> */}
                                         </div>
                                         <span
                                             style={{

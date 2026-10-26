@@ -1,6 +1,7 @@
 import { Faq } from "@/app/context/AccountSettingsContext";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import React, { useCallback } from "react";
+import { toast } from "sonner";
 
 /* -------------------------------------------------------------------------- */
 /*  HelpSupport                                                               */
@@ -175,6 +176,7 @@ export default function HelpSupport({
             title: "Live Chat",
             description: "Chat with our support team",
             status: { text: "Online · ~2 min", tone: "success" },
+            onClick(){ toast.message("Comming Soon!") }
         },
         {
             id: "email",

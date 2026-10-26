@@ -300,6 +300,7 @@ export function mapMyProfileSummary(
     location: profile.location,
     /* Neither plan tier nor trust score is part of this endpoint yet. */
     isPlatinumMember: false,
+    pkg:profile.package.name,
     trustScore: 0,
     completionPercent: clampPercent(flows.REVIEW_FINISH?.profileCompletion),
   };

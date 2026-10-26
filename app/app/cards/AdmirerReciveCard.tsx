@@ -127,7 +127,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
         </button>
       </div>
       {/* Name / match / distance */}
-      <div className="absolute w-3/5 left-[4.73cqw] bottom-[1.778cqh] right-[21.622cqw] text-white"
+      <div className="absolute w-17/20 left-[4.73cqw] bottom-[1.778cqh] right-[21.622cqw] text-white"
                 style={{
             overflow: "hidden",
             whiteSpace: "nowrap",
@@ -146,7 +146,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
       </div>
 
       {/* Like (heart) button – only once the profile has been revealed */}
-      <button
+      {/* <button
         type="button"
         onClick={handleLike}
         aria-label="Like"
@@ -160,7 +160,7 @@ const AdmirerReciveCard: React.FC<AdmirerReciveCardProps> = ({
         >
           <path d="M12 21s-6.716-4.35-9.428-8.06C.86 10.42 1.02 6.9 3.6 5.06c2.2-1.57 4.98-1.02 6.4.98L12 8l2-1.96c1.42-2 4.2-2.55 6.4-.98 2.58 1.84 2.74 5.36 1.03 7.88C18.716 16.65 12 21 12 21z" />
         </svg>
-      </button>
+      </button> */}
     </div >
   );
 };
