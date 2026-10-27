@@ -39,6 +39,8 @@ export interface AdmirersMainProps {
     onReject?: (admirer: Admirer) => void;
     /** Coins charged by the unlock button on a locked profile. */
     revealCost?: number;
+    /** Fill the wrapper's height/width instead of a 100vh frame (mobile slot). */
+    fluid?: boolean;
 }
 
 /**
@@ -82,6 +84,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     onAccept,
     onReject,
     revealCost = 50,
+    fluid = false,
 }) => {
     const { tab, selectedId, selectAdmirer } = useAdmirersTab();
 
@@ -143,9 +146,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (profile && locked) {
         return (
-            <div className="relative flex-1 flex flex-col h-screen overflow-hidden">
+            <div className="relative flex-1 flex flex-col h-full overflow-hidden">
                 <div className="flex-1 min-h-0 blur-2xl scale-105 pointer-events-none select-none">
-                    <ProfileMain profile={profile} />
+                    <ProfileMain profile={profile} fluid={fluid} />
                 </div>
 
                 {/* Lock / coin unlock, over the blurred profile */}
@@ -175,9 +178,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (profile) {
         return (
-            <div className="relative flex-1 flex flex-col h-screen overflow-hidden">
+            <div className="relative flex-1 flex flex-col h-full overflow-hidden">
                 <div className="flex-1 min-h-0">
-                    <ProfileMain profile={profile} />
+                    <ProfileMain profile={profile} fluid={fluid} />
                 </div>
 
                 {/* Received likes get deck controls, bottom-centre, drawn from
@@ -214,7 +217,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (loading) {
         return (
-            <main className="flex-1 flex flex-col relative h-screen">
+            <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
                 <Loader label="Loading admirers…" hint="Just a moment." />
             </main>
         );
@@ -222,7 +225,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (error) {
         return (
-            <main className="flex-1 flex flex-col relative h-screen">
+            <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
                 <Notice
                     title="Couldn't load admirers"
                     detail={error}

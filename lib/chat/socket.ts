@@ -2,6 +2,7 @@
 
 import { io, type Socket } from "socket.io-client";
 import { API_BASE_URL } from "@/utils/api";
+import { MessageType } from "@/app/context/ChatContext";
 interface ServerToClientEvents {
   "message:receive": (message: ChatMessage) => void;
   /** Server → sender: the counterpart's client acknowledged delivery. */
@@ -24,7 +25,6 @@ interface ClientToServerEvents {
   /** Client → server: no payload — keeps our presence key warm in Redis. */
   "presence:heartbeat": () => void;
 }
-export type MessageType = "TEXT";
 
 export interface ChatMessage {
   id: string;

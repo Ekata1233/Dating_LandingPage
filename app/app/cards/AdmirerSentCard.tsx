@@ -1,10 +1,14 @@
+"use client";
+
 import { useUserProfileData } from "@/app/context/UserProfileDataContext";
 import React from "react";
 import { toast } from "sonner";
 
+type Step = "sent" | "seen" | "matched";
+
 export interface AdmirerSentCardProps {
+  id: string;
   /** Matched person's photo URL */
-  id:string;
   avatarUrl: string;
   /** Matched person's name */
   name: string;
@@ -18,13 +22,14 @@ export interface AdmirerSentCardProps {
   matchedAgo: string;
   gender: string;
   /** Current status step. Superseded by `likeStatus` when that is given. */
-  status?: "sent" | "seen" | "matched";
+  status?: Step;
   /**
    * Per-step completion straight from the API. When set, each pill colours
-   * from its own flag instead of filling up to `status`.
+   * from its own flag, and the card theme/label follow the furthest
+   * completed step.
    */
   likeStatus?: { sent: boolean; seen: boolean; matched: boolean };
-  /** Called when "Send a rose" is tapped */
+  /** Called after a rose is sent successfully */
   onSendRose?: () => void;
   /** Called when the card body is tapped */
   onOpenProfile?: () => void;
@@ -32,9 +37,17 @@ export interface AdmirerSentCardProps {
   className?: string;
 }
 
+const STEPS: Step[] = ["sent", "seen", "matched"];
+
+const STATUS_LABEL: Record<Step, string> = {
+  sent: "Sent",
+  seen: "Seen",
+  matched: "Matched",
+};
+
 /**
  * "her" / "him" from the admirer's gender. Female is checked first because
- * "female" and "woman" both contain the substring "male"/"man".
+ * "female" contains the substring "male".
  */
 function likedPronoun(gender?: string): "her" | "him" | "them" {
   const g = (gender ?? "").toLowerCase();
@@ -44,10 +57,9 @@ function likedPronoun(gender?: string): "her" | "him" | "them" {
 }
 
 /**
- * A "Matched" summary card. Fills 100% of its parent's width/height,
- * and every internal element (text, avatar, pills, button) scales
- * fluidly with the parent's size using CSS container queries —
- * just resize the parent, no props needed to control scale.
+ * Summary card for an admirer you've sent a like to. Fills 100% of its
+ * parent's width/height; everything inside scales with the parent's width
+ * using CSS container queries (cqw units).
  */
 const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
   id,
@@ -64,53 +76,83 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
   onOpenProfile,
   className = "",
 }) => {
-  const steps: Array<"sent" | "seen" | "matched"> = ["sent", "seen", "matched"];
-  const stepIndex = steps.indexOf(status);
-  const {sendRose, refetchAdmirersSent} = useUserProfileData()
-  async function handleSendRose(id:string) {
-    const response = await sendRose(id);
-    console.log(response)
-    if(response?.success){
-      toast.success(response.message)
-      await refetchAdmirersSent;
-    }
-    else{
-      toast.error(response?.message)
+  const { sendRose, refetchAdmirersSent } = useUserProfileData();
+
+  // Single source of truth for theme + label. API flags win over `status`.
+  const currentStatus: Step = likeStatus
+    ? likeStatus.matched
+      ? "matched"
+      : likeStatus.seen
+        ? "seen"
+        : "sent"
+    : status;
+
+  const stepIndex = STEPS.indexOf(currentStatus);
+
+  async function handleSendRose(userId: string) {
+    const response = await sendRose(userId);
+    if (response?.success) {
+      toast.success(response.message);
+      await refetchAdmirersSent();
+      onSendRose?.();
+    } else {
+      toast.error(response?.message);
     }
   }
+
   return (
     <div
-      className={` matched-card ${className}`}
+      className={`admirer-card admirer-card--${currentStatus} ${className}`}
       role={onOpenProfile ? "button" : undefined}
       tabIndex={onOpenProfile ? 0 : undefined}
       onClick={onOpenProfile}
       onKeyDown={
         onOpenProfile
           ? (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onOpenProfile();
+              // Ignore key presses that come from the inner "Send a rose" button
+              if (e.target !== e.currentTarget) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpenProfile();
+              }
             }
-          }
           : undefined
       }
       style={onOpenProfile ? { cursor: "pointer" } : undefined}
     >
       <style>{`
-        .matched-card {
+        .admirer-card {
           container-type: inline-size;
           width: 100%;
           height: 100%;
           min-width: 0;
           min-height: 0;
         }
-        .matched-card .mc-inner {
+
+        /* Per-status theme: only the variables change */
+        .admirer-card--sent {
+          --card-bg: linear-gradient(135deg, #f5e9d6 0%, #ffffff 55%);
+          --status-color: #9c7a2e;
+          --dot-color: #d4a73a;
+        }
+        .admirer-card--seen {
+          --card-bg: linear-gradient(135deg, #dbeafe 0%, #ffffff 55%);
+          --status-color: #2563eb;
+          --dot-color: #3b82f6;
+        }
+        .admirer-card--matched {
+          --card-bg: linear-gradient(135deg, #eafaf1 0%, #ffffff 55%, #fdeef3 100%);
+          --status-color: #16532c;
+          --dot-color: #22c55e;
+        }
+
+        .admirer-card .mc-inner {
           width: 100%;
           height: 100%;
           box-sizing: border-box;
           border-radius: 7cqw;
-          background: linear-gradient(135deg, #eafaf1 0%, #ffffff 55%, #fdeef3 100%);
-          border: 1px solid rgba(0,0,0,0.06);
+          background: var(--card-bg);
+          border: 1px solid rgba(0, 0, 0, 0.06);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -129,7 +171,7 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
           gap: 1.6cqw;
           font-size: 4.2cqw;
           font-weight: 600;
-          color: #16532c;
+          color: var(--status-color);
         }
         .mc-dot {
           width: 2cqw;
@@ -137,7 +179,7 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
           min-width: 6px;
           min-height: 6px;
           border-radius: 50%;
-          background: #22c55e;
+          background: var(--dot-color);
         }
         .mc-ago {
           font-size: 3.4cqw;
@@ -194,30 +236,6 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
           white-space: nowrap;
           flex-shrink: 0;
         }
-        .mc-bottom {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 3cqw;
-        }
-        .mc-steps {
-          display: flex;
-          align-items: center;
-          gap: 1.6cqw;
-        }
-        .mc-step {
-          font-size: 3cqw;
-          font-weight: 700;
-          letter-spacing: 0.03em;
-          padding: 1.8cqw 3cqw;
-          border-radius: 999px;
-          white-space: nowrap;
-          background: #eef0f2;
-          color: #a6abb2;
-        }
-        .mc-step.active {
-          opacity: 1;
-        }
         .mc-step-sent.active { background: #f5e9d6; color: #9c7a2e; }
         .mc-step-seen.active { background: #dbeafe; color: #2563eb; }
         .mc-step-matched.active { background: #dcfce7; color: #16a34a; }
@@ -252,7 +270,7 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
         <div className="mc-top">
           <div className="mc-status">
             <span className="mc-dot" />
-            Matched
+            {STATUS_LABEL[currentStatus]}
           </div>
           <div className="mc-ago">{matchedAgo}</div>
         </div>
@@ -276,22 +294,22 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
         {/* Bottom row */}
         <div className="flex flex-row justify-between w-full gap-1.5">
           <div className="flex gap-0.5 items-center text-[6px]">
-            {steps.map((step, i) => {
+            {STEPS.map((step, i) => {
               const active = likeStatus ? !!likeStatus[step] : i <= stepIndex;
 
               return (
                 <React.Fragment key={step}>
                   {i > 0 && (
                     <span
-                      className={`mc-step-line ${active ? "" : "opacity-40 grayscale"
-                        }`}
+                      className={`mc-step-line ${active ? "" : "opacity-40 grayscale"}`}
                     />
                   )}
                   <span
-                    className={`rounded-full px-2 py-0.5 transition-colors ${active
+                    className={`rounded-full px-2 py-0.5 transition-colors ${
+                      active
                         ? `mc-step-${step} active`
                         : "bg-gray-200 text-gray-400 grayscale"
-                      }`}
+                    }`}
                   >
                     {step.toUpperCase()}
                   </span>
@@ -304,7 +322,10 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
             <button
               type="button"
               className="mc-rose-btn hover:scale-105"
-              onClick={()=>handleSendRose(id)}
+              onClick={(e) => {
+                e.stopPropagation(); // don't trigger onOpenProfile
+                handleSendRose(id);
+              }}
             >
               🌹 Send a rose
             </button>
@@ -316,27 +337,3 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
 };
 
 export default AdmirerSentCard;
-
-/*
-Usage example:
-
-<div style={{ width: 480, height: 220 }}>
-  <AdmirerSentCard
-    avatarUrl="/path/to/photo.jpg"
-    name="Elena"
-    age={23}
-    matchPercent={95}
-    location="Mumbai"
-    matchedAgo="3h ago"
-    status="matched"
-    onSendRose={() => console.log("rose sent")}
-  />
-</div>
-
-The outer wrapper fills 100% of its parent's width and height. All
-internal text, avatar, pills and the button scale fluidly with the
-parent's width using CSS container queries (cqw units) — so the same
-component looks right whether it's 200px or 1000px wide, with no
-extra props needed. Requires a browser with container query support
-(all modern evergreen browsers).
-*/

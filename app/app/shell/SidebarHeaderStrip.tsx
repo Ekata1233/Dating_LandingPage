@@ -5,7 +5,6 @@ import React from "react";
 import type { ActiveSection } from "@/app/context/ActiveSectionContext";
 import type { NavItem, NavSlot } from "../config/sections";
 import { navSlotFor } from "../config/sections";
-import { BRAND, STRIP_ACTIVE } from "../shared/theme";
 
 /* -------------------------------------------------------------------------- */
 /*  The pink navigation strip.                                                 */
@@ -14,6 +13,17 @@ import { BRAND, STRIP_ACTIVE } from "../shared/theme";
 /*  mobile shell it is rendered at the BOTTOM as a fixed bottom navigation bar.  */
 /*  Keeping one component for both is what stops the two from drifting apart.  */
 /* -------------------------------------------------------------------------- */
+
+/* Theme tokens for the strip. Move these into ../shared/theme if you want
+   them shared with the rest of the app. */
+const STRIP = {
+  /** Same gradient as the rest of the app theme. */
+  gradient: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
+  /** Icon / label colour on the white "active" pill. #E11D63 on white is ~4.6:1. */
+  activeText: "#E11D63",
+  /** Icon / label colour on the gradient. */
+  inactiveText: "#FFFFFF",
+} as const;
 
 export interface SidebarHeaderStripProps {
   /** "top" = desktop sidebar header. "bottom" = mobile fixed bottom nav. */
@@ -45,6 +55,10 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
      (section "profile" -> slot "you"), so always compare slots. */
   const isItemActive = (item: NavItem) => navSlotFor(item.section) === activeNav;
 
+  /* Shared focus ring so keyboard users can see where they are on the gradient. */
+  const focusRing =
+    "outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#E11D63]";
+
   /* ------------------------------------------------------------------ */
   /* Top (desktop sidebar header) – unchanged layout                    */
   /* ------------------------------------------------------------------ */
@@ -54,22 +68,30 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
 
     return (
       <div
-        className={`flex flex-row items-center justify-between px-2 shrink-0 h-[9vh] bg-[#E7477D] ${className}`}
-        style={{ containerType: "size" }}
+        className={`flex flex-row items-center justify-between px-2 shrink-0 h-[10vh] ${className}`}
+        style={{ containerType: "size", background: STRIP.gradient }}
       >
         {avatarItem && (
           <button
+            type="button"
             onClick={() => onSelect(avatarItem.section)}
+            aria-current={isItemActive(avatarItem) ? "page" : undefined}
             className={`
               px-1.5 py-1
               flex gap-2 items-center
               rounded-full
               cursor-pointer
-              hover:bg-white
-              hover:text-gray-600
               transition
-              ${isItemActive(avatarItem) ? "bg-white text-gray-600" : ""}
+              ${focusRing}
+              ${
+                isItemActive(avatarItem)
+                  ? "bg-white shadow-sm"
+                  : "text-white hover:bg-white/20"
+              }
             `}
+            style={
+              isItemActive(avatarItem) ? { color: STRIP.activeText } : undefined
+            }
           >
             <img
               src={profileAvatar}
@@ -77,31 +99,33 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
               className="object-cover w-[47cqh] h-[47cqh] rounded-full"
             />
 
-            <span className="text-[20cqh]">You</span>
+            <span className="text-[20cqh] font-semibold">You</span>
           </button>
         )}
 
         <div className="flex gap-0.5">
           {iconItems.map((item) => {
             if (item.kind !== "icon") return null;
+            const active = isItemActive(item);
 
             return (
               <button
                 key={item.section}
+                type="button"
                 onClick={() => onSelect(item.section)}
                 title={item.label}
                 aria-label={item.label}
-                aria-current={isItemActive(item) ? "page" : undefined}
+                aria-current={active ? "page" : undefined}
                 className={`
                   p-2
                   rounded-full
                   cursor-pointer
-                  hover:bg-white
-                  hover:text-gray-600
                   transition
                   [&_svg]:w-[33cqh] [&_svg]:h-[33cqh]
-                  ${isItemActive(item) ? "bg-white text-gray-600" : ""}
+                  ${focusRing}
+                  ${active ? "bg-white shadow-sm" : "text-white hover:bg-white/20"}
                 `}
+                style={active ? { color: STRIP.activeText } : undefined}
               >
                 {item.icon}
               </button>
@@ -121,9 +145,10 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
   /* ------------------------------------------------------------------ */
   return (
     <div
-      className={`flex items-stretch w-full bg-[#E7477D] ${
+      className={`flex items-stretch w-full border-t border-white/25 shadow-[0_-4px_16px_rgba(225,29,99,0.25)] ${
         safeArea ? "pb-[env(safe-area-inset-bottom)]" : ""
       } ${className}`}
+      style={{ background: STRIP.gradient }}
     >
       {items.map((item) => {
         const isActive = isItemActive(item);
@@ -135,32 +160,34 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
             onClick={() => onSelect(item.section)}
             aria-label={item.label}
             aria-current={isActive ? "page" : undefined}
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 min-h-[60px] py-1.5 cursor-pointer"
+            className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-1 min-h-[60px] py-1.5 cursor-pointer ${focusRing}`}
           >
             {/* Icon / avatar sits in a fixed-size pill so every slot is
                 visually identical regardless of its content. */}
             <span
               className={`flex items-center justify-center h-8 w-8 rounded-full transition ${
-                isActive
-                  ? "bg-white shadow-sm"
-                  : "bg-transparent"
+                isActive ? "bg-white shadow-sm" : "bg-transparent"
               }`}
-              style={{ color: isActive ? STRIP_ACTIVE.text : BRAND.white }}
+              style={{ color: isActive ? STRIP.activeText : STRIP.inactiveText }}
             >
               {item.kind === "avatar" ? (
                 <img
                   src={profileAvatar}
                   alt=""
-                  className="object-cover w-6 h-6 rounded-full"
+                  className={`object-cover w-6 h-6 rounded-full ${
+                    isActive ? "" : "ring-1 ring-white/70"
+                  }`}
                 />
               ) : (
                 item.icon
               )}
             </span>
 
+            {/* Full-white labels: white/75 on the light end of the gradient
+                (#F26FA6) is too faint to read. Weight marks the active slot. */}
             <span
-              className={`text-[10px] leading-none font-semibold truncate max-w-full px-1 ${
-                isActive ? "text-white" : "text-white/75"
+              className={`text-[10px] leading-none truncate max-w-full px-1 text-white ${
+                isActive ? "font-bold" : "font-medium text-white/90"
               }`}
             >
               {item.label}

@@ -2,6 +2,7 @@ import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { ReferralStats, useUserProfileData } from "@/app/context/UserProfileDataContext";
 import React, { useCallback } from "react";
 import { toast } from "sonner";
+import { useId } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  ReferAndEarn                                                              */
@@ -228,49 +229,72 @@ const CheckIcon = () => (
 const STEP_ICONS = { share: ShareIcon, login: LoginIcon, diamond: DiamondIcon };
 
 /* ------------------------------ illustrations ------------------------------ */
-const GiftIllustration = () => (
-    <svg viewBox="0 0 315 290" style={{ width: "100%", height: "100%", display: "block" }} aria-hidden>
-        <defs>
-            <linearGradient id="ref-body" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ff5a86" />
-                <stop offset="1" stopColor="#ff8a6b" />
-            </linearGradient>
-        </defs>
-        {/* confetti */}
-        <g fill="none" strokeWidth="4" strokeLinecap="round">
-            <circle cx="235" cy="28" r="9" stroke="#3ec6e0" />
-            <circle cx="131" cy="76" r="9" stroke="#5b7cf6" />
-            <circle cx="228" cy="120" r="7" stroke="#ff8a4c" />
-            <circle cx="41" cy="212" r="6" stroke="#ff8a4c" />
-            <path d="M160 8v12" stroke="#ffd93b" />
-            <path d="M212 86l7-8" stroke="#3ec6e0" />
-            <path d="M78 108l9 8" stroke="#5b7cf6" />
-            <path d="M2 168l14-5" stroke="#3ec6e0" />
-            <path d="M270 128l14-6" stroke="#ff8a4c" />
-            <path d="M40 60c6-6 12 0 6 8" stroke="#5b7cf6" />
-            <path d="M255 165c8-8 16 2 24-4" stroke="#b06cf6" />
-            <path d="M62 170c6-8 14-4 22-8" stroke="#ff8a4c" />
-            <path d="M160 100c6-4 6 6 0 10" stroke="#ff8a4c" />
-            <rect x="277" y="188" width="10" height="10" rx="2" stroke="#5b7cf6" transform="rotate(45 282 193)" />
-            <rect x="180" y="60" width="16" height="16" rx="3" stroke="#b06cf6" transform="rotate(45 188 68)" />
-        </g>
-        <g fill="#ffb300">
-            <path d="M87 24l14 6-12 8z" />
-            <path d="M264 66l-10-2 4 10z" />
-            <path d="M20 108l12 3-8 8z" />
-        </g>
-        {/* box */}
-        <rect x="98" y="205" width="132" height="82" rx="10" fill="url(#ref-body)" />
-        <rect x="83" y="173" width="162" height="36" rx="10" fill="#ff3d7f" />
-        {/* ribbon */}
-        <rect x="155" y="175" width="15" height="110" fill="#ffe600" />
-        {/* bow */}
-        <g fill="none" stroke="#ffe600" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M162 172C132 176 100 168 108 148c8-20 44-12 54 22" />
-            <path d="M164 172c30 4 62-4 54-24-8-20-44-12-54 22" />
-        </g>
-    </svg>
-);
+const GiftIllustration = () => {
+    // useId returns values like ":r1:", which are invalid inside url(#...) on some browsers
+    const gradId = `gift-body-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+    return (
+        <svg
+            viewBox="0 0 315 290"
+            preserveAspectRatio="xMidYMid meet"
+            width="315"
+            height="290"
+            style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+                maxWidth: "100%",
+                overflow: "visible",
+            }}
+            aria-hidden
+            focusable="false"
+        >
+            <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#ff5a86" />
+                    <stop offset="1" stopColor="#ff8a6b" />
+                </linearGradient>
+            </defs>
+
+            {/* confetti */}
+            <g fill="none" strokeWidth="4" strokeLinecap="round">
+                <circle cx="235" cy="28" r="9" stroke="#3ec6e0" />
+                <circle cx="131" cy="76" r="9" stroke="#5b7cf6" />
+                <circle cx="228" cy="120" r="7" stroke="#ff8a4c" />
+                <circle cx="41" cy="212" r="6" stroke="#ff8a4c" />
+                <path d="M160 8v12" stroke="#ffd93b" />
+                <path d="M212 86l7-8" stroke="#3ec6e0" />
+                <path d="M78 108l9 8" stroke="#5b7cf6" />
+                <path d="M2 168l14-5" stroke="#3ec6e0" />
+                <path d="M270 128l14-6" stroke="#ff8a4c" />
+                <path d="M40 60c6-6 12 0 6 8" stroke="#5b7cf6" />
+                <path d="M255 165c8-8 16 2 24-4" stroke="#b06cf6" />
+                <path d="M62 170c6-8 14-4 22-8" stroke="#ff8a4c" />
+                <path d="M160 100c6-4 6 6 0 10" stroke="#ff8a4c" />
+                <rect x="277" y="188" width="10" height="10" rx="2" stroke="#5b7cf6" transform="rotate(45 282 193)" />
+                <rect x="180" y="60" width="16" height="16" rx="3" stroke="#b06cf6" transform="rotate(45 188 68)" />
+            </g>
+            <g fill="#ffb300">
+                <path d="M87 24l14 6-12 8z" />
+                <path d="M264 66l-10-2 4 10z" />
+                <path d="M20 108l12 3-8 8z" />
+            </g>
+
+            {/* box */}
+            <rect x="98" y="205" width="132" height="82" rx="10" fill={`url(#${gradId})`} />
+            <rect x="83" y="173" width="162" height="36" rx="10" fill="#ff3d7f" />
+
+            {/* ribbon */}
+            <rect x="155" y="175" width="15" height="110" fill="#ffe600" />
+
+            {/* bow */}
+            <g fill="none" stroke="#ffe600" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M162 172C132 176 100 168 108 148c8-20 44-12 54 22" />
+                <path d="M164 172c30 4 62-4 54-24-8-20-44-12-54 22" />
+            </g>
+        </svg>
+    );
+};
 
 const CoinIllustration = () => (
     <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", display: "block" }} aria-hidden>
@@ -370,10 +394,10 @@ export default function ReferAndEarn({
     const filteredHistory = history.filter((r) => TAB_STATUSES[tab].includes(String(r.status)));
     const counts: Record<ReferralTab, number> = referralDashboard?.history
         ? {
-              joined: history.filter((r) => TAB_STATUSES.joined.includes(String(r.status))).length,
-              rewarded: history.filter((r) => TAB_STATUSES.rewarded.includes(String(r.status))).length,
-              pending: history.filter((r) => TAB_STATUSES.pending.includes(String(r.status))).length,
-          }
+            joined: history.filter((r) => TAB_STATUSES.joined.includes(String(r.status))).length,
+            rewarded: history.filter((r) => TAB_STATUSES.rewarded.includes(String(r.status))).length,
+            pending: history.filter((r) => TAB_STATUSES.pending.includes(String(r.status))).length,
+        }
         : { joined: stats.joined, rewarded: stats.rewarded, pending: stats.pending };
 
     /* Opens the native share sheet when the browser supports it; otherwise (or
@@ -559,11 +583,11 @@ export default function ReferAndEarn({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "12%",
+                                        // top: "12%",
                                         left: "50%",
                                         transform: "translateX(-50%)",
                                         width: U(31),
-                                        height: U(28.5),
+                                        // aspectRatio: "315 / 290",
                                     }}
                                 >
                                     <GiftIllustration />
@@ -671,11 +695,11 @@ export default function ReferAndEarn({
                                                             style={{
                                                                 padding: `${U(1.9)} ${U(4)}`,
                                                                 borderRadius: U(4),
-                                                                background: "linear-gradient(135deg, #fbb03b, #f28c12)",
+                                                                background: "linear-gradient(135deg, #34d399, #059669)",
                                                                 color: C.white,
                                                                 fontSize: U(3.4),
                                                                 fontWeight: 600,
-                                                                boxShadow: `0 ${U(0.8)} ${U(2)} rgba(242,140,18,.3)`,
+                                                                boxShadow: `0 ${U(0.8)} ${U(2)} rgba(52, 211, 153, 0.3)`,
                                                                 whiteSpace: "nowrap",
                                                             }}
                                                         >

@@ -1,4 +1,5 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import Image from "next/image";
 import React, { useCallback } from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -154,7 +155,7 @@ const ThinkingPerson = () => (
 /* -------------------------------- defaults --------------------------------- */
 const DEFAULT_ITEMS: SafeItem[] = [
     { title: "Matches & chats", description: "Every conversation stays exactly where it is", tone: "safe" },
-    { title: "Wallet & plan", description: "₹3,240 and your plan stay active", tone: "safe" },
+    { title: "Wallet & plan", description: "Wallet and your plan stay active", tone: "safe" },
     { title: "Bookings & plans", description: "Event tickets and date plans unaffected", tone: "safe" },
     { title: "Notifications pause", description: "You won't get match or message alerts", tone: "warning" },
 ];
@@ -277,8 +278,25 @@ export default function LogoutMain({
                             {/* illustration + copy */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                                 <div style={{ width: U(23.6), height: U(31), display: "block" }}>
-                                    {illustration ?? <ThinkingPerson />}
-                                </div>
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            // top: "12%",
+                                            left: "50%",
+                                            transform: "translateX(-50%)",
+                                            width: U(31),
+                                            aspectRatio: "1 / 1", // match your GIF's real ratio, e.g. "315 / 290"
+                                        }}
+                                    >
+                                        <Image
+                                            src="/logout.gif"
+                                            alt="Gift"
+                                            fill
+                                            unoptimized
+                                            priority
+                                            style={{ objectFit: "contain" }}
+                                        />
+                                    </div>                                </div>
                                 <h2
                                     style={{
                                         margin: `${U(3.9)} 0 0`,

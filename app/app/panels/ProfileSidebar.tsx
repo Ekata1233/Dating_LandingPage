@@ -832,11 +832,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           )}
 
           {/* Trust badge — always shown, including 0% */}
-          <div className="profile-badge profile-badge-trust">
+          {/* <div className="profile-badge profile-badge-trust">
             <span className="profile-trust-dot" />
 
             {trustScore}% Trust Score
-          </div>
+          </div> */}
         </div>
 
         {/* ================================================================ */}

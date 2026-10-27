@@ -149,11 +149,74 @@ export function mapApiMessages(
         return gift;
       }
 
-      case "DATE_CONFIRMED":
-      case "RELATIONSHIP_TAG_PROPOSAL":
-      case "ENGAGEMENT": {
+      case "DATE_CONFIRMED":{
+        const card: CardMessage = {
+          kind: "date",
+          id: m.id,
+          from,
+          title: SYSTEM_TITLES[m.messageType] ?? "Update",
+          subtitle: m.content?.trim() || undefined,
+          time,
+          status,
+          read,
+        };
+        return card;
+      }
+      case "RELATIONSHIP_TAG_PROPOSAL":{
+        const card: CardMessage = {
+          kind: "relationshipTag",
+          id: m.id,
+          from,
+          title: SYSTEM_TITLES[m.messageType] ?? "Update",
+          subtitle: m.content?.trim() || undefined,
+          time,
+          status,
+          read,
+        };
+        return card;
+      }
+      case "RELATIONSHIP_TAG_ACCEPTED":{
+        const card: CardMessage = {
+          kind: "relationshipTag",
+          id: m.id,
+          from,
+          title: SYSTEM_TITLES[m.messageType] ?? "Update",
+          subtitle: m.content?.trim() || undefined,
+          time,
+          status,
+          read,
+        };
+        return card;
+      }
+      case "EVENT_INVITE":{
         const card: CardMessage = {
           kind: "event",
+          id: m.id,
+          from,
+          title: SYSTEM_TITLES[m.messageType] ?? "Update",
+          subtitle: m.content?.trim() || undefined,
+          time,
+          status,
+          read,
+        };
+        return card;
+      }
+      case "DATE_INVITE":{
+        const card: CardMessage = {
+          kind: "date",
+          id: m.id,
+          from,
+          title: SYSTEM_TITLES[m.messageType] ?? "Update",
+          subtitle: m.content?.trim() || undefined,
+          time,
+          status,
+          read,
+        };
+        return card;
+      }
+      case "ENGAGEMENT": {
+        const card: CardMessage = {
+          kind: "relationshipTag",
           id: m.id,
           from,
           title: SYSTEM_TITLES[m.messageType] ?? "Update",
@@ -187,7 +250,9 @@ const RICH_LABELS: Record<Exclude<MessageKind, "text" | "locked">, string> = {
   rose: "Rose",
   compliment: "Compliment",
   image: "Photo",
-  event: "Update",
+  event: "Event",
+  relationshipTag: "Relationship Tag",
+  date: "Date",
 };
 
 /**

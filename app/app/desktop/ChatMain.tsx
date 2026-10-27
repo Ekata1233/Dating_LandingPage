@@ -71,7 +71,7 @@ export interface GiftMessage {
  *  - image / event: generic badge card.
  */
 export interface CardMessage {
-    kind: "rose" | "compliment" | "image" | "event";
+    kind: "rose" | "compliment" | "image" | "event" | "relationshipTag" | "date";
     id: string | number;
     from: "me" | "them";
     title: string;

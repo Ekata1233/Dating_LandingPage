@@ -241,6 +241,49 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-27 — mobile admirers: Accept/Reject behind bottom nav (slot-height + fluid wiring)
+- **Bug:** on `/app/admirers` mobile, the received-profile deck buttons (`absolute bottom-8`
+  Reject/Accept) rendered behind the fixed bottom nav. Root cause: `AdmirersMain`'s profile
+  roots were `h-screen` (100vh) inside the mobile slot, whose height is `100dvh − navH`
+  (Screen mobile slot is `flex-1` above the `md:hidden` bottom strip) — the buttons fell past
+  the slot's `overflow-hidden` clip line. The `fluid` plumbing was also half-built:
+  `admirers/page.tsx` already passes `fluid` → `MobileAdmirerSection` declared it but dropped
+  it, so `ProfileMain` stayed `h-screen`-sized and its card bottom/name overlay could clip too.
+- **Fix:**
+  - `app/app/desktop/AdmirersMain.tsx`: both profile roots (locked + unlocked) `h-screen` →
+    `h-full` (deck now 32px above the nav); new `fluid?: boolean` prop forwarded to both
+    `<ProfileMain fluid={…}>` and used by the loading/error frames
+    (`${fluid ? "h-full w-full" : "h-screen"}`, the repo's frameClass pattern).
+  - `app/app/mobile/MobileAdmirerSection.tsx`: destructure `fluid = false` and forward it to
+    `<AdmirersMain fluid={fluid}>`.
+  - Desktop unchanged: desktop slot is 100vh so `h-full` ≡ `h-screen`, and the desktop slot
+    passes no `fluid` → card keeps `h-full aspect-[300/520]` framing.
+- Verified: `npx tsc --noEmit` 0; `npx eslint` on both files 0. Build skipped (dev server
+  listening :3000, PID 23756).
+- **Open:** deck (`bottom-8`) overlaps ~28px with `ProfileMain`'s info-text block (`bottom-8
+  p-5`) — that is the pre-existing desktop treatment, unchanged by this; `HomeMain` instead
+  separates deck vs info (`bottom-4` fluid / `bottom-[3.75rem]`, info `bottom-16`) — revisit
+  if QA flags it. Other mains' loading frames and `AdmiererSidebar` still use `h-screen`
+  (out of scope). Transient earlier `tsc` failures were the documented torn
+  `.next/dev/types/*` dev-write race — self-healed when dev regenerated the files; source
+  errors were never present. No tests.
+
+### 2026-10-27 — onboarding card: fully viewport-driven size + scaling
+- `app/onBoarding/layout.tsx`: dropped the fixed-px caps that froze the card at a
+  design size — `--onb-card-side` is now `min(92vw, 100dvh - 3rem)` (was
+  `min(…, 600px)`; the ≤480px override likewise lost its `600px`), and `--onb-u` is
+  `max(0.5px, calc(min(1cqw, 1cqh) * 0.12))` (was `clamp(…, 0.72px)` ceiling).
+  Card side and all `u()` chrome + Tailwind token overrides now scale with the screen
+  the same way `/app` components do (`h-full aspect-[300/520]`, rail `22.6%` +
+  `cqw`/`cqh`, no px caps). The 0.5px floor still guards small phones.
+- Verified: `npx tsc --noEmit` 0; `npx eslint app/onBoarding` = same baseline
+  (1 pre-existing error + 9 warnings in Prompts/Review/Location/stepPayloads, none from
+  this change). Build skipped (dev server possibly running).
+- **Open:** no upper bound means a very large monitor makes the card (and text) grow
+  past the old 600px/0.72px design reference — intentional per the request, but worth a
+  visual check; hard `text-[10px]`/`text-[11px]` literals in steps/fields still don't
+  scale with the unit (pre-existing).
+
 ### 2026-10-26 — profile sidebar: package badge wired to the real plan
 - **Bug:** the badge UI and `pkg` prop existed, but both callers passed
   `profile.package.name`, and `mapMyProfile` hardcodes that to `FREE` (the onboarding

@@ -163,7 +163,10 @@ export type MessageType =
     | "ENGAGEMENT"
     | "GIFT"
     | "IMAGE"
-    | "TEXT";
+    | "TEXT"
+    | "EVENT_INVITE"
+    | "RELATIONSHIP_TAG_ACCEPTED"
+    | "DATE_INVITE";
 
 export type ProgressType = "GIFT" | "ROSE";
 

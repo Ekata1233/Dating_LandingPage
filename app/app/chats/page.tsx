@@ -55,6 +55,7 @@ export default function Page() {
     <ChatMain
       userId={active.user.id}
       name={active.user.fullName}
+      age={active.user.age}
       avatarUrl={active.user.profilePhoto}
       online={active.user.isOnline}
       lastSeenLabel={lastSeenLabel(active.user.lastSeenAt)}

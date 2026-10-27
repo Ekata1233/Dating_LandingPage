@@ -165,6 +165,7 @@ export const MOCK_MY_PROFILE_SUMMARY: MyProfile = {
   name: "Muskan",
   age: 32,
   verified: true,
+  pkg:"VIP",
   location: "Karve Nagar, Pune, Maharashtra",
   isPlatinumMember: true,
   trustScore: 68,
