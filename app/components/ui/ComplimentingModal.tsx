@@ -21,7 +21,7 @@ import React from "react";
  *   />
  */
 
-const SIZE = 380;
+const SIZE = 480;
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -178,11 +178,12 @@ const css = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  align-items:center;
+  gap: 3px;
   height: 30px;
   padding: 0 8px;
   border-radius: 99px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -499,7 +500,7 @@ const ComplimentingModal: React.FC<ComplimentingModalProps> = ({
         </div>
 
         {/* stats */}
-        <div className="cpl-stats">
+        <div className="cpl-stats ">
           <span className="cpl-stat cpl-stat--comments">
             <CommentIcon />
             <b>{comments}</b> comments
@@ -537,8 +538,9 @@ const ComplimentingModal: React.FC<ComplimentingModalProps> = ({
           ) : (
             <>
               <textarea
+
                 ref={textareaRef}
-                className="cpl-textarea"
+                className="cpl-textarea overflow-y-hidden"
                 placeholder="Write a sweet compliment…"
                 value={text}
                 maxLength={maxLength}

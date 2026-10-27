@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { Check, ChevronDown, MapPin, Search } from "lucide-react";
 
@@ -15,74 +16,137 @@ import { Check, ChevronDown, MapPin, Search } from "lucide-react";
 /*  Config                                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Dataset used by react-country-state-city. It contains the whole world, so the
-// first load is big. For a much faster load, self-host an India-only copy
-// (see the script in the chat) and point this at it, e.g. "/india-cities.json".
-// The component works with both because it only reads the India entry.
-const CITIES_URL =
-  "https://venkatvidyut.github.io/react-country-state-city/data/citiesminified.json";
+const COUNTRY_CODE = "IN";
+const PAGE_SIZE = 30; // rows rendered per batch
+const LOAD_MORE_MARGIN = "120px"; // start the next batch this far before the end
 
-const INDIA_ID = 101;
-
-// Rows render in batches and more are appended as the user scrolls.
-const PAGE_SIZE = 30;
-const LOAD_MORE_THRESHOLD = 120;
+const CACHE_KEY = "india-cities:v2"; // bump if the cached shape changes
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /* -------------------------------------------------------------------------- */
-/*  Data (fetched once per page session, shared by every instance)            */
+/*  Data store (module-level, shared by every instance)                       */
+/*                                                                            */
+/*  country-state-city ships the whole world's data (~8 MB minified), so:     */
+/*   - it is imported dynamically, never in the main bundle                   */
+/*   - only India is kept, as a compact [city, state] list in localStorage    */
+/*   - after the first visit the package isn't loaded at all                  */
 /* -------------------------------------------------------------------------- */
 
-type IndiaCity = {
-  uid: string; // unique across states (city names repeat between states)
+export type CityItem = {
+  uid: string; // unique per row (city names repeat between states)
   name: string;
   stateName: string;
-  key: string; // lowercase "city state", used for searching
+  lname: string; // normalised city name, for prefix ranking
+  key: string; // normalised "city state", for searching
 };
 
-type RawCountry = {
-  id: number;
-  name?: string;
-  states?: {
-    id: number;
-    name: string;
-    cities?: { id: number; name: string }[];
-  }[];
+type Snapshot = {
+  cities: CityItem[];
+  status: "idle" | "loading" | "ready" | "error";
 };
 
-let indiaCitiesPromise: Promise<IndiaCity[]> | null = null;
+/** lowercase + strip accents, so input is forgiving */
+const normalize = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 
-function loadIndiaCities(): Promise<IndiaCity[]> {
-  if (!indiaCitiesPromise) {
-    indiaCitiesPromise = fetch(CITIES_URL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load cities (${res.status})`);
-        return res.json() as Promise<RawCountry[]>;
-      })
-      .then((countries) => {
-        const india =
-          countries.find((c) => c.id === INDIA_ID) ??
-          countries.find((c) => c.name === "India");
+/** rows: [cityName, stateName], already sorted by city name */
+function buildItems(rows: [string, string][]): CityItem[] {
+  return rows.map(([name, stateName], i) => {
+    const lname = normalize(name);
+    return {
+      uid: String(i),
+      name,
+      stateName,
+      lname,
+      key: `${lname} ${normalize(stateName)}`,
+    };
+  });
+}
 
-        const list: IndiaCity[] = [];
-        for (const state of india?.states ?? []) {
-          for (const city of state.cities ?? []) {
-            list.push({
-              uid: `${state.id}-${city.id}`,
-              name: city.name,
-              stateName: state.name,
-              key: `${city.name} ${state.name}`.toLowerCase(),
-            });
-          }
-        }
-        list.sort((a, b) => a.name.localeCompare(b.name));
-        return list;
-      })
-      .catch((error) => {
-        indiaCitiesPromise = null; // allow retry
-        throw error;
-      });
+const EMPTY: Snapshot = { cities: [], status: "idle" };
+let snapshot: Snapshot = EMPTY;
+const listeners = new Set<() => void>();
+
+function setSnapshot(next: Snapshot) {
+  snapshot = next;
+  listeners.forEach((listener) => listener());
+}
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+function readCache(): [string, string][] | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { t: number; d: [string, string][] };
+    if (Date.now() - parsed.t > CACHE_TTL_MS || !parsed.d?.length) return null;
+    return parsed.d;
+  } catch {
+    return null;
   }
-  return indiaCitiesPromise;
+}
+
+function writeCache(rows: [string, string][]) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: rows }));
+  } catch {
+    /* storage full or unavailable: still works, just not cached */
+  }
+}
+
+let loading: Promise<void> | null = null;
+
+export function prefetchIndiaCities(): Promise<void> {
+  if (snapshot.status === "ready") return Promise.resolve();
+  if (loading) return loading;
+
+  loading = (async () => {
+    setSnapshot({ cities: [], status: "loading" });
+
+    try {
+      // Fast path: India-only list cached from a previous visit.
+      let rows = readCache();
+
+      if (!rows) {
+        // Cold path: pull the dataset in as a separate chunk, keep only India.
+        const { City, State } = await import("country-state-city");
+
+        const stateNames = new Map<string, string>();
+        for (const state of State.getStatesOfCountry(COUNTRY_CODE)) {
+          stateNames.set(state.isoCode, state.name);
+        }
+
+        rows = City.getCitiesOfCountry(COUNTRY_CODE)?.map(
+          (city): [string, string] => [
+            city.name,
+            stateNames.get(city.stateCode) ?? city.stateCode,
+          ]
+        ) ?? [];
+
+        rows.sort((a, b) => a[0].localeCompare(b[0]));
+        if (rows.length > 0) writeCache(rows);
+      }
+
+      if (rows.length === 0) throw new Error("No cities found for India");
+      setSnapshot({ cities: buildItems(rows), status: "ready" });
+    } catch (error) {
+      console.warn("Failed to load cities:", error);
+      setSnapshot({ cities: [], status: "error" });
+    }
+  })().finally(() => {
+    loading = null;
+  });
+
+  return loading;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -96,18 +160,18 @@ const CityRow = memo(function CityRow({
   isActive,
   onPick,
 }: {
-  city: IndiaCity;
+  city: CityItem;
   index: number;
   isSelected: boolean;
   isActive: boolean;
-  onPick: (name: string) => void;
+  onPick: (city: CityItem) => void;
 }) {
   return (
     <li
       id={`city-opt-${index}`}
       role="option"
       aria-selected={isSelected}
-      onClick={() => onPick(city.name)}
+      onClick={() => onPick(city)}
       className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-pink-50 ${
         isActive ? "bg-pink-50" : ""
       }`}
@@ -134,7 +198,8 @@ const CityRow = memo(function CityRow({
 
 type CityDropdownProps = {
   selectedCity: string;
-  onSelect: (cityName: string) => void;
+  /** Second argument is the city's state, in case you want to store it too. */
+  onSelect: (cityName: string, stateName?: string) => void;
 };
 
 export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
@@ -143,48 +208,52 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const [cities, setCities] = useState<IndiaCity[]>([]);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
-    "idle"
+  const { cities, status } = useSyncExternalStore(
+    subscribe,
+    () => snapshot,
+    () => EMPTY
   );
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const sentinelRef = useRef<HTMLLIElement>(null);
   const fromKeyboard = useRef(false);
 
-  /* ------------------------------ Data loading ----------------------------- */
+  /* ------------------------------ Prefetching ------------------------------ */
 
-  const fetchCities = useCallback(() => {
-    setStatus("loading");
-    loadIndiaCities()
-      .then((list) => {
-        setCities(list);
-        setStatus("ready");
-      })
-      .catch((error) => {
-        console.error("Failed to load cities:", error);
-        setStatus("error");
-      });
+  // Start loading when the browser is idle after mount, so the list is
+  // usually ready before the first tap.
+  useEffect(() => {
+    const run = () => void prefetchIndiaCities();
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 200);
+    return () => window.clearTimeout(id);
   }, []);
 
-  // Load when first opened (cached afterwards).
-  useEffect(() => {
-    if (isOpen && status === "idle") fetchCities();
-  }, [isOpen, status, fetchCities]);
+  // Hover / focus means a tap is coming: start now if idle hasn't fired yet.
+  const prefetch = useCallback(() => void prefetchIndiaCities(), []);
 
-  // Start downloading as soon as the user shows intent, so it's ready on click.
-  const prefetch = useCallback(() => {
-    if (status === "idle") fetchCities();
-  }, [status, fetchCities]);
-
-  /* -------------------------- Search + batch rendering --------------------- */
+  /* ----------------------------- Search + paging ---------------------------- */
 
   const deferredQuery = useDeferredValue(query);
 
   const matches = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase();
-    return q ? cities.filter((c) => c.key.includes(q)) : cities;
+    const q = normalize(deferredQuery);
+    if (!q) return cities;
+
+    // Names starting with the query first, then every other city (or state)
+    // containing it, so all similar names show up.
+    const startsWith: CityItem[] = [];
+    const contains: CityItem[] = [];
+    for (const city of cities) {
+      if (city.lname.startsWith(q)) startsWith.push(city);
+      else if (city.key.includes(q)) contains.push(city);
+    }
+    return startsWith.concat(contains);
   }, [cities, deferredQuery]);
 
   const visible = useMemo(
@@ -197,6 +266,24 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
     setVisibleCount((count) => count + PAGE_SIZE);
   }, []);
 
+  // Infinite scroll: observe a sentinel row at the end of the list and append
+  // the next batch just before it scrolls into view.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const root = listRef.current;
+    if (!isOpen || !hasMore || !sentinel || !root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { root, rootMargin: LOAD_MORE_MARGIN }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+    // visibleCount: re-observe after each batch so a still-visible sentinel fires again
+  }, [isOpen, hasMore, visibleCount, loadMore]);
+
   /* ------------------------------- Open / close ---------------------------- */
 
   const close = useCallback(() => {
@@ -207,8 +294,8 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
   }, []);
 
   const pick = useCallback(
-    (name: string) => {
-      onSelect(name);
+    (city: CityItem) => {
+      onSelect(city.name, city.stateName);
       close();
     },
     [onSelect, close]
@@ -226,10 +313,10 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen, close]);
 
-  // Focus the search box once the panel is open and data is ready.
+  // Focus the search box as soon as the panel opens.
   useEffect(() => {
-    if (isOpen && status === "ready") inputRef.current?.focus();
-  }, [isOpen, status]);
+    if (isOpen) inputRef.current?.focus();
+  }, [isOpen]);
 
   // New search: reset highlight, batch size and scroll position.
   useEffect(() => {
@@ -249,14 +336,6 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
 
   /* --------------------------------- Events -------------------------------- */
 
-  const onListScroll = (event: React.UIEvent<HTMLUListElement>) => {
-    if (!hasMore) return;
-    const el = event.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < LOAD_MORE_THRESHOLD) {
-      loadMore();
-    }
-  };
-
   const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -270,13 +349,62 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
       setActiveIndex(Math.max(activeIndex - 1, 0));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      if (matches[activeIndex]) pick(matches[activeIndex].name);
+      if (matches[activeIndex]) pick(matches[activeIndex]);
     } else if (event.key === "Escape") {
       close();
     }
   };
 
   /* --------------------------------- Render -------------------------------- */
+
+  const renderBody = () => {
+    if (status === "error") {
+      return (
+        <li className="px-3 py-6 text-center text-sm text-gray-500">
+          <p>Couldn&apos;t load cities.</p>
+          <button
+            type="button"
+            onClick={prefetch}
+            className="mt-2 rounded-full bg-pink-500 px-3 py-1 text-xs font-medium text-white hover:bg-pink-600"
+          >
+            Try again
+          </button>
+        </li>
+      );
+    }
+
+    if (status !== "ready") {
+      return (
+        <li className="px-3 py-8 text-center text-sm text-gray-500">
+          Loading cities...
+        </li>
+      );
+    }
+
+    if (visible.length === 0) {
+      return (
+        <li className="px-3 py-8 text-center text-sm text-gray-500">
+          No cities found
+        </li>
+      );
+    }
+
+    return (
+      <>
+        {visible.map((city, index) => (
+          <CityRow
+            key={city.uid}
+            city={city}
+            index={index}
+            isSelected={city.name === selectedCity}
+            isActive={index === activeIndex}
+            onPick={pick}
+          />
+        ))}
+        {hasMore && <li ref={sentinelRef} aria-hidden className="h-1" />}
+      </>
+    );
+  };
 
   return (
     <div className="relative flex-1 sm:flex-none" ref={rootRef}>
@@ -293,7 +421,9 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
         <span className="max-w-[9rem] truncate">{selectedCity || "Select city"}</span>
         <ChevronDown
           size={16}
-          className={`shrink-0 text-gray-500 ${isOpen ? "rotate-180" : ""}`}
+          className={`shrink-0 text-gray-500 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
         />
       </button>
 
@@ -327,40 +457,9 @@ export function CityDropdown({ selectedCity, onSelect }: CityDropdownProps) {
             ref={listRef}
             id="city-listbox"
             role="listbox"
-            onScroll={onListScroll}
             className="max-h-64 overflow-y-auto overflow-x-hidden p-1.5"
           >
-            {status === "loading" || status === "idle" ? (
-              <li className="px-3 py-8 text-center text-sm text-gray-500">
-                Loading cities...
-              </li>
-            ) : status === "error" ? (
-              <li className="px-3 py-6 text-center text-sm text-gray-500">
-                <p>Couldn&apos;t load cities.</p>
-                <button
-                  type="button"
-                  onClick={fetchCities}
-                  className="mt-2 rounded-full bg-pink-500 px-3 py-1 text-xs font-medium text-white hover:bg-pink-600"
-                >
-                  Try again
-                </button>
-              </li>
-            ) : visible.length === 0 ? (
-              <li className="px-3 py-8 text-center text-sm text-gray-500">
-                No cities found
-              </li>
-            ) : (
-              visible.map((city, index) => (
-                <CityRow
-                  key={city.uid}
-                  city={city}
-                  index={index}
-                  isSelected={city.name === selectedCity}
-                  isActive={index === activeIndex}
-                  onPick={pick}
-                />
-              ))
-            )}
+            {renderBody()}
           </ul>
         </div>
       )}

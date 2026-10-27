@@ -277,26 +277,24 @@ export default function LogoutMain({
 
                             {/* illustration + copy */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                                <div style={{ width: U(23.6), height: U(31), display: "block" }}>
-                                    <div
-                                        style={{
-                                            position: "absolute",
-                                            // top: "12%",
-                                            left: "50%",
-                                            transform: "translateX(-50%)",
-                                            width: U(31),
-                                            aspectRatio: "1 / 1", // match your GIF's real ratio, e.g. "315 / 290"
-                                        }}
-                                    >
-                                        <Image
-                                            src="/logout.gif"
-                                            alt="Gift"
-                                            fill
-                                            unoptimized
-                                            priority
-                                            style={{ objectFit: "contain" }}
-                                        />
-                                    </div>                                </div>
+                                <div
+                                    style={{
+                                        position: "relative",   // required for <Image fill />
+                                        width: U(31),
+                                        height: U(31),          // matches the 1:1 ratio, so aspectRatio isn't needed
+                                        flexShrink: 0,          // stops the flex column from squeezing it
+                                    }}
+                                >
+                                    <Image
+                                        src="/logout.gif"
+                                        alt="Logout"
+                                        fill
+                                        unoptimized
+                                        priority
+                                        style={{ objectFit: "contain" }}
+                                    />
+                                </div>
+
                                 <h2
                                     style={{
                                         margin: `${U(3.9)} 0 0`,
@@ -308,6 +306,7 @@ export default function LogoutMain({
                                 >
                                     {heading}
                                 </h2>
+
                                 <p
                                     style={{
                                         margin: `${U(3.6)} 0 0`,

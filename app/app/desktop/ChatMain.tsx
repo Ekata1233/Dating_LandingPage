@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import { formatDayHeading } from "../shared/chatMessages";
 
 /* -------------------------------------------------------------------------- */
 /*  ChatConversation                                                           */
@@ -37,6 +38,7 @@ export interface TextMessage {
     from: "me" | "them";
     text: string;
     time: string;
+    dayKey?: string;
     /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
     delivered?: boolean;
     read?: boolean;
@@ -58,6 +60,7 @@ export interface GiftMessage {
     /** Coins the gift unlocks for the receiver */
     coinsSpent?: number;
     time: string;
+    dayKey?: string;
     /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
     delivered?: boolean;
     read?: boolean;
@@ -79,6 +82,7 @@ export interface CardMessage {
     subtitle?: string;
     imageUrl?: string;
     time: string;
+    dayKey?: string;
     /** Shown under generic cards: Sent / Delivered / Read / Received. */
     status?: string;
     /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
@@ -102,6 +106,7 @@ export interface LockedMessage {
     /** What is hidden behind the placeholder, e.g. "Photo", "Gift", "Rose". */
     label: string;
     time: string;
+    dayKey?: string;
     /** Sent / Delivered / Read / Received, same as the rich cards. */
     status?: string;
     /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
@@ -440,6 +445,30 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
 ];
 
 /* --------------------------------- bubbles ----------------------------------- */
+const DayHeading = ({ dayKey }: { dayKey: string }) => (
+    <div
+        style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%",
+            margin: `${U(3)} 0 ${U(1.5)}`,
+        }}
+    >
+        <span
+            style={{
+                fontSize: U(2.7),
+                fontWeight: 600,
+                color: C.grey,
+                background: C.bubbleTheirs,
+                padding: `${U(0.9)} ${U(3)}`,
+                borderRadius: U(6),
+            }}
+        >
+            {formatDayHeading(dayKey)}
+        </span>
+    </div>
+);
+
 const TextBubble = ({ msg }: { msg: TextMessage }) => {
     const mine = msg.from === "me";
     return (
@@ -1698,13 +1727,23 @@ export default function ChatMain({
                                             </button>
                                         </div>
                                     )}
-                                    {messages.map((m) => {
-                                        if (m.kind === "text") return <TextBubble key={m.id} msg={m} />;
-                                        if (m.kind === "locked") return <LockedBubble key={m.id} msg={m} />;
-                                        if (m.kind === "gift") return <GiftCard key={m.id} msg={m} otherName={name} />;
-                                        if (m.kind === "rose") return <RoseCard name={name} key={m.id} msg={m} />;
-                                        if (m.kind === "compliment") return <ComplimentCard key={m.id} msg={m} />;
-                                        return <CardBubble key={m.id} msg={m} />;
+                                    {messages.map((m, i) => {
+                                        const prev = i > 0 ? messages[i - 1] : undefined;
+                                        let bubble: React.ReactNode;
+                                        if (m.kind === "text") bubble = <TextBubble msg={m} />;
+                                        else if (m.kind === "locked") bubble = <LockedBubble msg={m} />;
+                                        else if (m.kind === "gift") bubble = <GiftCard msg={m} otherName={name} />;
+                                        else if (m.kind === "rose") bubble = <RoseCard name={name} msg={m} />;
+                                        else if (m.kind === "compliment") bubble = <ComplimentCard msg={m} />;
+                                        else bubble = <CardBubble msg={m} />;
+                                        return (
+                                            <React.Fragment key={m.id}>
+                                                {m.dayKey && m.dayKey !== prev?.dayKey && (
+                                                    <DayHeading dayKey={m.dayKey} />
+                                                )}
+                                                {bubble}
+                                            </React.Fragment>
+                                        );
                                     })}
                                     {messagesError && (
                                         <div
@@ -1900,7 +1939,7 @@ export default function ChatMain({
                                 >
                                     <EmojiPicker
                                         onEmojiClick={handleEmojiClick}
-                                        height={260}
+                                        height={360}
                                         style={{ width: "100%" }}
                                         previewConfig={{ showPreview: false }}
                                     />

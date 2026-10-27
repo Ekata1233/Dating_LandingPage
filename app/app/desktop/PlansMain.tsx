@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import React from "react";
 
 import Screen from "@/app/app/shell/Screen";
+import { sortPlansByTier } from "@/utils/planOrder";
 
 /* -------------------------------------------------------------------------- */
 /*  MembershipPlanDetails                                                     */
@@ -295,7 +296,11 @@ export function MembershipPlanDetails({
     const router = useRouter();
     const { id } = useParams<{ id: string }>();
     const { plan, loading, error, refetch } = usePlanDetail(id);
-    const { plans } = useAccountSettings();
+    const { plans: rawPlans } = useAccountSettings();
+
+    /* Tabs are always ordered Premium → VIP → VIP Elite, whatever order the
+       API returns them in. */
+    const plans = React.useMemo(() => sortPlansByTier(rawPlans ?? []), [rawPlans]);
 
     /* Colors follow plan.slug. While loading there is no slug yet, so the first
        paint uses the premium pink. */
@@ -435,7 +440,8 @@ export function MembershipPlanDetails({
                                     </h1>
                                 </header>
 
-                                {/* Plan tabs — one per plan from GET /package/get/cards */}
+                                {/* Plan tabs — one per plan from GET /package/get/cards,
+                                    always ordered Premium → VIP → VIP Elite */}
                                 {plans.length > 1 && (
                                     <div
                                         role="tablist"

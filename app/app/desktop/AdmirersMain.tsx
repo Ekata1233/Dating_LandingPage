@@ -26,6 +26,9 @@ import { useAdmirersTab } from "@/app/context/AdmirersTabContext";
 /*  Received likes add the deck controls (`Reject` / `Accept`) and, while the  */
 /*  list is locked behind a package, hide the profile behind a blur with the   */
 /*  coin unlock. When the active tab has nobody, the Boost nudge takes over.   */
+/*                                                                            */
+/*  Every read from the API response is null-safe: `data` may be undefined,    */
+/*  null or not an array, and individual rows may be missing `user`.           */
 /* -------------------------------------------------------------------------- */
 
 export interface AdmirersMainProps {
@@ -43,20 +46,27 @@ export interface AdmirersMainProps {
     fluid?: boolean;
 }
 
+/** A row is only usable if it has a user with an id. */
+const hasUser = (a: Admirer | null | undefined): a is Admirer =>
+    !!a && !!a.user && !!a.user.id;
+
 /**
  * A received/sent admirer only carries a handful of fields. Widen it into the
  * `Profile` the card renders; the details endpoint fills the rest in.
+ * Every field is read with a fallback so a partial row never throws.
  */
 function admirerToProfile(admirer: Admirer): Profile {
-    const image = admirer.user.profileImage || FALLBACK_AVATAR;
-    const distance = formatDistance(admirer.user.distanceKm);
+    const user = admirer.user;
+    const profileImage = user?.profileImage ?? "";
+    const image = profileImage || FALLBACK_AVATAR;
+    const distance = formatDistance(user?.distanceKm) ?? "";
 
     return {
-        id: admirer.user.id,
-        name: admirer.user.name,
-        age: admirer.user.age,
+        id: user?.id ?? "",
+        name: user?.name ?? "",
+        age: user?.age ?? 0,
         image,
-        gallery: admirer.user.profileImage ? [admirer.user.profileImage] : [],
+        gallery: profileImage ? [profileImage] : [],
         distance,
         birth_date: "",
         height: "",
@@ -74,7 +84,7 @@ function admirerToProfile(admirer: Admirer): Profile {
         prompts: [],
         family: [],
         networking: [],
-        matchScore: admirer.user.matchScore,
+        matchScore: user?.matchScore ?? 0,
     };
 }
 
@@ -105,12 +115,22 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const error = isReceived ? admirersReceivedError : admirersSentError;
     const refetch = isReceived ? refetchAdmirersReceived : refetchAdmirersSent;
 
-    const data = response?.data ?? [];
+    /* `data` can be undefined/null/non-array while loading or on error, and
+       rows without a user are dropped so nothing below has to re-check. */
+    const rawData = response?.data;
+    const data = useMemo<Admirer[]>(
+        () => (Array.isArray(rawData) ? rawData.filter(hasUser) : []),
+        [rawData]
+    );
+
     /* The admirer picked in the rail, else the first one in the tab. */
-    const target =
-        (selectedId ? data.find((a) => a.user.id === selectedId) : undefined) ??
-        data[0] ??
-        null;
+    const target = useMemo<Admirer | null>(() => {
+        if (data.length === 0) return null;
+        const picked = selectedId
+            ? data.find((a) => a.user.id === selectedId)
+            : undefined;
+        return picked ?? data[0] ?? null;
+    }, [data, selectedId]);
 
     const profile = useMemo(() => (target ? admirerToProfile(target) : null), [target]);
 
@@ -119,8 +139,8 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const [unlockedIds, setUnlockedIds] = useState<string[]>([]);
     const locked =
         isReceived &&
-        !!admirersReceived?.isLocked &&
-        !admirersReceived?.isPackageActive &&
+        !!response?.isLocked &&
+        !response?.isPackageActive &&
         !!profile &&
         !unlockedIds.includes(profile.id);
 
@@ -128,8 +148,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const goNext = () => {
         if (!target || data.length < 2) return;
         const index = data.findIndex((a) => a.user.id === target.user.id);
+        if (index === -1) return;
         const next = data[(index + 1) % data.length];
-        if (next) selectAdmirer(next.user.id);
+        if (next?.user?.id) selectAdmirer?.(next.user.id);
     };
 
     const handleAccept = () => {

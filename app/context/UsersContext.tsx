@@ -16,7 +16,8 @@ import { PRESENCE_EVENT, type PresencePayload } from "@/lib/chat/socket";
 import { packageType } from "../app/shared/types";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
-const USERS_URL = `${API_BASE_URL}/api/user/feed?limit=50`;
+const USERS_URL = `${API_BASE_URL}/api/user/feed`;
+const FEED_PAGE_SIZE = 50;
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
 
@@ -96,6 +97,9 @@ interface UsersData {
     status: UsersStatus;
     error: string | null;
     refetch: () => void;
+    /** False once the feed answered with fewer rows than the limit asked for. */
+    hasMore: boolean;
+    loadMore: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -220,6 +224,8 @@ const UsersContext = createContext<UsersData>({
     status: "idle",
     error: null,
     refetch: () => { },
+    hasMore: false,
+    loadMore: () => { },
 });
 
 /**
@@ -259,10 +265,13 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [status, setStatus] = useState<UsersStatus>("idle");
     const [error, setError] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(true);
 
     /* Guards against out-of-order responses and updates after unmount. */
     const requestId = useRef(0);
     const mounted = useRef(true);
+    const feedLimit = useRef(FEED_PAGE_SIZE);
+    const loadMorePending = useRef(false);
     useEffect(() => {
         mounted.current = true;
         return () => {
@@ -291,14 +300,17 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         setError(null);
 
         try {
-            const response = await axios.get<UsersApiResponse>(USERS_URL, {
-                headers: authHeader(),
-            });
+            const response = await axios.get<UsersApiResponse>(
+                `${USERS_URL}?limit=${FEED_PAGE_SIZE}`,
+                { headers: authHeader() }
+            );
             if (id !== requestId.current || !mounted.current) return;
 
             const data = response.data;
             if (data?.success && Array.isArray(data.users)) {
                 setUsers(data.users);
+                feedLimit.current = FEED_PAGE_SIZE;
+                setHasMore(data.users.length >= FEED_PAGE_SIZE);
                 setStatus("success");
             } else {
                 setError("Couldn't load users.");
@@ -309,6 +321,42 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             console.error("UsersProvider fetch error:", err);
             setError("Couldn't load users.");
             setStatus("error");
+        }
+    }, []);
+
+    /* Topped up from HomeMain when only a few cards remain: the feed takes a
+       plain `limit`, so each call asks for one more page worth and appends
+       only the rows that are new. A short answer means the feed is drained. */
+    const loadMore = useCallback(async () => {
+        if (!getClientToken() || loadMorePending.current) return;
+
+        const nextLimit = feedLimit.current + FEED_PAGE_SIZE;
+        loadMorePending.current = true;
+        const id = ++requestId.current;
+
+        try {
+            const response = await axios.get<UsersApiResponse>(
+                `${USERS_URL}?limit=${nextLimit}`,
+                { headers: authHeader() }
+            );
+            if (id !== requestId.current || !mounted.current) return;
+
+            const data = response.data;
+            if (data?.success && Array.isArray(data.users)) {
+                setUsers((prev) => {
+                    const seen = new Set(prev.map((u) => u.id));
+                    const incoming = data.users.filter((u) => !seen.has(u.id));
+                    return incoming.length ? [...prev, ...incoming] : prev;
+                });
+                feedLimit.current = nextLimit;
+                if (data.users.length < nextLimit) setHasMore(false);
+            } else {
+                setHasMore(false);
+            }
+        } catch (err) {
+            console.error("UsersProvider loadMore error:", err);
+        } finally {
+            loadMorePending.current = false;
         }
     }, []);
 
@@ -432,8 +480,10 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             error,
             loading: status === "idle" || status === "loading",
             refetch: fetchUsers,
+            hasMore,
+            loadMore,
         }),
-        [users, status, error, fetchUsers]
+        [users, status, error, fetchUsers, hasMore, loadMore]
     );
 
     return (

@@ -241,6 +241,42 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-27 — chat: centered day headings; home feed: limit-growth pagination
+- **Chat day headings** (both surfaces — `MobileChatSection` renders the same `ChatMain`):
+  - `app/app/shared/chatMessages.ts`: new `localDayKey` / `dayKeyOf` / `formatDayHeading`
+    ("Today" / "Yesterday" / `12 Oct 2026`, `en-IN`); `useChatThread`'s memo now stamps every
+    row with a local `dayKey` via an id→key map **after** `lockRichMessages` — no mapper
+    restructure, socket/optimistic rows included (same `createdAt`).
+  - `app/app/desktop/ChatMain.tsx`: `dayKey?: string` on all four render interfaces; new
+    `DayHeading` (centered grey pill, `U()`/`C` palette); the thread loop wraps each bubble
+    in a keyed `Fragment` and renders the heading when `dayKey` differs from the previous
+    message. `DEFAULT_MESSAGES` carry no `dayKey` → demo thread shows no headings.
+- **Home feed pagination** (user asked to "change the api url and change limit" as few
+  cards remain → limit-growth, not cursor):
+  - `app/context/UsersContext.tsx`: `USERS_URL` is now limit-free (`FEED_PAGE_SIZE = 50`
+    appended per call); `loadMore()` re-requests `?limit=lastLimit+50`, appends with by-id
+    dedupe, flips `hasMore=false` when the server answers with fewer rows than asked (handles
+    exhaustion, server caps, and a backend that ignores `limit`); shared `requestId`
+    newest-wins + `loadMorePending` ref guard. `useUsersData()` now exposes
+    `hasMore`/`loadMore` (default context updated too — that was the one tsc error).
+  - `app/app/desktop/HomeMain.tsx`: `deckKey` reset now distinguishes **append vs replace**
+    (prefix check over `lastDeck.split("|")`) so a top-up never rewinds `current` to 0 —
+    this was the critical gotcha (old code rewound on every array change); top-up effect
+    fires `loadMore()` when `profiles.length - current <= 5` (`FEED_TOP_UP_REMAINING`),
+    guarded by `status === "success"` + `hasMore` + no `profilesProp`. Silent, no UI.
+- Verified: `npx tsc --noEmit` 0; eslint delta **0** by stash+lint (both with and without
+  my changes: 28 problems = 4 errors / 24 warnings, identical identifiers — so ChatMain's
+  real baseline is **14 warnings**, not the 11 the older entries claimed; UsersContext's 3
+  errors and HomeMain's 11 warnings are all pre-existing). Build skipped (dev on :3000,
+  PID 3248).
+- **Open:** `nextCursor` (typed in `UsersApiResponse`) is still unused — if the backend
+  supports `?cursor=`, switch `loadMore` to it; limit-growth re-sends the whole prefix each
+  time (dedupe absorbs it) but is what the request literally asked for and needs no cursor
+  support. If the backend rejects `limit>50`, loadMore stops itself via the short-answer
+  check. Deck still wraps modulo — top-up fires *before* exhaustion so the wrap stays
+  invisible while cards exist. Chat has no scroll anchoring for "Load earlier messages"
+  (pre-existing snap-to-bottom quirk; separators inherit it). No tests.
+
 ### 2026-10-27 — mobile admirers: Accept/Reject behind bottom nav (slot-height + fluid wiring)
 - **Bug:** on `/app/admirers` mobile, the received-profile deck buttons (`absolute bottom-8`
   Reject/Accept) rendered behind the fixed bottom nav. Root cause: `AdmirersMain`'s profile

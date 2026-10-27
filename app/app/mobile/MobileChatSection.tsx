@@ -8,7 +8,20 @@ import { useConversations } from "@/app/context/ChatContext";
 import type { Conversation } from "@/app/context/ChatContext";
 import { toast } from "sonner";
 import { useChatThread } from "../shared/chatMessages";
-
+const C = {
+  pink: "#e23a6a",
+  pinkText: "#e0355f",
+  pinkSoft: "#fdeef1",
+  green: "#1f9254",
+  greenSoft: "#e7f7ee",
+  greenBadge: "#22b56b",
+  ink: "#17151a",
+  grey: "#8a8790",
+  greyLight: "#b8b5bc",
+  border: "#ececec",
+  track: "#e7e5e9",
+  white: "#ffffff",
+};
 /* -------------------------------------------------------------------------- */
 /*  Chats – two-step, Tinder inbox style.                                      */
 /*                                                                            */
@@ -100,14 +113,57 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
 
   if (loading && conversations.length === 0) {
     return (
+            <div>
+        <header
+          className="px-[4.054cqw] py-[1.778cqh]"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h1
+            className="text-[7.432cqw]"
+            style={{
+              margin: 0,
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            <span style={{ color: C.ink }}>Mess</span>
+            <span style={{ color: C.pinkText }}>ages</span>
+          </h1>
+        </header>
       <div className="flex h-full items-center justify-center text-sm text-gray-500">
         Loading chats…
+      </div>
       </div>
     );
   }
 
   if (error && conversations.length === 0) {
     return (
+            <div>
+        <header
+          className="px-[4.054cqw] py-[1.778cqh]"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h1
+            className="text-[7.432cqw]"
+            style={{
+              margin: 0,
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            <span style={{ color: C.ink }}>Mess</span>
+            <span style={{ color: C.pinkText }}>ages</span>
+          </h1>
+        </header>
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-gray-600">{error}</p>
         <button
@@ -118,14 +174,38 @@ const MobileChatSection: React.FC<MobileChatSectionProps> = ({
           Try again
         </button>
       </div>
+      </div>
     );
   }
 
   if (conversations.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center px-6 text-center text-sm text-gray-500">
-        No conversations yet.
+      <div>
+        <header
+          className="px-[4.054cqw] py-[1.778cqh]"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h1
+            className="text-[7.432cqw]"
+            style={{
+              margin: 0,
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            <span style={{ color: C.ink }}>Mess</span>
+            <span style={{ color: C.pinkText }}>ages</span>
+          </h1>
+        </header>
+        <div className="flex h-full items-center justify-center px-6 text-center text-sm text-gray-500">
+          No conversations yet.
+        </div>
       </div>
+
     );
   }
 

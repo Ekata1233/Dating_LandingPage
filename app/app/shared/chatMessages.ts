@@ -36,6 +36,31 @@ function formatTime(iso: string): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+function localDayKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function dayKeyOf(iso: string): string | undefined {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? undefined : localDayKey(date);
+}
+
+export function formatDayHeading(dayKey: string): string {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (dayKey === localDayKey(now)) return "Today";
+  if (dayKey === localDayKey(yesterday)) return "Yesterday";
+  const [year, month, day] = dayKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function metaString(
   meta: Record<string, unknown> | null | undefined,
   key: string
@@ -303,10 +328,19 @@ export function useChatThread(counterpartId?: string | null) {
     socketConnected,
   } = useChatMessages();
 
-  const chatMessages = useMemo(
-    () => lockRichMessages(mapApiMessages(messages, counterpartId)),
-    [messages, counterpartId]
-  );
+  const chatMessages = useMemo(() => {
+    const mapped = lockRichMessages(mapApiMessages(messages, counterpartId));
+    const dayById = new Map<string, string>();
+    for (const m of messages) {
+      const key = dayKeyOf(m.createdAt);
+      if (key) dayById.set(m.id, key);
+    }
+    if (dayById.size === 0) return mapped;
+    return mapped.map((item): ChatMessage => {
+      const dayKey = dayById.get(String(item.id));
+      return dayKey ? { ...item, dayKey } : item;
+    });
+  }, [messages, counterpartId]);
 
   return {
     chatMessages,

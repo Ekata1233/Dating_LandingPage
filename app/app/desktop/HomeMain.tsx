@@ -25,6 +25,9 @@ import ComplimentingModal, { GiftOption } from "@/app/components/ui/Complimentin
 /** Horizontal drag distance (px) that commits a like / nope. */
 const SWIPE_THRESHOLD = 88;
 
+/** Remaining cards at which the deck tops itself up from the feed. */
+const FEED_TOP_UP_REMAINING = 5;
+
 /** Top-right package badge, keyed by the API `package.name`. */
 const PACKAGE_BADGES: Record<string, { icon: string; label: string; ring: string }> = {
   PREMIUM: { icon: "🔥", label: "PREMIUM", ring: "border-orange-300/40" },
@@ -118,7 +121,7 @@ function HomeMain({
   const [roseOpen, setRoseOpen] = useState(false);
   const [swipeDir, setSwipeDir] = useState<SwipeDir | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
-  const { users, loading, error, status, refetch } = useUsersData();
+  const { users, loading, error, status, refetch, hasMore, loadMore } = useUsersData();
 
   const swipeTimer = useRef<number | null>(null);
   function sendCompliment(text: string, gift: GiftOption) {
@@ -140,15 +143,28 @@ function HomeMain({
     [profilesProp, users]
   );
 
-  /* A new deck (first load, or a refetch) has to rewind the index. */
+  /* A new deck (first load, or a refetch) has to rewind the index — but an
+     appended feed page must not: the member stays on the card they're on. */
   const deckKey = profiles.map((p) => p.id).join("|");
   const [lastDeck, setLastDeck] = useState(deckKey);
   if (lastDeck !== deckKey) {
+    const prevIds = lastDeck ? lastDeck.split("|") : [];
+    const appended =
+      profiles.length > prevIds.length &&
+      prevIds.every((id, i) => profiles[i]?.id === id);
     setLastDeck(deckKey);
-    setCurrent(0);
+    if (!appended) setCurrent(0);
   }
 
   const profile: Profile | undefined = profiles[current];
+
+  /* Pagination: ask for the next page before the member runs out of cards. */
+  useEffect(() => {
+    const remaining = profiles.length - current;
+    if (profilesProp || status !== "success" || !hasMore) return;
+    if (remaining > FEED_TOP_UP_REMAINING) return;
+    void loadMore();
+  }, [profilesProp, profiles, current, status, hasMore, loadMore]);
 
   /* ------------------------------------------------------------------ */
   /*  Deep profile                                                      */

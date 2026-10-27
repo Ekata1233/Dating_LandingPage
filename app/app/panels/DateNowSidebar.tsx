@@ -68,13 +68,13 @@ function DateNowSidebar({
     }
 
     const isInline = layout === 'inline'
-    const {filter, setFilter} = useDateNow()
+    const { filter, setFilter } = useDateNow()
     const availabilityChips = DATE_AVAILABILITY_OPTIONS.map((option) => (
         <button
             key={option.value}
             type="button"
             value={filter}
-            onClick={() => {selectAvailability(option.value); setFilter(option.value)}}
+            onClick={() => { selectAvailability(option.value); setFilter(option.value) }}
             className={chip(activeAvailability === option.value)}
         >
             {option.label}
@@ -102,8 +102,8 @@ function DateNowSidebar({
             {showHeader && (
                 <header
                     className={`shrink-0 bg-slate-50 ${isInline
-                            ? 'px-[6.757cqw] pt-[1.333cqh] pb-[0.444cqh] md:py-[1.333cqh] md:pr-[2.703cqw]'
-                            : 'px-[5.405cqw] py-[1.778cqh] border-b border-gray-100'
+                        ? 'px-[6.757cqw] pt-[1.8cqh] pb-[0.8cqh] md:py-[1.333cqh] md:pr-[2.703cqw]'
+                        : 'px-[5.405cqw] py-[2.2cqh] border-b border-gray-100'
                         }`}
                 >
                     <h1
