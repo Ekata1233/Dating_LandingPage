@@ -89,12 +89,12 @@ export interface BasicInfoRequest {
 }
 /* The profile editor's extras, PATCHed to `EDIT_BASIC_INFO_URL` — shown while
    editing, never during onboarding. The three option-list fields go back as
-   the API's own ids (mother tongue as a list, since that field is multi); the
-   static three as their enum values. `null` means "cleared". */
+   the API's own ids (mother tongue as a single id — the endpoint takes one);
+   the static three as their enum values. `null` means "cleared". */
 export interface EditBasicInfoRequest {
     religionId: number | null;
     communityId: number | null;
-    motherTongueId: number[] | null;
+    motherTongueId: number | null;
     zodiac: string | null;
     loveLanguage: string | null;
     communicationStyle: string | null;

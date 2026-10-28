@@ -17,7 +17,6 @@ import { authHeader, getClientToken } from "@/utils/token";
 /* ------------------------------------------------------------------ */
 
 const DATE_PLANS_DISCOVER_URL = `${API_BASE_URL}/api/user/date-plans/discover`;
-// const DATE_PLANS_DISCOVER_URL = `https://dev-api.welvors.com/api/user/date-plans/discover`;
 
 /** Appends the optional pagination cursor to a filter's discover URL. */
 const datePlansUrl = (filter: DatePlanFilter, cursor?: string | null) => {

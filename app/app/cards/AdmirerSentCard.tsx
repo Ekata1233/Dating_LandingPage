@@ -96,7 +96,7 @@ const AdmirerSentCard: React.FC<AdmirerSentCardProps> = ({
       await refetchAdmirersSent();
       onSendRose?.();
     } else {
-      toast.error(response?.message);
+      toast.error(response?.message || "Couldn't send rose");
     }
   }
 

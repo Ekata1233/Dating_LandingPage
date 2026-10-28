@@ -434,6 +434,16 @@ function asList(value: unknown): string[] {
   return [String(value)];
 }
 
+/**
+ * The VIP / VIP Elite interest questions (`"⭐⭐ VIP & Elite only (…)"` and
+ * friends) are single-answer. Their `key` is API-generated gibberish, so the
+ * match is on the title the editor already renders. Mirrors the helper in
+ * `app/onBoarding/steps/Interests.tsx`.
+ */
+function isSingleAnswer(field: FieldDef): boolean {
+  return /vip|elite/i.test(field.label) || /vip|elite/i.test(field.name);
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Display helpers (read-only — they never change what is stored)             */
 /* -------------------------------------------------------------------------- */
@@ -517,16 +527,6 @@ function resolveOptionId(options: readonly FieldOption[], saved: unknown): strin
  */
 function optionValueFor(options: readonly FieldOption[], saved: unknown): string {
   return resolveOptionId(options, saved) || text(unwrapOption(saved)).trim();
-}
-
-/** Mother tongue is multi: a list, or one string that may name several. */
-function resolveOptionIds(options: readonly FieldOption[], saved: unknown): string[] {
-  const entries = Array.isArray(saved) ? saved : [saved];
-
-  return entries
-    .flatMap((entry) => text(unwrapOption(entry)).split(","))
-    .map((entry) => resolveOptionId(options, entry))
-    .filter((entry) => entry !== "");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1160,7 +1160,7 @@ const BIO_FALLBACK_MAX_LENGTH = 300;
  * `religion`, `caste` and `motherTongue` carry no options: their lists come
  * from the API (`useUserProfileData`) and are layered on in `renderField`,
  * the same way the career selects take theirs from `careerSources`. Mother
- * tongue is the one `multi` of the set — it stores a list of language ids.
+ * tongue is a single select — the endpoint takes one language id.
  */
 const EDIT_BASIC_FIELDS: FieldDef[] = [
   {
@@ -1178,7 +1178,7 @@ const EDIT_BASIC_FIELDS: FieldDef[] = [
   {
     name: "motherTongue",
     label: "Mother tongue",
-    kind: "multi",
+    kind: "select",
     placeholder: "Select mother tongue",
   },
   {
@@ -1629,7 +1629,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     return {
       religion: resolveOptionId(religionOptions, saved.religion),
       caste: resolveOptionId(allCommunityOptions, saved.community),
-      motherTongue: resolveOptionIds(languageOptions, saved.motherTongue),
+      motherTongue: resolveOptionId(languageOptions, saved.motherTongue),
       zodiac: resolveOptionId(ZODIAC, saved.zodiac),
       loveLanguage: resolveOptionId(LOVELANGUAGE, saved.loveLanguage),
       communicationStyle: resolveOptionId(COMMUNICATIONSTYLE, saved.communicationStyle),
@@ -2268,8 +2268,8 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
    * The editor for a field whose option list belongs to an API rather than the
    * schema: the field def owns the name and the label, the list is layered on
    * here — exactly how the onboarding career step treats `careerSources`.
-   * Renders the control its `kind` asks for (select today, multi for mother
-   * tongue), so an API-backed field only has to name its source.
+   * Renders the control its `kind` asks for, so an API-backed field only has
+   * to name its source.
    */
   const renderApiField = (
     field: FieldDef,
@@ -2440,10 +2440,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     /* Multi is checked first: its value is an array, which `readString` reads
        as "" — falling through to the blank guard below would hide every pick. */
     if (field.kind === "multi") {
-      const options =
-        field.name === "motherTongue"
-          ? languageOptions
-          : (field as { options?: unknown }).options;
+      const options = (field as { options?: unknown }).options;
 
       const picks = asList(fields[field.name]);
       if (picks.length === 0) return { display: "" };
@@ -2482,14 +2479,17 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
     if (field.kind === "select") {
       /* Same list the editor uses — except caste, which is *named* from every
          community so a saved caste still reads as text even when the religion
-         above it has since changed (the picker itself is the filtered list). */
+         above it has since changed (the picker itself is the filtered list).
+         Mother tongue's list is API-backed the same way religion's is. */
       const options = isCareerField(field.name)
         ? careerSources[field.name].options
         : field.name === "religion"
           ? religionOptions
           : field.name === "caste"
             ? allCommunityOptions
-            : (field as { options?: unknown }).options;
+            : field.name === "motherTongue"
+              ? languageOptions
+              : (field as { options?: unknown }).options;
 
       const label = optionLabel(options, raw);
 
@@ -3085,6 +3085,7 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
                 const allotment = Math.max(0, INTERESTS_MAX - (interestPicked - own.length));
 
                 if (field.kind === "multi") {
+                  const single = isSingleAnswer(field);
                   return (
                     <MultiField
                       key={field.name}
@@ -3092,7 +3093,9 @@ const ProfileEditMain: React.FC<ProfileEditMainProps> = ({
                       values={own}
                       max={allotment}
                       hideCount
-                      onChange={(v) => setField(field.name, v)}
+                      /* Single-answer questions keep the chips they already have,
+                         but a new pick replaces the old one instead of joining it. */
+                      onChange={(v) => setField(field.name, single ? v.slice(-1) : v)}
                     />
                   );
                 }

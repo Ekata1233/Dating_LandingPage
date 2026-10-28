@@ -241,6 +241,53 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-28 — edit profile: mother tongue single-select + payload fix
+- **Bug:** mother tongue on `/app/profile/edit` never persisted. It was wired as the
+  one `multi` of the edit-only basics end-to-end (`kind: "multi"`, hydration via
+  `resolveOptionIds` → `string[]`, payload `motherTongueId: number[]`), but the
+  endpoint takes a **single id** — sending an array failed the PATCH (or was ignored
+  server-side), so saves appeared to succeed client-side and changed nothing.
+- **Fix (three files):**
+  - `app/context/OnBoardingApiContext.tsx`: `EditBasicInfoRequest.motherTongueId`
+    `number[] | null` → `number | null`.
+  - `app/onBoarding/stepPayloads.ts`: `toEditBasicInfoRequest` now sends
+    `motherTongueId: id(data.motherTongue)` (the shared single-id `id()` helper);
+    the array-mapping block is gone.
+  - `app/app/desktop/ProfileEditMain.tsx`: `EDIT_BASIC_FIELDS` motherTongue
+    `kind: "multi"` → `"select"` (SelectField, same as religion/caste);
+    `feedExtras` hydrates with `resolveOptionId` (was `resolveOptionIds`, now
+    deleted — no other caller); `describeField` multi-branch motherTongue special
+    case removed and the select-branch options lookup gained
+    `motherTongue → languageOptions` so the closed row still shows the label.
+- Verified: `npx tsc --noEmit` 0; eslint on the three files = only pre-existing
+  unused-var warnings (13, all baseline). Build skipped (dev server on :3000).
+- **Open:** mobile edit profile reuses this component, so it is covered. Old
+  profiles that saved a *list* of tongues before this fix hydrate via
+  `resolveOptionId`, which matches on the whole stored string — a comma-joined
+  "Hindi, English" will not match a single option and reads as unset until the
+  user re-picks (acceptable; the backend only ever kept one anyway if it rejected
+  arrays). `removeNullValues` still strips `motherTongueId: null`, so "clearing"
+  the select cannot be expressed to the endpoint — pre-existing for all six
+  edit-basic fields, untouched. No tests.
+
+### 2026-10-28 — edit profile: VIP/VIP-Elite interests single-answer (port of onboarding fix)
+- **Bug:** `ProfileEditMain.tsx` still let VIP / VIP Elite interest chips accumulate
+  multiple option ids — the `16c5a21` fix only landed in `app/onBoarding/steps/Interests.tsx`.
+  Zero `vip|elite` matches existed in the edit-profile file.
+- **Fix (`app/app/desktop/ProfileEditMain.tsx`):** added module-local `isSingleAnswer(field)`
+  (same `/vip|elite/i` match on label/name as onboarding, after `asList` ~line 437) and the
+  interests `MultiField` `onChange` now does `setField(field.name, single ? v.slice(-1) : v)`
+  (~line 3106). Chips UI unchanged; a new pick replaces instead of joining. Save path
+  (`toInterestsRequests`) untouched — it already serialises whatever the field holds.
+- Verified: `npx tsc --noEmit` 0; `npx eslint app/app/desktop/ProfileEditMain.tsx` = the same
+  10 pre-existing unused-var warnings, 0 errors, nothing new. Build skipped (dev server
+  listening :3000, PID 14060).
+- **Open:** hydration (`answersToStepData` → `stepDataFromDetails`) still seeds an *array*
+  for any `isMulti` question, so a VIP answer saved before the fix hydrates as a
+  multi-element array (chips + budget count) until re-picked — same residual quirk as
+  onboarding; fix only constrains new writes. Mobile edit profile reuses this component
+  (`MobileEditProfileSection` → `ProfileEditCard`), so it is covered. No tests.
+
 ### 2026-10-28 — admirers sidebar refresh after like (provider-order fix)
 - **Bug:** liking on the home feed never updated the admirers sidebar. `swipe()` in
   `UsersContext.tsx` already called `await refetchAdmirersSent()` after a successful swipe,

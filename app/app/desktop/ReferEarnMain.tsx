@@ -463,7 +463,7 @@ export default function ReferAndEarn({
             toast.success(response.message);
             onApplyCode?.(code);
         } else {
-            toast.error(response?.message || applyReferralError);
+            toast.error(response?.message || applyReferralError || "Could't Apply Referral Code");
         }
         setFriendCode("");
     };
