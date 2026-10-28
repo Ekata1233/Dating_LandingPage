@@ -325,14 +325,14 @@ const DEFAULT_STEPS: HowItWorksStep[] = [
         icon: "login",
         title: "Friend joins Welvors",
         description: "They sign up & log in using your code.",
-        reward: "+₹100",
+        reward: "+₹50",
         rewardNote: "to you",
     },
     {
         icon: "diamond",
         title: "They buy any plan",
         description: "Premium+, VIP or Elite — any package counts.",
-        reward: "+₹200",
+        reward: "+₹300",
         rewardNote: "to you",
     },
 ];
@@ -463,7 +463,7 @@ export default function ReferAndEarn({
             toast.success(response.message);
             onApplyCode?.(code);
         } else {
-            toast.error(applyReferralError || "Referral already applied.");
+            toast.error(response?.message || applyReferralError);
         }
         setFriendCode("");
     };

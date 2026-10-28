@@ -330,27 +330,28 @@ export function ProfileProvider({
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
-            setBasicInfoError(
-                response.data?.message ||
-                "Couldn't update basic information."
-            );
 
-            return null;
+            /* The message goes back with the failure, the way `createPhotos`
+               already does: `saveStep` shows `res.message` on the step's footer,
+               and a `null` here would leave it with nothing but the generic
+               fallback — the real reason for the rejection (visible in the
+               browser's network tab) would never reach the screen. */
+            const message =
+                response.data?.message ||
+                "Couldn't update basic information.";
+            setBasicInfoError(message);
+
+            return { success: false, message };
         } catch (err) {
             console.error("Update Basic Info Error:", err);
 
-            if (axios.isAxiosError(err)) {
-                setBasicInfoError(
-                    err.response?.data?.message ||
-                    "Something went wrong while updating basic information."
-                );
-            } else {
-                setBasicInfoError(
-                    "Something went wrong while updating basic information."
-                );
-            }
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message ||
+                "Something went wrong while updating basic information."
+                : "Something went wrong while updating basic information.";
+            setBasicInfoError(message);
 
-            return null;
+            return { success: false, message };
         } finally {
             setBasicInfoLoading(false);
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import { isBlank } from "../stepSchemas";
+import { isBlank, type FieldDef } from "../stepSchemas";
 import {
   INTERESTS_MAX,
   INTERESTS_MIN,
@@ -22,7 +22,20 @@ import { StepShell } from "../StepShell";
 /*  INTERESTS_MAX picks in total, regardless of how many categories the API      */
 /*  returns. Each category therefore only ever sees what the others have left,   */
 /*  which is why the cap is worked out per render instead of sitting on a field. */
+/*                                                                            */
+/*  Exception: the VIP / VIP Elite questions take a single answer. The chips     */
+/*  stay exactly as they are — picking another one replaces the current pick     */
+/*  instead of adding to it.                                                    */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * The VIP / VIP Elite questions (`"⭐⭐ VIP & Elite only (…)"` and friends)
+ * are single-answer. Their `key` is API-generated gibberish, so the match is
+ * on the title the step already renders.
+ */
+function isSingleAnswer(field: FieldDef): boolean {
+  return /vip|elite/i.test(field.label) || /vip|elite/i.test(field.name);
+}
 
 export default function InterestsStep() {
   const form = useStepForm("interests");
@@ -96,6 +109,7 @@ export default function InterestsStep() {
             );
 
             if (field.kind === "multi") {
+              const single = isSingleAnswer(field);
               return (
                 <MultiField
                   key={field.name}
@@ -104,7 +118,11 @@ export default function InterestsStep() {
                   error={form.errors[field.name]}
                   max={allotment}
                   hideCount
-                  onChange={(v) => form.set(field.name, v)}
+                  /* Single-answer questions keep the chips they already have,
+                     but a new pick replaces the old one instead of joining it. */
+                  onChange={(v) =>
+                    form.set(field.name, single ? v.slice(-1) : v)
+                  }
                 />
               );
             }

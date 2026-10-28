@@ -68,7 +68,7 @@ const SidebarHeaderStrip: React.FC<SidebarHeaderStripProps> = ({
 
     return (
       <div
-        className={`flex flex-row items-center justify-between px-2 shrink-0 h-[10vh] ${className}`}
+        className={`flex flex-row items-center justify-between px-2 shrink-0 h-[9.5vh] ${className}`}
         style={{ containerType: "size", background: STRIP.gradient }}
       >
         {avatarItem && (

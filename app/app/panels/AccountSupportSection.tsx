@@ -85,7 +85,7 @@ const DEFAULT_ITEMS: AccountSupportItem[] = [
     color: "#DB2777",  // pink-600
     title: "Refer & Earn",
     titleColor: "#DB2777",
-    subtitle: "Earn ₹100 for every friend",
+    subtitle: "Earn ₹50 for every friend",
     section: "refer-earn",
   },
   {

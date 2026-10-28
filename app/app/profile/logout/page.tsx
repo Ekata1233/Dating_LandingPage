@@ -15,6 +15,7 @@ export default function Page() {
   const router = useRouter()
   const handleLogout = async () => {
     await deleteSession();
+    sessionStorage.clear();
     router.push("/");
   };
   return (

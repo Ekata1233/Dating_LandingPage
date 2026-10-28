@@ -105,30 +105,30 @@ export type NavItem = NavIconItem | NavAvatarItem;
  */
 export const NAV_ITEMS: NavItem[] = [
   { kind: "avatar", section: "profile", label: "You" },
-  { kind: "icon", section: "home", label: "Home", icon: <House size={18} /> },
+  { kind: "icon", section: "home", label: "Home", icon: <House size={15} /> },
   {
     kind: "icon",
     section: "date-now",
     label: "Date Now",
-    icon: <CirclePlay size={20} />,
+    icon: <CirclePlay size={15} />,
   },
   {
     kind: "icon",
     section: "admirer",
     label: "Admirers",
-    icon: <Heart size={20} />,
+    icon: <Heart size={15} />,
   },
   {
     kind: "icon",
     section: "chat",
     label: "Chats",
-    icon: <MessageSquare size={18} />,
+    icon: <MessageSquare size={15} />,
   },
   {
     kind: "icon",
     section: "events",
     label: "Events",
-    icon: <Calendar size={20} />,
+    icon: <Calendar size={15} />,
   },
 
 ];

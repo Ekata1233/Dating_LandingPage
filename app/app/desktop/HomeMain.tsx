@@ -426,10 +426,11 @@ function HomeMain({
       {/* Card container – fills remaining height */}
       {roseOpen && (
         <ComplimentingModal
+          id={profiles[current].id}
           name={profiles[current].name}
           avatarUrl={profiles[current].image}
           onClose={() => setRoseOpen(false)}
-        // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
+          // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
         />
       )}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">

@@ -20,6 +20,7 @@ export default function Page() {
             if (response?.success) {
                 toast.success(response.message || "Account deleted successfully.");
                 await deleteSession();
+                sessionStorage.clear();
                 router.push("/");
             }
             else {

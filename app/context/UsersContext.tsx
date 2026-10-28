@@ -19,6 +19,7 @@ import { useUserProfileData } from "./UserProfileDataContext";
 // NOTE: adjust this to the real discover/users endpoint for your app.
 const USERS_URL = `${API_BASE_URL}/api/user/feed`;
 const SWIPE_ACTION_URL = `${API_BASE_URL}/api/user/swipe`;
+const SEND_COMPLIMENT_URL = `${API_BASE_URL}/api/user/engagement/send`;
 const FEED_PAGE_SIZE = 50;
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
@@ -28,6 +29,54 @@ const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/deta
 /* ------------------------------------------------------------------ */
 
 export type SwipeAction = "LIKE" | "PASS";
+
+/* ---- Send compliment (POST /api/user/engagement/send) ---- */
+
+/** Optional: a rose sent along with the compliment. */
+export interface RoseType {
+    targetType: string | null;
+    targetId: string | null;
+}
+
+/** Required: the compliment itself. `ideaId` is only set for suggested ideas. */
+export interface ComplimentType {
+    message: string;
+    ideaId?: string;
+    targetType: string | null;
+    targetId: string | null;
+}
+
+/** Optional: a gift sent along with the compliment. */
+export interface GiftType {
+    giftId: string;
+    message: string;
+    targetType: string | null;
+    targetId: string | null;
+}
+
+export interface SendComplimentRequest {
+    receiverId: string;
+    /** Compulsory. A request without a compliment is rejected before it is sent. */
+    compliment: ComplimentType;
+    rose?: RoseType;
+    gift?: GiftType;
+}
+
+/**
+ * The backend's body, returned as-is for success and failure alike, e.g.
+ * {
+ *   "success": false,
+ *   "message": "Insufficient wallet balance. ₹120 is required to send a Rose.",
+ *   "errors": { "fieldErrors": {} }
+ * }
+ */
+export interface SendComplimentResponse {
+    success: boolean;
+    message: string;
+    errors?: {
+        fieldErrors: Record<string, string[] | undefined>;
+    };
+}
 
 interface SwipeActionRequest {
     targetUserId: string;
@@ -124,6 +173,11 @@ interface UsersData {
     loadMore: () => void;
     /** Records a LIKE/PASS on a user. Resolves with the outcome; never throws. */
     swipe: (targetUserId: string, action: SwipeAction) => Promise<SwipeResult>;
+    /**
+     * Sends a compliment (required) with an optional rose and/or gift.
+     * Resolves with the backend's response body, success or failure; never throws.
+     */
+    sendCompliment: (request: SendComplimentRequest) => Promise<SendComplimentResponse>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -239,6 +293,32 @@ interface UserDetailsApi {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
+
+/** A failed `SendComplimentResponse` built locally (no request was made, or
+    the server sent nothing usable), in the same shape the backend uses. */
+function sendComplimentFailure(message: string): SendComplimentResponse {
+    return { success: false, message, errors: { fieldErrors: {} } };
+}
+
+/** True when a response body looks like the backend's `{ success, message }`. */
+function isSendComplimentResponse(value: unknown): value is SendComplimentResponse {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as SendComplimentResponse).success === "boolean" &&
+        typeof (value as SendComplimentResponse).message === "string"
+    );
+}
+
+/** Pulls the backend's `message` out of an axios error, if there is one. */
+function apiErrorMessage(err: unknown): string | undefined {
+    if (!axios.isAxiosError(err)) return undefined;
+    return (err.response?.data as { message?: string } | undefined)?.message;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Contexts                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -251,6 +331,7 @@ const UsersContext = createContext<UsersData>({
     hasMore: false,
     loadMore: () => { },
     swipe: async () => ({ ok: false, isMatch: false, error: "Not ready" }),
+    sendCompliment: async () => sendComplimentFailure("Not ready"),
 });
 
 /**
@@ -291,8 +372,7 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<UsersStatus>("idle");
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
-    const { refetchAdmirersSent } = useUserProfileData()
-
+    const { refetchAdmirersSent, refetchAdmirersReceived } = useUserProfileData();
 
     /* Guards against out-of-order responses and updates after unmount. */
     const requestId = useRef(0);
@@ -424,7 +504,18 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
                 const data = response.data;
 
                 if (data?.success) {
-                    await refetchAdmirersSent();
+                    /* A LIKE lands in the "Sent" admirer list; a mutual match
+                       also puts them in "Received". Keep both in sync so the
+                       admirers sidebar re-renders with the new row. A failed
+                       refresh must not turn a recorded swipe into an error. */
+                    if (action === "LIKE") {
+                        try {
+                            await refetchAdmirersSent();
+                            if (data.isMatch) await refetchAdmirersReceived();
+                        } catch (syncErr) {
+                            console.error("UsersProvider admirers refresh error:", syncErr);
+                        }
+                    }
                     return { ok: true, isMatch: Boolean(data.isMatch), error: null };
                 }
                 return {
@@ -433,20 +524,101 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
                     error: data?.message ?? "Couldn't record your swipe.",
                 };
             } catch (err) {
-                console.error(`UsersProvider swipe error (${targetUserId}):`, err);
-                const message = axios.isAxiosError(err)
-                    ? (err.response?.data as { message?: string } | undefined)?.message
-                    : undefined;
+                // console.error(`UsersProvider swipe error (${targetUserId}):`, err);
                 return {
                     ok: false,
                     isMatch: false,
-                    error: message ?? "Couldn't record your swipe.",
+                    error: apiErrorMessage(err) ?? "Couldn't record your swipe.",
                 };
             } finally {
                 swipingIds.current.delete(targetUserId);
             }
         },
-        []
+        [refetchAdmirersSent, refetchAdmirersReceived]
+    );
+
+    /* ------------------------------------------------------------------ */
+    /*  Send compliment (POST /api/user/engagement/send)                   */
+    /*                                                                    */
+    /*  The compliment is compulsory; rose and gift ride along only when   */
+    /*  the caller passes them.                                            */
+    /*                                                                    */
+    /*  Resolves with the backend's `SendComplimentResponse` body and      */
+    /*  nothing else: a 2xx body is returned as-is, and so is the body of  */
+    /*  a 4xx/5xx (axios throws on those, so it is read off the error).    */
+    /*  Only when there is no usable body (offline, guard hit) does it     */
+    /*  build a failed response in the same shape. Never throws.           */
+    /*  One in-flight send per receiver, so a double tap can't post twice. */
+    /* ------------------------------------------------------------------ */
+
+    const sendingIds = useRef<Set<string>>(new Set());
+
+    const sendCompliment = useCallback(
+        async (request: SendComplimentRequest): Promise<SendComplimentResponse> => {
+            const { receiverId, compliment, rose, gift } = request;
+
+            if (!receiverId) {
+                return sendComplimentFailure("Missing user id.");
+            }
+            if (!compliment?.message?.trim()) {
+                return sendComplimentFailure("Write a compliment first.");
+            }
+            if (!getClientToken()) {
+                return sendComplimentFailure("Not signed in.");
+            }
+            if (sendingIds.current.has(receiverId)) {
+                return sendComplimentFailure("Compliment already being sent.");
+            }
+
+            sendingIds.current.add(receiverId);
+
+            /* Only include the optional parts that were actually chosen. */
+            const body: SendComplimentRequest = {
+                receiverId,
+                compliment: { ...compliment, message: compliment.message.trim() },
+                ...(rose ? { rose } : {}),
+                ...(gift ? { gift } : {}),
+            };
+
+            try {
+                const response = await axios.post<SendComplimentResponse>(
+                    SEND_COMPLIMENT_URL,
+                    body,
+                    { headers: authHeader() }
+                );
+                const data = response.data;
+
+                if (!isSendComplimentResponse(data)) {
+                    return sendComplimentFailure("Couldn't send your compliment.");
+                }
+
+                if (data.success) {
+                    /* The compliment shows up in the "Sent" admirer list. A
+                       failed refresh must not turn a delivered compliment
+                       into a failure. */
+                    try {
+                        await refetchAdmirersSent();
+                    } catch (syncErr) {
+                        console.error("UsersProvider admirers refresh error:", syncErr);
+                    }
+                }
+                return data;
+            } catch (err) {
+                // console.error(`UsersProvider sendCompliment error (${receiverId}):`, err);
+
+                /* e.g. 400 "Insufficient wallet balance..." — hand back the
+                   backend's own body untouched. */
+                if (axios.isAxiosError(err) && isSendComplimentResponse(err.response?.data)) {
+                    return err.response.data;
+                }
+                return sendComplimentFailure(
+                    apiErrorMessage(err) ?? "Couldn't send your compliment."
+                );
+            } finally {
+                sendingIds.current.delete(receiverId);
+            }
+        },
+        [refetchAdmirersSent]
     );
 
     /* ------------------------------------------------------------------ */
@@ -568,8 +740,9 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             hasMore,
             loadMore,
             swipe,
+            sendCompliment,
         }),
-        [users, status, error, fetchUsers, hasMore, loadMore, swipe]
+        [users, status, error, fetchUsers, hasMore, loadMore, swipe, sendCompliment]
     );
 
     return (

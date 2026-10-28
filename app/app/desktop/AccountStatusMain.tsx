@@ -228,7 +228,7 @@ export default function AccountStatusMain({
                 await profileDetails.refetch();
                 setOptimisticStatus(null);
             } else {
-                toast.error(resumeError || "Failed to resume account.");
+                toast.error(response?.message || resumeError || "Failed to resume account.");
             }
         });
     }

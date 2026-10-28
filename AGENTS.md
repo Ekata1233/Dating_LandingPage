@@ -241,6 +241,35 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-28 — admirers sidebar refresh after like (provider-order fix)
+- **Bug:** liking on the home feed never updated the admirers sidebar. `swipe()` in
+  `UsersContext.tsx` already called `await refetchAdmirersSent()` after a successful swipe,
+  but it resolved the **default** `useUserProfileData()` context (a no-op async fn) because
+  `UsersProvider` was an *ancestor* of `UserProfileDataProvider` in `app/layout.tsx` —
+  the documented "mis-nesting does not throw" failure mode.
+- **Fix:**
+  - `app/layout.tsx`: hoisted `<UserProfileDataProvider>` so it wraps `<UsersProvider>`
+    (new order inside `<main>`: ActiveSection → ChatConversations → AccountSettings →
+    UserProfileData → Users → Legal → Event → Payment). Verified safe: the only
+    cross-provider consumer was `UsersContext.tsx` (`useUserProfileData`); no provider
+    component consumes a sibling context. All other `useUserProfileData` call sites are
+    page-level (below every provider).
+  - `app/context/UsersContext.tsx`: `swipe()` now destructures
+    `refetchAdmirersSent, refetchAdmirersReceived`; on **LIKE** success it refetches
+    `sent`, and additionally `received` when `data.isMatch` (mutual like lands there).
+    PASS no longer triggers a pointless sent-refetch. Both refetchers added to the
+    `swipe` dep array (they are stable: deps chain is `useCallback([])`).
+  - `app/app/panels/AdmirersSidebar.tsx`: removed a vestigial empty `useEffect` (and the
+    now-unused `useEffect` import) — the sidebar reads `admirersSent` from context and
+    re-renders when it updates; no effect needed.
+- Verified: `npx tsc --noEmit` 0; eslint delta **−1 warning / 0 new problems** (stash+lint:
+  baseline 6 problems = 3 errors + 3 warnings → with change 5 = 3 errors + 2 warnings; the
+  missing-deps warning on `swipe` is gone). Build skipped (dev server on :3000, PID 13296).
+- **Open:** `HomeMain.tsx:238–240` still discards the `SwipeResult` (no match toast);
+  `admirersSent` refetch is one POST + one GET per like — fine at feed cadence, but a batch
+  or debounce would be needed if likes become frequent. `AdmirersMain.tsx` reads the same
+  context fields so the `/app/admirers` main pane also goes live with the fix. No tests.
+
 ### 2026-10-27 — chat: centered day headings; home feed: limit-growth pagination
 - **Chat day headings** (both surfaces — `MobileChatSection` renders the same `ChatMain`):
   - `app/app/shared/chatMessages.ts`: new `localDayKey` / `dayKeyOf` / `formatDayHeading`
