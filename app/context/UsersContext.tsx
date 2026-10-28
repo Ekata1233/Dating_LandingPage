@@ -14,9 +14,11 @@ import { API_BASE_URL } from "@/utils/api";
 import { authHeader, getClientToken } from "@/utils/token";
 import { PRESENCE_EVENT, type PresencePayload } from "@/lib/chat/socket";
 import { packageType } from "../app/shared/types";
+import { useUserProfileData } from "./UserProfileDataContext";
 
 // NOTE: adjust this to the real discover/users endpoint for your app.
 const USERS_URL = `${API_BASE_URL}/api/user/feed`;
+const SWIPE_ACTION_URL = `${API_BASE_URL}/api/user/swipe`;
 const FEED_PAGE_SIZE = 50;
 /** Per-user deep profile. Slower and richer than the feed. */
 const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/details/${userId}`;
@@ -24,6 +26,26 @@ const USER_DETAILS_URL = (userId: string) => `${API_BASE_URL}/api/user/feed/deta
 /* ------------------------------------------------------------------ */
 /*  Types (derived from the sample API response)                      */
 /* ------------------------------------------------------------------ */
+
+export type SwipeAction = "LIKE" | "PASS";
+
+interface SwipeActionRequest {
+    targetUserId: string;
+    action: SwipeAction;
+}
+
+/** Shape is a guess; adjust to what your backend returns (e.g. a match flag). */
+interface SwipeActionResponse {
+    success: boolean;
+    message?: string;
+    isMatch?: boolean;
+}
+
+export interface SwipeResult {
+    ok: boolean;
+    isMatch: boolean;
+    error: string | null;
+}
 
 interface Profile {
     city: string;
@@ -100,6 +122,8 @@ interface UsersData {
     /** False once the feed answered with fewer rows than the limit asked for. */
     hasMore: boolean;
     loadMore: () => void;
+    /** Records a LIKE/PASS on a user. Resolves with the outcome; never throws. */
+    swipe: (targetUserId: string, action: SwipeAction) => Promise<SwipeResult>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -166,7 +190,7 @@ export interface UserFeedDetails {
     replyTime: string | null;
     bio: string | null;
     lookingFor: string | null;
-    package : packageType;
+    package: packageType;
     lookingFor_subtitle: string | null;
     religion: string | null;
     community: string | null;
@@ -226,6 +250,7 @@ const UsersContext = createContext<UsersData>({
     refetch: () => { },
     hasMore: false,
     loadMore: () => { },
+    swipe: async () => ({ ok: false, isMatch: false, error: "Not ready" }),
 });
 
 /**
@@ -244,7 +269,7 @@ const UserDetailsContext = createContext<UserDetailsApi>({
 /*  Provider                                                          */
 /* ------------------------------------------------------------------ */
 
-/** Human-readable presence line for the feed, e.g. "Active5m ago". */
+/** Human-readable presence line for the feed, e.g. "Active 5m ago". */
 function presenceLabel(lastSeenAt: string | null): string {
     if (!lastSeenAt) return "Inactive";
 
@@ -266,6 +291,8 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     const [status, setStatus] = useState<UsersStatus>("idle");
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
+    const { refetchAdmirersSent } = useUserProfileData()
+
 
     /* Guards against out-of-order responses and updates after unmount. */
     const requestId = useRef(0);
@@ -363,6 +390,64 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         void fetchUsers();
     }, [fetchUsers]);
+
+    /* ------------------------------------------------------------------ */
+    /*  Swipe action (POST /api/user/swipe)                                */
+    /*                                                                    */
+    /*  Never throws: callers branch on `result.ok`. One in-flight swipe   */
+    /*  per user, so a double tap can't post twice.                        */
+    /* ------------------------------------------------------------------ */
+
+    const swipingIds = useRef<Set<string>>(new Set());
+
+    const swipe = useCallback(
+        async (targetUserId: string, action: SwipeAction): Promise<SwipeResult> => {
+            if (!targetUserId) {
+                return { ok: false, isMatch: false, error: "Missing user id." };
+            }
+            if (!getClientToken()) {
+                return { ok: false, isMatch: false, error: "Not signed in." };
+            }
+            if (swipingIds.current.has(targetUserId)) {
+                return { ok: false, isMatch: false, error: "Swipe already in progress." };
+            }
+
+            swipingIds.current.add(targetUserId);
+            const body: SwipeActionRequest = { targetUserId, action };
+
+            try {
+                const response = await axios.post<SwipeActionResponse>(
+                    SWIPE_ACTION_URL,
+                    body,
+                    { headers: authHeader() }
+                );
+                const data = response.data;
+
+                if (data?.success) {
+                    await refetchAdmirersSent();
+                    return { ok: true, isMatch: Boolean(data.isMatch), error: null };
+                }
+                return {
+                    ok: false,
+                    isMatch: false,
+                    error: data?.message ?? "Couldn't record your swipe.",
+                };
+            } catch (err) {
+                console.error(`UsersProvider swipe error (${targetUserId}):`, err);
+                const message = axios.isAxiosError(err)
+                    ? (err.response?.data as { message?: string } | undefined)?.message
+                    : undefined;
+                return {
+                    ok: false,
+                    isMatch: false,
+                    error: message ?? "Couldn't record your swipe.",
+                };
+            } finally {
+                swipingIds.current.delete(targetUserId);
+            }
+        },
+        []
+    );
 
     /* ------------------------------------------------------------------ */
     /*  Realtime presence (chat socket → DOM event)                        */
@@ -482,8 +567,9 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
             refetch: fetchUsers,
             hasMore,
             loadMore,
+            swipe,
         }),
-        [users, status, error, fetchUsers, hasMore, loadMore]
+        [users, status, error, fetchUsers, hasMore, loadMore, swipe]
     );
 
     return (

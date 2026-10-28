@@ -4,7 +4,7 @@ import { ROSE_IMAGE } from "../shared/mockData";
 import { Loader, Notice } from "../shared/Loader";
 import { mapUsersToProfiles, mergeUserDetails } from "../shared/mapUser";
 import type { Profile, SwipeHandlers } from "../shared/types";
-import { useUserDetails, useUsersData } from "@/app/context/UsersContext";
+import { SwipeAction, useUserDetails, useUsersData } from "@/app/context/UsersContext";
 import ProfileDetailSections, { Section } from "./ProfileDetailSections";
 import {
   Astroid,
@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import ComplimentingModal, { GiftOption } from "@/app/components/ui/ComplimentingModal";
+import { useProfileData } from "@/app/context/OnBoardingApiContext";
 
 /** Horizontal drag distance (px) that commits a like / nope. */
 const SWIPE_THRESHOLD = 88;
@@ -121,7 +122,7 @@ function HomeMain({
   const [roseOpen, setRoseOpen] = useState(false);
   const [swipeDir, setSwipeDir] = useState<SwipeDir | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
-  const { users, loading, error, status, refetch, hasMore, loadMore } = useUsersData();
+  const { users, loading, error, status, refetch, hasMore, loadMore,swipe } = useUsersData();
 
   const swipeTimer = useRef<number | null>(null);
   function sendCompliment(text: string, gift: GiftOption) {
@@ -232,7 +233,11 @@ function HomeMain({
          from wherever the drag left it (an active drag pins an inline
          transform with transitions disabled). */
       setDrag((d) => ({ ...d, active: false }));
-      onSwipe?.(profile.id, dir);
+      //Handling the Like or Pass
+      if(dir==="left") {
+        swipe(profile.id,"PASS")
+      }
+      else if(dir==="right") {swipe(profile.id,"LIKE")}
       swipeTimer.current = window.setTimeout(resetCard, dir === "up" ? 480 : 380);
     },
     [swipeDir, profile, onSwipe, resetCard]

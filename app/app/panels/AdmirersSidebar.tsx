@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import AdmirerReciveCard from "../cards/AdmirerReciveCard";
 import AdmirerSentCard from "../cards/AdmirerSentCard";
 
@@ -134,7 +134,9 @@ function AdmiererSidebar({
         refetchAdmirersSent,
         sendRose,
     } = useUserProfileData();
+    useEffect(()=>{
 
+    },[refetchAdmirersSent])
     const select = (next: AdmirersTab) => {
         if (tab === undefined) setTab(next);
         onTabChange?.(next);
