@@ -1,5 +1,5 @@
 "use client";
-
+// Home Main section User Profiles and there details APIs are implemented here
 import React, {
     createContext,
     useCallback,

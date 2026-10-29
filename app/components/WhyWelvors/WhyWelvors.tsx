@@ -2,6 +2,9 @@
 
 import React, { SVGProps, useCallback, useEffect, useRef, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+/* ------------------------------------------------------------------ */
+/*  App's Main features are shown in this section  */
+/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline (Tailwind theme pe depend nahi)                */
@@ -15,7 +18,7 @@ const C = {
 };
 
 // How long the hover-style animation stays on after a tap (ms)
-const TAP_ACTIVE_MS = 1200;
+const TAP_ACTIVE_MS = 800;
 
 /* ------------------------------------------------------------------ */
 /*  Styles                                                             */

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+// It was created for temporary razor pay verification it is not being used anywhere
 const NEXT_PUBLIC_MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI!;
 
 if (!NEXT_PUBLIC_MONGODB_URI) {

@@ -1,3 +1,5 @@
+//It is used on the Receive tab of admirer section
+
 import React, { useState } from "react";
 import { CirclePoundSterling } from "lucide-react";
 export interface AdmirerReciveCardProps {

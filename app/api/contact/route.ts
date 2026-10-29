@@ -1,4 +1,5 @@
 // app/api/users/route.ts
+//This is not being used anywhere cause it was for temporary purpose for razor pay verification
 import { NextResponse } from "next/server";
 import { connectDB } from "@/utils/mongodb";
 import { User } from "@/utils/userSchema";

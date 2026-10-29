@@ -1,5 +1,5 @@
 "use client";
-
+//FRONTEND ONLY -> this is a frontend only context used to manage the admirer's tab 
 import {
     createContext,
     useCallback,

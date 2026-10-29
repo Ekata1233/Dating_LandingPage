@@ -1,5 +1,5 @@
 "use client";
-
+// City dropdown list for events section
 import {
   memo,
   useCallback,

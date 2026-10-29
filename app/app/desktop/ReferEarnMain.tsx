@@ -336,10 +336,10 @@ const DEFAULT_STEPS: HowItWorksStep[] = [
         rewardNote: "to you",
     },
 ];
-
+//These are static values update it as per new UI of the app and the reward values must come from the backend
 const DEFAULT_RULES = [
-    "₹100 is credited once your friend joins (signs up & logs in) with your code.",
-    "₹500 is credited when that friend activates any paid package (Premium+, VIP or Elite).",
+    "₹50 is credited once your friend joins (signs up & logs in) with your code.",
+    "₹300 is credited when that friend activates any paid package (Premium+, VIP or Elite).",
     "Rewards land in your Welvors wallet and can be withdrawn to UPI / bank.",
     "Self-referrals or fake accounts are not eligible and may lead to a ban.",
 ];

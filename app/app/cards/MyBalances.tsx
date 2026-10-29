@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-
+//My balances is used on the Home Sidebar
 import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
 import type { BalanceItem, DatePlansSummary } from "../shared/types";
 import { UserBalances, useUserProfileData } from "@/app/context/UserProfileDataContext";

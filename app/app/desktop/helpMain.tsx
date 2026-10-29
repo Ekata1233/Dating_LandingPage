@@ -170,6 +170,7 @@ export default function HelpSupport({
     const [openIds, setOpenIds] = React.useState<string[]>(defaultOpenIds);
     const { setActiveSection } = useActiveSection();
     const contacts: ContactOption[] = [
+        //Chat option yet to be implemented 
         {
             id: "chat",
             icon: "chat",

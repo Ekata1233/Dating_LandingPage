@@ -1,4 +1,5 @@
 import React from "react";
+//used on Home sidebar
 
 import {
   featureLabel,

@@ -2,6 +2,9 @@
 
 import React, { SVGProps, useCallback, useEffect, useRef, useState } from "react";
 import { useScrollReveal } from "../useScrollReveal";
+/* ------------------------------------------------------------------ */
+/*  This section shows about the multilevel verification of the app  */
+/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */

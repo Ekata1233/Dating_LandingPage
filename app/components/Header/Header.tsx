@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import { getClientToken } from "@/utils/token";
 
 /* ------------------------------------------------------------------ */
-/*  Mockup profile photo — apni image /public me daal ke path yahan     */
-/*  update karo. Jab tak nahi hai, gradient fallback dikhega.           */
+/*  This is the first section on landing page with hero title and hero image  */
 /* ------------------------------------------------------------------ */
-const PROFILE_IMG = "/download.jpg";
+
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline rakhe hain (Tailwind theme pe depend nahi)     */
@@ -281,32 +280,11 @@ const Icon = {
     </svg>),
 };
 
-
-const STRIP = [
-  { label: "Every profile verified", icon: <Icon.Shield /> },
-  { label: "Privacy first", icon: <Icon.Lock /> },
-  { label: "Real intentions only", icon: <Icon.User /> },
-  { label: "Meaningful Matches", icon: <Icon.Heart /> },
-  { label: "Discover people nearby", icon: <Icon.MapPin /> },
-  { label: "No endless swiping", icon: <Icon.Sparkles /> },
-
-];
-const AVATARS = [
-  { letter: "A", bg: "#C9436E" },
-  { letter: "R", bg: "#5B62B5" },
-  { letter: "S", bg: "#3F8F5B" },
-  { letter: "M", bg: "#B8860B" },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Mockup card ke stat pills                                          */
-/* ------------------------------------------------------------------ */
-const STAT_PILLS = ["92% Match", "98% Trust", "~5m Reply"];
-
 function Header() {
   const [waitlistCount, setWaitlistCount] = useState(515);
   const [headerRef, headerVisible] = useScrollReveal({ threshold: 0.05 });
   const router = useRouter();
+  // On click the Discover Welvors Button
   const handleDiscover = () => {
     if (getClientToken() === null) {
       /* logged out → open the navbar login modal */
@@ -316,7 +294,7 @@ function Header() {
     }
     router.push("/app/home");
   };
-
+  //On click the Download App Button -> Send user to DownloadApp Section on same page itself
   const handleDownloadApp = () => {
     if (typeof document === "undefined") return;
     const downloadSection = document.getElementById("download-app");
@@ -324,7 +302,6 @@ function Header() {
       downloadSection.scrollIntoView({ behavior: "smooth" });
     }
   };
-
   useEffect(() => {
     const BASE = 515;
     const ANCHOR = new Date("2026-07-22T00:00:00+05:30").getTime();
@@ -448,6 +425,7 @@ function Header() {
         </div>
 
         {/* -------------------- HERO IMAGE — MOBILE ORDER 2 -------------------- */}
+        {/* On mobile Image gets on top of body */}
         <div className="order-2 relative flex justify-center pt-10 lg-pt-0 lg:order-none lg:justify-end">
           <div className={`relative ${headerVisible ? "wv-reveal-scale is-visible" : "wv-reveal-scale"}`} style={{ animationDelay: "200ms" }}>
 

@@ -3,7 +3,9 @@
 import React, { SVGProps, useState, useEffect } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import Link from "next/link";
-
+/* ------------------------------------------------------------------ */
+/*  This is App Mockup Section where the app's screenshot are shown here  */
+/* ------------------------------------------------------------------ */
 const C = {
   bg: "#FCF8F4",
   headingDark: "#2B2A28",
@@ -392,13 +394,14 @@ function DownloadAppFeature() {
               Download the Welvors app and start creating a love story that stands the test of time. Available free for iOS and Android.
             </p>
 
-            {/* App Store Buttons */}
+            {/* App's Download Links Buttons */}
             <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-4 ${textVisible ? "wv-reveal is-visible" : "wv-reveal"}`} style={{ animationDelay: "300ms" }}>
               <Link
                 href="https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
+                {/* Apple store link -> update when available */}
                 <Icon.Apple />
                 <div className="text-left">
                   <p className="text-[9px] leading-none opacity-80">Download on the</p>
@@ -410,6 +413,7 @@ function DownloadAppFeature() {
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
+                {/* Google Play store link */}
                 <Icon.PlayStore />
                 <div className="text-left">
                   <p className="text-[9px] leading-none opacity-80">Get it on</p>
@@ -420,31 +424,6 @@ function DownloadAppFeature() {
 
           </div>
         </div>
-
-        {/* Bottom trust strip */}
-        {/* <div
-          ref={stripRef}
-          className={`w-full my-10 border-y overflow-hidden ${stripVisible ? "wv-reveal is-visible" : "wv-reveal"}`}
-          style={{
-            backgroundColor: C.stripBg,
-            borderColor: "#6b655f17",
-          }}
-        >
-          <div className="wv-marquee py-4">
-            <div className="wv-marquee-track">
-              {[...STRIP, ...STRIP].map((item, i) => (
-                <span
-                  key={`${item.label}-${i}`}
-                  className="wv-marquee-item inline-flex items-center gap-2 text-[13.5px] font-semibold whitespace-nowrap"
-                  style={{ color: C.headingDark }}
-                >
-                  <span style={{ color: C.pink }}>{item.icon}</span>
-                  {item.label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div> */}
       </div>
     </section>
   );

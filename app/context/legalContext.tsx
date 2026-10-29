@@ -1,5 +1,5 @@
 "use client";
-
+// All the footer terms and condition APIs are implemented here
 import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";

@@ -1,5 +1,5 @@
 "use client";
-
+//THIS PAGE IS NOT USED ANYWHERE THIS IS DEPRITIATED 
 import { API_BASE_URL } from "@/utils/api";
 import React, { createContext, useContext, useEffect, useState } from "react";
 

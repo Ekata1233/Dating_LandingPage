@@ -4,6 +4,7 @@ import React from "react";
 import Screen from "@/app/app/shell/Screen";
 import { useRouter } from "next/navigation";
 import DatePlansStore from "@/app/app/desktop/DatePlansMain";
+// Date Plans Store to purchase the Date Plans -> razor pay api integrated
 
 export default function Page() {
     const router = useRouter()

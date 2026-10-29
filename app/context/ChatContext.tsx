@@ -1,4 +1,5 @@
 "use client";
+//Chat section API calls are implemented here
 import React, {
     createContext,
     useCallback,

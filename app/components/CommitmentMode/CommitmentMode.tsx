@@ -4,7 +4,9 @@ import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import { useRouter } from "next/navigation";
 import { getClientToken } from "@/utils/token";
-
+/* ------------------------------------------------------------------ */
+/*  This section shows about the Premium Feature of the app which is commitment mode  */
+/* ------------------------------------------------------------------ */
 const C = {
   bg: "#FCF8F4",
   headingDark: "#2B2A28",
@@ -136,7 +138,6 @@ function CommitmentMode() {
   const [bentoRef, bentoVisible] = useScrollReveal({ threshold: 0.05 });
   const [perksRef, perksVisible] = useScrollReveal({ threshold: 0.05 });
   const router = useRouter();
-
   const handleJoin = () => {
     if (getClientToken() === null) {
       /* logged out → open the navbar login modal */

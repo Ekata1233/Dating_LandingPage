@@ -241,6 +241,21 @@ career/intentions/lifestyle have no endpoints (all three have them), and its fil
 
 ## Session log (newest first)
 
+### 2026-10-28 — home feed: empty API lifestyle no longer shows Activity/Responds/Trust score
+- **Bug:** LIFESTYLE section on HomeMain/ProfileMain showed Activity / Responds / Trust score
+  even when `GET /api/user/feed/details/:id` returned `lifestyle: []`. Cause: those three rows
+  are not API data — `buildLifestyle()` (`app/app/shared/mapUser.ts:128–147`) synthesises them
+  from feed presence fields (`isOnline`/`lastSeen`/`replyTime`/`trust`), and `mergeUserDetails`
+  fell back to them whenever the details lifestyle array was empty
+  (`lifestyle: detailLifestyle.length ? detailLifestyle : base.lifestyle`).
+- **Fix (`app/app/shared/mapUser.ts:568`):** `lifestyle: detailLifestyle` — the details payload
+  is now authoritative once loaded; empty array → `lifestyle: []` → the existing `hasLifestyle`
+  gate in `ProfileDetailSections.tsx:62` hides the section. Photo-overlay trust/replyTime chips
+  (HomeMain.tsx:520–536) are separate and unaffected. `buildLifestyle` kept for the pre-details
+  base card (accepted brief flash of the section until details resolve).
+- Verified: `npx tsc --noEmit` 0; `npx eslint app/app/shared/mapUser.ts` 0. Build skipped
+  (not requested). No tests.
+
 ### 2026-10-28 — edit profile: mother tongue single-select + payload fix
 - **Bug:** mother tongue on `/app/profile/edit` never persisted. It was wired as the
   one `multi` of the edit-only basics end-to-end (`kind: "multi"`, hydration via

@@ -562,9 +562,10 @@ export function mergeUserDetails(base: Profile, details: UserFeedDetails): Profi
     communicationStyle: humanizeEnum(details.communicationStyle) || base.communicationStyle,
     loveLanguage: humanizeEnum(details.loveLanguage) || base.loveLanguage,
 
-    /* Detail-only sections, each falling back to whatever the feed had. */
+    /* Detail-only sections. Lifestyle trusts the details payload — an empty
+       array hides the section rather than falling back to presence facts. */
     career: detailCareer,
-    lifestyle: detailLifestyle.length ? detailLifestyle : base.lifestyle,
+    lifestyle: detailLifestyle,
     interests: detailInterests.length ? detailInterests : base.interests,
     prompts: (details.prompts ?? [])
       .filter((prompt) => firstNonEmpty(prompt?.answer))

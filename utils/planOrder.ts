@@ -1,5 +1,5 @@
 export const PLAN_ORDER = ["premium", "vip", "vip-elite"] as const;
-
+//this is to prevent the plan order change as per the data returns from the api
 /** "VIP Elite", "vip_elite", "vip-elite" and "elite" all land on "vip-elite". */
 const normalize = (slug?: string | null) => {
     const s = (slug ?? "").toLowerCase().trim().replace(/[\s_]+/g, "-");

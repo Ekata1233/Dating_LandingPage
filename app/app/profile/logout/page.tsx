@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-
+//log out the user
 import LogoutMain from "../../desktop/LogoutMain";
 import { useSectionBack } from "../../config/useSectionBack";
 import Screen from "../../shell/Screen";

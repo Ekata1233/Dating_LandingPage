@@ -11,7 +11,7 @@ import React, {
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
 import { authHeader, getClientToken } from "@/utils/token";
-
+//Accounts and setting context is for the Accounts and support section on profile sidebar
 /* ------------------------------------------------------------------ */
 /* API URLs                                                           */
 /* ------------------------------------------------------------------ */

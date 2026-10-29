@@ -1398,29 +1398,6 @@ export default function ChatMain({
 
     const menuItems: MenuItem[] = [
         {
-            key: "report",
-            title: "Report User",
-            subtitle: "Report inappropriate behavior or safety concerns",
-            icon: <FlagIcon />,
-            onClick: onReport,
-        },
-        {
-            key: "block",
-            title: `Block ${name}`,
-            subtitle: "Prevent them from contacting you",
-            icon: <BanIcon />,
-            danger: true,
-            onClick: onBlock,
-        },
-        {
-            key: "unmatch",
-            title: "Unmatch",
-            subtitle: "Removes the match and this chat",
-            icon: <BrokenHeartIcon />,
-            danger: true,
-            onClick: onUnmatch,
-        },
-        {
             key: "clear",
             title: "Clear Chat",
             subtitle: "Remove all messages from this chat",

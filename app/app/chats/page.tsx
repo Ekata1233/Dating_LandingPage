@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-
+//chat section route
 import ChatMain from "../desktop/ChatMain";
 import MobileChatSection from "../mobile/MobileChatSection";
 import Screen from "../shell/Screen";

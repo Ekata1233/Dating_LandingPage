@@ -4,6 +4,7 @@ import React from "react";
 import Screen from "@/app/app/shell/Screen";
 import { useRouter } from "next/navigation";
 import RosesStore from "@/app/app/desktop/RosesMain";
+// Rose Store to purchase the roses -> razor pay api integrated
 
 export default function Page() {
     const router = useRouter()

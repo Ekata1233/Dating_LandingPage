@@ -4,7 +4,9 @@ import React, { SVGProps } from "react";
 import { useScrollReveal } from "../useScrollReveal";
 import { useRouter } from "next/navigation";
 import { getClientToken } from "@/utils/token";
-
+/* ------------------------------------------------------------------ */
+/*  This is the shows about the Date Plan feature of the app  */
+/* ------------------------------------------------------------------ */
 const C = {
   bg: "#FBF7F3",
   headingDark: "#2B2A28",

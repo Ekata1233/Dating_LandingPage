@@ -1,4 +1,4 @@
-//Only for Ui
+//FRONTEND ONLY -> for steps and progress bar
 "use client";
 import { createContext, useCallback, useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";

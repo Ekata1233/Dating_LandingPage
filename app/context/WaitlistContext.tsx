@@ -1,6 +1,5 @@
-// app/waitlist/WaitlistContext.tsx
 "use client";
-
+// THIS IS NOT BEING USED ANYWHERE THIS HAS BEEN DEPRETIATED
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation"; // ⬅ NEW
 import { API_BASE_URL } from "@/utils/api";
