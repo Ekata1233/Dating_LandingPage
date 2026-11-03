@@ -16,12 +16,13 @@ import { StepShell } from "../StepShell";
 /*  turned into a field keyed by the question's own `key`, so this step does    */
 /*  not read the static schema.                                                 */
 /*                                                                            */
-/*  Every question is compulsory: Continue stays closed until each rendered      */
-/*  field holds a value, and the step then saves them (one request per           */
-/*  answered question). The gate lives here rather than in STEP_SCHEMAS because  */
-/*  the field names are the API's own keys — a static schema entry would         */
-/*  validate a key the step never writes and block the button with no visible    */
-/*  error. There is no Skip on this step, so Continue is the only way past.      */
+/*  The step is skippable and Continue is deliberately partial: it opens once    */
+/*  at least one rendered question holds a value, and then saves only the        */
+/*  answered ones (one request per answered question — an unanswered question    */
+/*  has nothing to post). Skip advances without saving anything. The gate lives   */
+/*  here rather than in STEP_SCHEMAS because the field names are the API's own   */
+/*  keys — a static schema entry would validate a key the step never writes and  */
+/*  block the button with no visible error.                                      */
 /* -------------------------------------------------------------------------- */
 
 export default function LifestyleStep() {
@@ -33,9 +34,11 @@ export default function LifestyleStep() {
 
   /* The questions come from the API, so `form.isComplete` (which counts schema
      fields) has nothing to count here — completeness is measured against the
-     questions actually rendered, and every one of them must be answered. */
+     questions actually rendered. Nothing is compulsory: Continue saves whatever
+     is answered, so it only needs at least one answer to be worth pressing. */
   const ready = !lifestyle.loading && fields.length > 0;
   const complete = ready && answered === fields.length;
+  const canContinue = ready && answered > 0;
 
   return (
     <StepShell
@@ -43,17 +46,18 @@ export default function LifestyleStep() {
       title="How do you live?"
       subtitle={
         !ready
-          ? "Every question here is required — answer them all to continue."
+          ? "Answer what you like — you can skip anything you'd rather not share."
           : complete
             ? `All ${fields.length} answered — Continue saves them.`
-            : `${answered} of ${fields.length} answered — answer every question to continue.`
+            : `${answered} of ${fields.length} answered — Continue saves what you've picked, or skip for now.`
       }
       footer={
         <StepFooter
           onSubmit={() => form.submit()}
           submitting={form.submitState === "submitting"}
           submitError={form.submitError}
-          isValid={complete}
+          isValid={canContinue}
+          skippable
           onSkip={() => form.skip()}
         />
       }

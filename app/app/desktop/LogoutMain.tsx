@@ -1,4 +1,5 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
+import Image from "next/image";
 import React, { useCallback } from "react";
 
 /* -------------------------------------------------------------------------- */
@@ -154,7 +155,7 @@ const ThinkingPerson = () => (
 /* -------------------------------- defaults --------------------------------- */
 const DEFAULT_ITEMS: SafeItem[] = [
     { title: "Matches & chats", description: "Every conversation stays exactly where it is", tone: "safe" },
-    { title: "Wallet & plan", description: "₹3,240 and your plan stay active", tone: "safe" },
+    { title: "Wallet & plan", description: "Wallet and your plan stay active", tone: "safe" },
     { title: "Bookings & plans", description: "Event tickets and date plans unaffected", tone: "safe" },
     { title: "Notifications pause", description: "You won't get match or message alerts", tone: "warning" },
 ];
@@ -276,9 +277,24 @@ export default function LogoutMain({
 
                             {/* illustration + copy */}
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                                <div style={{ width: U(23.6), height: U(31), display: "block" }}>
-                                    {illustration ?? <ThinkingPerson />}
+                                <div
+                                    style={{
+                                        position: "relative",   // required for <Image fill />
+                                        width: U(31),
+                                        height: U(31),          // matches the 1:1 ratio, so aspectRatio isn't needed
+                                        flexShrink: 0,          // stops the flex column from squeezing it
+                                    }}
+                                >
+                                    <Image
+                                        src="/logout.gif"
+                                        alt="Logout"
+                                        fill
+                                        unoptimized
+                                        priority
+                                        style={{ objectFit: "contain" }}
+                                    />
                                 </div>
+
                                 <h2
                                     style={{
                                         margin: `${U(3.9)} 0 0`,
@@ -290,6 +306,7 @@ export default function LogoutMain({
                                 >
                                     {heading}
                                 </h2>
+
                                 <p
                                     style={{
                                         margin: `${U(3.6)} 0 0`,

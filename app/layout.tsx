@@ -127,25 +127,24 @@ export default function RootLayout({
             <ScrollProgress />
 
             <main className="flex-1">
-              <UsersProvider>
-                <LegalProvider>
-                  <EventProvider>
-                    <ActiveSectionProvider>
-                      <ChatConversationsProvider>
-                        <AccountSettingsProvider >
-                          <UserProfileDataProvider >
-                          <PaymentProvider>
-                            {children}
-                            
-                            <Toaster position="bottom-right" richColors />
+              <ActiveSectionProvider>
+                <ChatConversationsProvider>
+                  <AccountSettingsProvider>
+                    <UserProfileDataProvider>
+                      <UsersProvider>
+                        <LegalProvider>
+                          <EventProvider>
+                            <PaymentProvider>
+                              {children}
+                              <Toaster position="bottom-right" richColors />
                             </PaymentProvider>
-                          </UserProfileDataProvider>
-                        </AccountSettingsProvider>
-                      </ChatConversationsProvider>
-                    </ActiveSectionProvider>
-                  </EventProvider>
-                </LegalProvider>
-              </UsersProvider>
+                          </EventProvider>
+                        </LegalProvider>
+                      </UsersProvider>
+                    </UserProfileDataProvider>
+                  </AccountSettingsProvider>
+                </ChatConversationsProvider>
+              </ActiveSectionProvider>
             </main>
 
             <ConditionalFooter />

@@ -1,8 +1,8 @@
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import { ReferralStats, useUserProfileData } from "@/app/context/UserProfileDataContext";
-import Link from "next/link";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import { toast } from "sonner";
+import { useId } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*  ReferAndEarn                                                              */
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 /*                                                                            */
 /*  Usage:                                                                    */
 /*    <div style={{ width: 390, height: 800 }}>                               */
-/*      <ReferAndEarn inviteCode="LY7A3Q6M" />                                */
+/*      <ReferAndEarn />                                                      */
 /*    </div>                                                                  */
 /*                                                                            */
 /*  Zero dependencies: no Tailwind, no icon library, no CSS files.            */
@@ -28,6 +28,9 @@ import { toast } from "sonner";
 
 /* ---------------------------------- types ---------------------------------- */
 export type ReferralTab = "joined" | "rewarded" | "pending";
+
+/** Absolute URL (or a path, in which case the current origin is prepended). */
+const REFER_EARN_ROUTE = "https://www.welvors.com/app/profile/refer-earn";
 
 export interface ReferralItem {
     id: string | number;
@@ -61,6 +64,7 @@ export interface ReferAndEarnProps {
     onBack?: () => void;
     showBack?: boolean;
     onCopy?: (code: string) => void;
+    /** Called after the share sheet opens or the link is copied as a fallback. */
     onInvite?: (code: string) => void;
     /** Return nothing; the input clears after calling */
     onApplyCode?: (code: string) => void;
@@ -98,6 +102,25 @@ const FONT =
     "'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 const SERIF = "'Playfair Display', 'Georgia', 'Times New Roman', serif";
 
+const formatDate = (date: Date | string) =>
+    new Date(date)
+        .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+        .replace(",", "");
+
+/** Which `status` values belong in each tab. A rewarded signup counts as both
+ *  "Joined" and "Rewarded"; a pending one only shows under "Pending". */
+const TAB_STATUSES: Record<ReferralTab, string[]> = {
+    joined: ["SIGNUP_REWARDED"],
+    rewarded: ["SIGNUP_REWARDED"],
+    pending: ["PENDING"],
+};
+
+const EMPTY_MESSAGES: Record<ReferralTab, string> = {
+    joined: "No friends have joined yet",
+    rewarded: "No rewards earned yet",
+    pending: "No pending referrals",
+};
+
 const svgBase: React.CSSProperties = { width: "1em", height: "1em", display: "block", flexShrink: 0 };
 const stroke = {
     fill: "none",
@@ -106,6 +129,51 @@ const stroke = {
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
 };
+
+/**
+ * Copies text to the clipboard. Uses the async Clipboard API when available
+ * (needs HTTPS + a user gesture) and falls back to a hidden textarea with
+ * `execCommand("copy")` for older browsers and in-app webviews.
+ */
+async function copyToClipboard(text: string): Promise<boolean> {
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch {
+        // fall through to the legacy path
+    }
+
+    try {
+        const el = document.createElement("textarea");
+        el.value = text;
+        el.setAttribute("readonly", "");
+        el.style.position = "fixed";
+        el.style.top = "0";
+        el.style.left = "0";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        el.setSelectionRange(0, text.length);
+        const ok = document.execCommand("copy");
+        document.body.removeChild(el);
+        return ok;
+    } catch {
+        return false;
+    }
+}
+
+/** Builds the invite link, e.g. https://www.welvors.com/app/profile/refer-earn?ref=ABC123 */
+function buildInviteUrl(code: string): string {
+    const base = /^https?:\/\//i.test(REFER_EARN_ROUTE)
+        ? REFER_EARN_ROUTE
+        : `${window.location.origin}${REFER_EARN_ROUTE}`;
+    const url = new URL(base);
+    url.searchParams.set("ref", code);
+    return url.toString();
+}
 
 /* ---------------------------------- icons ---------------------------------- */
 const BackIcon = () => (
@@ -161,49 +229,72 @@ const CheckIcon = () => (
 const STEP_ICONS = { share: ShareIcon, login: LoginIcon, diamond: DiamondIcon };
 
 /* ------------------------------ illustrations ------------------------------ */
-const GiftIllustration = () => (
-    <svg viewBox="0 0 315 290" style={{ width: "100%", height: "100%", display: "block" }} aria-hidden>
-        <defs>
-            <linearGradient id="ref-body" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ff5a86" />
-                <stop offset="1" stopColor="#ff8a6b" />
-            </linearGradient>
-        </defs>
-        {/* confetti */}
-        <g fill="none" strokeWidth="4" strokeLinecap="round">
-            <circle cx="235" cy="28" r="9" stroke="#3ec6e0" />
-            <circle cx="131" cy="76" r="9" stroke="#5b7cf6" />
-            <circle cx="228" cy="120" r="7" stroke="#ff8a4c" />
-            <circle cx="41" cy="212" r="6" stroke="#ff8a4c" />
-            <path d="M160 8v12" stroke="#ffd93b" />
-            <path d="M212 86l7-8" stroke="#3ec6e0" />
-            <path d="M78 108l9 8" stroke="#5b7cf6" />
-            <path d="M2 168l14-5" stroke="#3ec6e0" />
-            <path d="M270 128l14-6" stroke="#ff8a4c" />
-            <path d="M40 60c6-6 12 0 6 8" stroke="#5b7cf6" />
-            <path d="M255 165c8-8 16 2 24-4" stroke="#b06cf6" />
-            <path d="M62 170c6-8 14-4 22-8" stroke="#ff8a4c" />
-            <path d="M160 100c6-4 6 6 0 10" stroke="#ff8a4c" />
-            <rect x="277" y="188" width="10" height="10" rx="2" stroke="#5b7cf6" transform="rotate(45 282 193)" />
-            <rect x="180" y="60" width="16" height="16" rx="3" stroke="#b06cf6" transform="rotate(45 188 68)" />
-        </g>
-        <g fill="#ffb300">
-            <path d="M87 24l14 6-12 8z" />
-            <path d="M264 66l-10-2 4 10z" />
-            <path d="M20 108l12 3-8 8z" />
-        </g>
-        {/* box */}
-        <rect x="98" y="205" width="132" height="82" rx="10" fill="url(#ref-body)" />
-        <rect x="83" y="173" width="162" height="36" rx="10" fill="#ff3d7f" />
-        {/* ribbon */}
-        <rect x="155" y="175" width="15" height="110" fill="#ffe600" />
-        {/* bow */}
-        <g fill="none" stroke="#ffe600" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M162 172C132 176 100 168 108 148c8-20 44-12 54 22" />
-            <path d="M164 172c30 4 62-4 54-24-8-20-44-12-54 22" />
-        </g>
-    </svg>
-);
+const GiftIllustration = () => {
+    // useId returns values like ":r1:", which are invalid inside url(#...) on some browsers
+    const gradId = `gift-body-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+    return (
+        <svg
+            viewBox="0 0 315 290"
+            preserveAspectRatio="xMidYMid meet"
+            width="315"
+            height="290"
+            style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+                maxWidth: "100%",
+                overflow: "visible",
+            }}
+            aria-hidden
+            focusable="false"
+        >
+            <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#ff5a86" />
+                    <stop offset="1" stopColor="#ff8a6b" />
+                </linearGradient>
+            </defs>
+
+            {/* confetti */}
+            <g fill="none" strokeWidth="4" strokeLinecap="round">
+                <circle cx="235" cy="28" r="9" stroke="#3ec6e0" />
+                <circle cx="131" cy="76" r="9" stroke="#5b7cf6" />
+                <circle cx="228" cy="120" r="7" stroke="#ff8a4c" />
+                <circle cx="41" cy="212" r="6" stroke="#ff8a4c" />
+                <path d="M160 8v12" stroke="#ffd93b" />
+                <path d="M212 86l7-8" stroke="#3ec6e0" />
+                <path d="M78 108l9 8" stroke="#5b7cf6" />
+                <path d="M2 168l14-5" stroke="#3ec6e0" />
+                <path d="M270 128l14-6" stroke="#ff8a4c" />
+                <path d="M40 60c6-6 12 0 6 8" stroke="#5b7cf6" />
+                <path d="M255 165c8-8 16 2 24-4" stroke="#b06cf6" />
+                <path d="M62 170c6-8 14-4 22-8" stroke="#ff8a4c" />
+                <path d="M160 100c6-4 6 6 0 10" stroke="#ff8a4c" />
+                <rect x="277" y="188" width="10" height="10" rx="2" stroke="#5b7cf6" transform="rotate(45 282 193)" />
+                <rect x="180" y="60" width="16" height="16" rx="3" stroke="#b06cf6" transform="rotate(45 188 68)" />
+            </g>
+            <g fill="#ffb300">
+                <path d="M87 24l14 6-12 8z" />
+                <path d="M264 66l-10-2 4 10z" />
+                <path d="M20 108l12 3-8 8z" />
+            </g>
+
+            {/* box */}
+            <rect x="98" y="205" width="132" height="82" rx="10" fill={`url(#${gradId})`} />
+            <rect x="83" y="173" width="162" height="36" rx="10" fill="#ff3d7f" />
+
+            {/* ribbon */}
+            <rect x="155" y="175" width="15" height="110" fill="#ffe600" />
+
+            {/* bow */}
+            <g fill="none" stroke="#ffe600" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M162 172C132 176 100 168 108 148c8-20 44-12 54 22" />
+                <path d="M164 172c30 4 62-4 54-24-8-20-44-12-54 22" />
+            </g>
+        </svg>
+    );
+};
 
 const CoinIllustration = () => (
     <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", display: "block" }} aria-hidden>
@@ -234,21 +325,21 @@ const DEFAULT_STEPS: HowItWorksStep[] = [
         icon: "login",
         title: "Friend joins Welvors",
         description: "They sign up & log in using your code.",
-        reward: "+₹100",
+        reward: "+₹50",
         rewardNote: "to you",
     },
     {
         icon: "diamond",
         title: "They buy any plan",
         description: "Premium+, VIP or Elite — any package counts.",
-        reward: "+₹200",
+        reward: "+₹300",
         rewardNote: "to you",
     },
 ];
-
+//These are static values update it as per new UI of the app and the reward values must come from the backend
 const DEFAULT_RULES = [
-    "₹100 is credited once your friend joins (signs up & logs in) with your code.",
-    "₹500 is credited when that friend activates any paid package (Premium+, VIP or Elite).",
+    "₹50 is credited once your friend joins (signs up & logs in) with your code.",
+    "₹300 is credited when that friend activates any paid package (Premium+, VIP or Elite).",
     "Rewards land in your Welvors wallet and can be withdrawn to UPI / bank.",
     "Self-referrals or fake accounts are not eligible and may lead to a ban.",
 ];
@@ -281,9 +372,8 @@ export default function ReferAndEarn({
     const [tab, setTab] = React.useState<ReferralTab>("joined");
     const [friendCode, setFriendCode] = React.useState("");
     const [copied, setCopied] = React.useState(false);
-    const [valid, setValid] = React.useState(false);
     const { setActiveSection } = useActiveSection();
-    const { referralDashboard, referralHistory, applyReferral, validateReferral, validateReferralError, applyReferralError } = useUserProfileData()
+    const { referralDashboard, applyReferral, applyReferralError } = useUserProfileData();
     const inviteCode = referralDashboard?.referralCode ?? "";
     const totalEarned = referralDashboard?.stats.totalEarned ?? 0;
     const stats = referralDashboard?.stats ?? {
@@ -291,42 +381,90 @@ export default function ReferAndEarn({
         joined: 0,
         rewarded: 0,
         pending: 0,
-    }; const handleCLick = useCallback(
-        () => () => setActiveSection("profile"),
+    };
+    const goToProfile = useCallback(
+        () => setActiveSection("profile"),
         [setActiveSection]
     );
     const canApply = friendCode.trim().length > 0;
 
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard?.writeText(inviteCode);
-        } catch {
-            /* clipboard may be unavailable; still notify parent */
+    /* Filter the history by status for the active tab, and derive each tab's
+       badge count from the same data so the badge always matches the list. */
+    const history = referralDashboard?.history ?? [];
+    const filteredHistory = history.filter((r) => TAB_STATUSES[tab].includes(String(r.status)));
+    const counts: Record<ReferralTab, number> = referralDashboard?.history
+        ? {
+            joined: history.filter((r) => TAB_STATUSES.joined.includes(String(r.status))).length,
+            rewarded: history.filter((r) => TAB_STATUSES.rewarded.includes(String(r.status))).length,
+            pending: history.filter((r) => TAB_STATUSES.pending.includes(String(r.status))).length,
         }
+        : { joined: stats.joined, rewarded: stats.rewarded, pending: stats.pending };
+
+    /* Opens the native share sheet when the browser supports it; otherwise (or
+       if sharing fails) copies the message + link to the clipboard. */
+    const handleShare = async () => {
+        if (!inviteCode) {
+            toast.error("Your referral code isn't ready yet. Please try again in a moment.");
+            return;
+        }
+
+        const url = buildInviteUrl(inviteCode);
+        const text = `Join me on Welvors! Use my referral code ${inviteCode} to sign up and earn rewards. Let's get rewarded together!`;
+        const shareData: ShareData = { title: "Refer & Earn on Welvors", text, url };
+
+        const canNativeShare =
+            typeof navigator !== "undefined" &&
+            typeof navigator.share === "function" &&
+            (typeof navigator.canShare !== "function" || navigator.canShare(shareData));
+
+        if (canNativeShare) {
+            try {
+                await navigator.share(shareData);
+                onInvite?.(inviteCode);
+                return;
+            } catch (error) {
+                // The user closed the share sheet: do nothing.
+                if (error instanceof Error && error.name === "AbortError") return;
+                // Any other failure: fall back to copying below.
+            }
+        }
+
+        const ok = await copyToClipboard(`${text}\n${url}`);
+        if (ok) {
+            toast.success("Referral link copied! Paste it in any chat to share.");
+            onInvite?.(inviteCode);
+        } else {
+            toast.error("Unable to share or copy the referral link.");
+        }
+    };
+
+    const handleCopy = async () => {
+        if (!inviteCode) return;
+
+        const ok = await copyToClipboard(inviteCode);
+        if (!ok) {
+            toast.error("Unable to copy referral code.");
+            return;
+        }
+
         onCopy?.(inviteCode);
         setCopied(true);
-        window.setTimeout(() => setCopied(false), 1600);
+        window.setTimeout(() => {
+            setCopied(false);
+        }, 1600);
     };
 
-    const handleValidate = async () => {
-        // onApplyCode?.(friendCode.trim());
-        // const response = await validateReferral({referralCode : referralDashboard?.referralCode || ""});
-        // setFriendCode("");
-    };
-    // useEffect(() => {
-    //     handleValidate()
-    // }, [])
     const handleApply = async () => {
         if (!canApply) return;
-        const response = await applyReferral({ referralCode: friendCode.trim() });
+        const code = friendCode.trim();
+        const response = await applyReferral({ referralCode: code });
 
         if (response?.success) {
-            toast.success(response.message)
+            toast.success(response.message);
+            onApplyCode?.(code);
+        } else {
+            toast.error(response?.message || applyReferralError || "Could't Apply Referral Code");
         }
-        else {
-            toast.error(applyReferralError || "Referral already applied.")
-        }
-        console.log("response", response);
         setFriendCode("");
     };
 
@@ -402,7 +540,7 @@ export default function ReferAndEarn({
                                         type="button"
                                         className="lc-btn cursor-pointer"
                                         aria-label="Go back"
-                                        onClick={onBack ?? handleCLick()}
+                                        onClick={onBack ?? goToProfile}
                                         style={{
                                             position: "absolute",
                                             left: U(-1.9),
@@ -445,11 +583,11 @@ export default function ReferAndEarn({
                                 <div
                                     style={{
                                         position: "absolute",
-                                        top: "12%",
+                                        // top: "12%",
                                         left: "50%",
                                         transform: "translateX(-50%)",
                                         width: U(31),
-                                        height: U(28.5),
+                                        // aspectRatio: "315 / 290",
                                     }}
                                 >
                                     <GiftIllustration />
@@ -557,11 +695,11 @@ export default function ReferAndEarn({
                                                             style={{
                                                                 padding: `${U(1.9)} ${U(4)}`,
                                                                 borderRadius: U(4),
-                                                                background: "linear-gradient(135deg, #fbb03b, #f28c12)",
+                                                                background: "linear-gradient(135deg, #34d399, #059669)",
                                                                 color: C.white,
                                                                 fontSize: U(3.4),
                                                                 fontWeight: 600,
-                                                                boxShadow: `0 ${U(0.8)} ${U(2)} rgba(242,140,18,.3)`,
+                                                                boxShadow: `0 ${U(0.8)} ${U(2)} rgba(52, 211, 153, 0.3)`,
                                                                 whiteSpace: "nowrap",
                                                             }}
                                                         >
@@ -647,33 +785,31 @@ export default function ReferAndEarn({
                             </section>
 
                             {/* invite button */}
-                            <Link href={referralDashboard?.shareLink ?? "#"} target="_blank" rel="noopener noreferrer" style={{ width: "100%" }}>
-                                <button
-                                    type="button"
-                                    className="wre-btn"
-                                    // onClick={() => onInvite?.(inviteCode)}
-                                    style={{
-                                        marginTop: U(6.2),
-                                        width: "100%",
-                                        height: U(13.9),
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        gap: U(2.8),
-                                        borderRadius: U(4.6),
-                                        background: "linear-gradient(90deg, #e63a6b, #e03a68)",
-                                        color: C.white,
-                                        fontSize: U(4),
-                                        fontWeight: 500,
-                                        boxShadow: `0 ${U(1.2)} ${U(3.4)} rgba(226,58,106,.35)`,
-                                    }}
-                                >
-                                    <span style={{ fontSize: U(4.2), display: "flex" }}>
-                                        <ShareIcon />
-                                    </span>
-                                    Invite friends &amp; earn
-                                </button>
-                            </Link>
+                            <button
+                                type="button"
+                                className="wre-btn"
+                                onClick={handleShare}
+                                style={{
+                                    marginTop: U(6.2),
+                                    width: "100%",
+                                    height: U(13.9),
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: U(2.8),
+                                    borderRadius: U(4.6),
+                                    background: "linear-gradient(90deg, #e63a6b, #e03a68)",
+                                    color: C.white,
+                                    fontSize: U(4),
+                                    fontWeight: 500,
+                                    boxShadow: `0 ${U(1.2)} ${U(3.4)} rgba(226,58,106,.35)`,
+                                }}
+                            >
+                                <span style={{ fontSize: U(4.2), display: "flex" }}>
+                                    <ShareIcon />
+                                </span>
+                                Invite friends &amp; earn
+                            </button>
 
                             {/* friend's code header */}
                             <div style={{ display: "flex", alignItems: "center", gap: U(3.4), marginTop: U(8) }}>
@@ -801,7 +937,6 @@ export default function ReferAndEarn({
                             <h2 style={{ margin: `${U(9)} 0 ${U(3.4)}`, fontSize: U(3.5), fontWeight: 700 }}>Your referrals</h2>
 
                             {/* tabs */}
-                            {/* tabs */}
                             <div
                                 role="tablist"
                                 style={{
@@ -813,7 +948,7 @@ export default function ReferAndEarn({
                                 {TABS.map(({ key, label }) => {
                                     const active = tab === key;
 
-                                    const count = stats[key] ?? 0;
+                                    const count = counts[key] ?? 0;
 
                                     return (
                                         <button
@@ -869,12 +1004,13 @@ export default function ReferAndEarn({
 
                             {/* list / empty state */}
                             <section
+                                role="tabpanel"
                                 style={{
                                     marginTop: U(4.3),
                                     minHeight: U(25.6),
                                     display: "flex",
                                     flexDirection: "column",
-                                    justifyContent: referralDashboard?.history.length ? "flex-start" : "center",
+                                    justifyContent: filteredHistory.length ? "flex-start" : "center",
                                     background: C.white,
                                     border: `${HAIR} solid ${C.border}`,
                                     borderRadius: U(5),
@@ -882,14 +1018,14 @@ export default function ReferAndEarn({
                                     overflow: "hidden",
                                 }}
                             >
-                                {referralDashboard?.history.length === 0 ? (
+                                {!filteredHistory.length ? (
                                     <p style={{ margin: 0, textAlign: "center", fontSize: U(3.4), color: "#a9a9a9" }}>
-                                        No referrals yet
+                                        {EMPTY_MESSAGES[tab]}
                                     </p>
                                 ) : (
-                                    referralDashboard?.history.map((r, i) => (
+                                    filteredHistory.map((r, i) => (
                                         <div
-                                            key={i}
+                                            key={r.id}
                                             style={{
                                                 display: "flex",
                                                 alignItems: "center",
@@ -898,38 +1034,53 @@ export default function ReferAndEarn({
                                                 borderTop: i === 0 ? "none" : `${HAIR} solid ${C.border}`,
                                             }}
                                         >
-                                            <span
-                                                style={{
-                                                    width: U(9),
-                                                    height: U(9),
-                                                    borderRadius: "50%",
-                                                    flexShrink: 0,
-                                                    background: C.pinkSoft,
-                                                    color: C.pinkText,
-                                                    fontSize: U(3.4),
-                                                    fontWeight: 600,
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                }}
-                                            >
-                                                {/* {r?.name.slice(0, 1).toUpperCase()} */}
-                                            </span>
-                                            {/* <div style={{ flex: 1, minWidth: 0 }}>
+                                            {r.profileImage ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={r.profileImage}
+                                                    alt={r.name ?? "Profile"}
+                                                    style={{
+                                                        width: U(10),
+                                                        height: U(10),
+                                                        borderRadius: "50%",
+                                                        objectFit: "cover",
+                                                        flexShrink: 0,
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span
+                                                    style={{
+                                                        width: U(10),
+                                                        height: U(10),
+                                                        borderRadius: "50%",
+                                                        flexShrink: 0,
+                                                        background: C.pinkSoft,
+                                                        color: C.pinkText,
+                                                        fontSize: U(3.6),
+                                                        fontWeight: 600,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    {(r.name ?? "?").slice(0, 1).toUpperCase()}
+                                                </span>
+                                            )}
+                                            <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div className="wre-ellipsis" style={{ fontSize: U(3.4), fontWeight: 500 }}>
                                                     {r?.name}
                                                 </div>
-                                                {r.subtitle && (
+                                                {r.joinedAt && (
                                                     <div className="wre-ellipsis" style={{ fontSize: U(2.7), color: C.grey }}>
-                                                        {r.subtitle}
+                                                        Joined {formatDate(r.joinedAt)}
                                                     </div>
                                                 )}
-                                            </div> */}
-                                            {/* {r.amount && (
-                                                <span style={{ fontSize: U(3.4), fontWeight: 600, color: "#e08a10", whiteSpace: "nowrap" }}>
-                                                    {r.amount}
+                                            </div>
+                                            {r.signupReward ? (
+                                                <span style={{ fontSize: U(3.4), fontWeight: 600, color: "#22C55E", whiteSpace: "nowrap" }}>
+                                                    +{r.signupReward}
                                                 </span>
-                                            )} */}
+                                            ) : null}
                                         </div>
                                     ))
                                 )}

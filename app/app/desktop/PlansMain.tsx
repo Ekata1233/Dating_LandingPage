@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import React from "react";
 
 import Screen from "@/app/app/shell/Screen";
+import { sortPlansByTier } from "@/utils/planOrder";
 
 /* -------------------------------------------------------------------------- */
 /*  MembershipPlanDetails                                                     */
@@ -295,7 +296,11 @@ export function MembershipPlanDetails({
     const router = useRouter();
     const { id } = useParams<{ id: string }>();
     const { plan, loading, error, refetch } = usePlanDetail(id);
-    const { plans } = useAccountSettings();
+    const { plans: rawPlans } = useAccountSettings();
+
+    /* Tabs are always ordered Premium → VIP → VIP Elite, whatever order the
+       API returns them in. */
+    const plans = React.useMemo(() => sortPlansByTier(rawPlans ?? []), [rawPlans]);
 
     /* Colors follow plan.slug. While loading there is no slug yet, so the first
        paint uses the premium pink. */
@@ -435,7 +440,8 @@ export function MembershipPlanDetails({
                                     </h1>
                                 </header>
 
-                                {/* Plan tabs — one per plan from GET /package/get/cards */}
+                                {/* Plan tabs — one per plan from GET /package/get/cards,
+                                    always ordered Premium → VIP → VIP Elite */}
                                 {plans.length > 1 && (
                                     <div
                                         role="tablist"
@@ -525,29 +531,29 @@ export function MembershipPlanDetails({
                                     This plan isn&rsquo;t available right now.
                                 </p>
                             ) : (
-                                <div style={{ padding: `${U(1)} ${U(PAD)} ${U(8)}`, boxSizing: "border-box" }}>
+                                <div style={{ padding: `${U(0.8)} ${U(PAD)} ${U(6.4)}`, boxSizing: "border-box" }}>
                                     {/* ------------------------------ hero ------------------------------ */}
                                     <section
                                         style={{
-                                            padding: `${U(5)} ${U(5)} ${U(5)}`,
-                                            borderRadius: U(6),
+                                            padding: `${U(4)} ${U(4)} ${U(4)}`,
+                                            borderRadius: U(4.8),
                                             background: THEME.gradient,
                                             color: BASE.white,
-                                            boxShadow: `0 ${U(2.4)} ${U(5.4)} ${THEME.shadow}`,
+                                            boxShadow: `0 ${U(1.9)} ${U(4.3)} ${THEME.shadow}`,
                                         }}
                                     >
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: U(2) }}>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: U(1.6) }}>
                                             <span
                                                 style={{
                                                     display: "inline-flex",
                                                     alignItems: "center",
-                                                    gap: U(1.6),
-                                                    padding: `${U(1.9)} ${U(3.6)}`,
-                                                    borderRadius: U(6),
+                                                    gap: U(1.3),
+                                                    padding: `${U(1.5)} ${U(2.9)}`,
+                                                    borderRadius: U(4.8),
                                                     border: `${U(0.3)} solid ${THEME.heroPillBorder}`,
                                                     background: "rgba(255,255,255,.1)",
                                                     color: THEME.heroPillColor,
-                                                    fontSize: U(3.1),
+                                                    fontSize: U(2.5),
                                                     fontWeight: 600,
                                                     letterSpacing: "0.04em",
                                                     textTransform: "uppercase",
@@ -561,9 +567,9 @@ export function MembershipPlanDetails({
 
                                         <h2
                                             style={{
-                                                margin: `${U(5)} 0 0`,
+                                                margin: `${U(4)} 0 0`,
                                                 fontFamily: SERIF,
-                                                fontSize: U(8.4),
+                                                fontSize: U(6.7),
                                                 fontWeight: 700,
                                                 lineHeight: 1.1,
                                                 letterSpacing: "0.01em",
@@ -572,16 +578,16 @@ export function MembershipPlanDetails({
                                             {plan.name.replaceAll("_", " ")}
                                         </h2>
 
-                                        <p style={{ margin: `${U(2.4)} 0 0`, fontSize: U(3.5), lineHeight: 1.45, opacity: 0.92 }}>
+                                        <p style={{ margin: `${U(1.9)} 0 0`, fontSize: U(2.8), lineHeight: 1.45, opacity: 0.92 }}>
                                             {plan.tagline}
                                         </p>
 
                                         {selected && (
-                                            <div style={{ display: "flex", alignItems: "baseline", gap: U(2.4), marginTop: U(4.6) }}>
+                                            <div style={{ display: "flex", alignItems: "baseline", gap: U(1.9), marginTop: U(3.7) }}>
                                                 <span
                                                     style={{
                                                         fontFamily: SERIF,
-                                                        fontSize: U(8.4),
+                                                        fontSize: U(6.7),
                                                         fontWeight: 700,
                                                         lineHeight: 1,
                                                         color: THEME.heroPrice,
@@ -589,20 +595,20 @@ export function MembershipPlanDetails({
                                                 >
                                                     {money(selected.price)}
                                                 </span>
-                                                <span style={{ fontSize: U(3.8), opacity: 0.8 }}>
+                                                <span style={{ fontSize: U(3), opacity: 0.8 }}>
                                                     {termLabel(selected.months)}
                                                 </span>
                                             </div>
                                         )}
 
                                         {selected && selected.discountPercent > 0 && (
-                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: U(3), marginTop: U(3.8) }}>
+                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: U(2.4), marginTop: U(3) }}>
                                                 <span
                                                     style={{
-                                                        padding: `${U(1.3)} ${U(3.4)}`,
-                                                        borderRadius: U(3),
+                                                        padding: `${U(1)} ${U(2.7)}`,
+                                                        borderRadius: U(2.4),
                                                         background: "rgba(255,255,255,.22)",
-                                                        fontSize: U(2.9),
+                                                        fontSize: U(2.3),
                                                         fontWeight: 700,
                                                         letterSpacing: "0.05em",
                                                     }}
@@ -623,11 +629,11 @@ export function MembershipPlanDetails({
                                             style={{
                                                 position: "relative",
                                                 display: "flex",
-                                                gap: U(3.3),
-                                                marginTop: U(3.6),
+                                                gap: U(2.6),
+                                                marginTop: U(2.9),
                                                 marginLeft: U(-PAD),
                                                 marginRight: U(-PAD),
-                                                padding: `${U(3.6)} ${U(PAD)} ${U(1.6)}`,
+                                                padding: `${U(2.9)} ${U(PAD)} ${U(1.3)}`,
                                                 overflowX: "auto",
                                                 scrollSnapType: "x proximity",
                                             }}
@@ -644,11 +650,11 @@ export function MembershipPlanDetails({
                                                         onClick={() => selectPrice(p)}
                                                         style={{
                                                             position: "relative",
-                                                            flex: `0 0 ${U(46.7)}`,
+                                                            flex: `0 0 ${U(37.4)}`,
                                                             boxSizing: "border-box",
                                                             textAlign: "left",
-                                                            padding: `${U(5)} ${U(5)} ${U(4.6)}`,
-                                                            borderRadius: U(5),
+                                                            padding: `${U(4)} ${U(4)} ${U(3.7)}`,
+                                                            borderRadius: U(4),
                                                             background: BASE.white,
                                                             border: `${U(isSelected ? 0.7 : 0.45)} solid ${isSelected ? THEME.accent : "#e8e2d8"}`,
                                                             scrollSnapAlign: "start",
@@ -659,14 +665,14 @@ export function MembershipPlanDetails({
                                                             <span
                                                                 style={{
                                                                     position: "absolute",
-                                                                    top: U(-3.2),
+                                                                    top: U(-2.6),
                                                                     left: "50%",
                                                                     transform: "translateX(-50%)",
-                                                                    padding: `${U(1.2)} ${U(3.4)}`,
-                                                                    borderRadius: U(4),
+                                                                    padding: `${U(1)} ${U(2.7)}`,
+                                                                    borderRadius: U(3.2),
                                                                     background: THEME.accent,
                                                                     color: BASE.white,
-                                                                    fontSize: U(2.9),
+                                                                    fontSize: U(2.3),
                                                                     fontWeight: 700,
                                                                     letterSpacing: "0.05em",
                                                                     whiteSpace: "nowrap",
@@ -679,7 +685,7 @@ export function MembershipPlanDetails({
                                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                                                             <span
                                                                 style={{
-                                                                    fontSize: U(3.3),
+                                                                    fontSize: U(2.6),
                                                                     fontWeight: 700,
                                                                     letterSpacing: "0.06em",
                                                                     color: isSelected ? BASE.ink : BASE.grey,
@@ -690,14 +696,14 @@ export function MembershipPlanDetails({
                                                             <span
                                                                 aria-hidden
                                                                 style={{
-                                                                    width: U(7.4),
-                                                                    height: U(7.4),
+                                                                    width: U(5.9),
+                                                                    height: U(5.9),
                                                                     borderRadius: "50%",
                                                                     boxSizing: "border-box",
                                                                     border: isSelected ? "none" : `${U(0.6)} solid #d9d3c8`,
                                                                     background: isSelected ? THEME.accent : "transparent",
                                                                     color: BASE.white,
-                                                                    fontSize: U(3.8),
+                                                                    fontSize: U(3),
                                                                     display: "flex",
                                                                     alignItems: "center",
                                                                     justifyContent: "center",
@@ -710,22 +716,22 @@ export function MembershipPlanDetails({
 
                                                         <div
                                                             style={{
-                                                                marginTop: U(3.4),
+                                                                marginTop: U(2.7),
                                                                 fontFamily: SERIF,
-                                                                fontSize: U(9),
+                                                                fontSize: U(7.2),
                                                                 fontWeight: 700,
                                                                 lineHeight: 1.05,
                                                             }}
                                                         >
                                                             {money(p.price)}
                                                         </div>
-                                                        <div style={{ marginTop: U(1.4), fontSize: U(3.3), color: BASE.grey }}>
+                                                        <div style={{ marginTop: U(1.1), fontSize: U(2.6), color: BASE.grey }}>
                                                             {money(perMonthOf(p))}/mo
                                                         </div>
                                                     </button>
                                                 );
                                             })}
-                                            <span aria-hidden style={{ flex: `0 0 ${U(1.2)}` }} />
+                                            <span aria-hidden style={{ flex: `0 0 ${U(1)}` }} />
                                         </div>
                                     )}
 
@@ -734,8 +740,8 @@ export function MembershipPlanDetails({
                                         <>
                                             <h3
                                                 style={{
-                                                    margin: `${U(5.4)} 0 ${U(3.4)}`,
-                                                    fontSize: U(3.1),
+                                                    margin: `${U(4.3)} 0 ${U(2.7)}`,
+                                                    fontSize: U(2.5),
                                                     fontWeight: 700,
                                                     letterSpacing: "0.12em",
                                                     color: BASE.ink,
@@ -747,10 +753,10 @@ export function MembershipPlanDetails({
                                                 className="plan-hide-scroll"
                                                 style={{
                                                     display: "flex",
-                                                    gap: U(3.3),
+                                                    gap: U(2.6),
                                                     marginLeft: U(-PAD),
                                                     marginRight: U(-PAD),
-                                                    padding: `${U(1)} ${U(PAD)} ${U(2)}`,
+                                                    padding: `${U(0.8)} ${U(PAD)} ${U(1.6)}`,
                                                     overflowX: "auto",
                                                 }}
                                             >
@@ -758,29 +764,29 @@ export function MembershipPlanDetails({
                                                     <div
                                                         key={l.id}
                                                         style={{
-                                                            flex: `0 0 ${U(21.3)}`,
-                                                            minHeight: U(25.2),
+                                                            flex: `0 0 ${U(17)}`,
+                                                            minHeight: U(20.2),
                                                             boxSizing: "border-box",
-                                                            padding: `${U(3.4)} ${U(1.6)}`,
+                                                            padding: `${U(2.7)} ${U(1.3)}`,
                                                             display: "flex",
                                                             flexDirection: "column",
                                                             alignItems: "center",
                                                             justifyContent: "center",
-                                                            gap: U(1.6),
+                                                            gap: U(1.3),
                                                             textAlign: "center",
-                                                            borderRadius: U(4.4),
+                                                            borderRadius: U(3.5),
                                                             background: BASE.white,
                                                             border: `${HAIR} solid ${THEME.softBorder}`,
-                                                            boxShadow: `0 ${U(0.6)} ${U(2.4)} rgba(0,0,0,.04)`,
+                                                            boxShadow: `0 ${U(0.5)} ${U(1.9)} rgba(0,0,0,.04)`,
                                                         }}
                                                     >
-                                                        <span style={{ fontSize: U(5), lineHeight: 1 }}>
+                                                        <span style={{ fontSize: U(4), lineHeight: 1 }}>
                                                             {STAT_ICONS[l.feature.code] ?? "✨"}
                                                         </span>
                                                         <span
                                                             style={{
                                                                 fontFamily: SERIF,
-                                                                fontSize: U(4.2),
+                                                                fontSize: U(3.4),
                                                                 fontWeight: 700,
                                                                 lineHeight: 1,
                                                                 color: THEME.accentText,
@@ -788,7 +794,7 @@ export function MembershipPlanDetails({
                                                         >
                                                             {statValue(l)}
                                                         </span>
-                                                        <span style={{ fontSize: U(2.7), lineHeight: 1.3, color: BASE.grey }}>
+                                                        <span style={{ fontSize: U(2.2), lineHeight: 1.3, color: BASE.grey }}>
                                                             {statLabel(l)} / {resetPeriod(l)}
                                                         </span>
                                                     </div>
@@ -799,30 +805,30 @@ export function MembershipPlanDetails({
 
                                     {/* ------------------------ feature groups ------------------------ */}
                                     {groups.length > 0 && (
-                                        <div style={{ display: "flex", flexDirection: "column", gap: U(4.6), marginTop: U(4) }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: U(3.7), marginTop: U(3.2) }}>
                                             {groups.map((g) => (
                                                 <section
                                                     key={g.category}
                                                     style={{
-                                                        padding: `${U(5.4)} ${U(5.6)} ${U(5)}`,
-                                                        borderRadius: U(5.2),
+                                                        padding: `${U(4.3)} ${U(4.5)} ${U(4)}`,
+                                                        borderRadius: U(4.2),
                                                         background: BASE.white,
                                                         border: `${U(0.4)} solid ${THEME.softBorder}`,
-                                                        boxShadow: `0 ${U(0.8)} ${U(3)} rgba(0,0,0,.04)`,
+                                                        boxShadow: `0 ${U(0.6)} ${U(2.4)} rgba(0,0,0,.04)`,
                                                     }}
                                                 >
-                                                    <div style={{ display: "flex", alignItems: "center", gap: U(4) }}>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: U(3.2) }}>
                                                         <span
                                                             aria-hidden
                                                             style={{
-                                                                width: U(9),
-                                                                height: U(9),
-                                                                borderRadius: U(2.6),
+                                                                width: U(7.2),
+                                                                height: U(7.2),
+                                                                borderRadius: U(2.1),
                                                                 background: THEME.soft,
                                                                 display: "flex",
                                                                 alignItems: "center",
                                                                 justifyContent: "center",
-                                                                fontSize: U(4.6),
+                                                                fontSize: U(3.7),
                                                                 flexShrink: 0,
                                                             }}
                                                         >
@@ -831,7 +837,7 @@ export function MembershipPlanDetails({
                                                         <h4
                                                             style={{
                                                                 margin: 0,
-                                                                fontSize: U(3),
+                                                                fontSize: U(2.4),
                                                                 fontWeight: 700,
                                                                 letterSpacing: "0.14em",
                                                                 textTransform: "uppercase",
@@ -845,27 +851,27 @@ export function MembershipPlanDetails({
                                                     <ul
                                                         style={{
                                                             listStyle: "none",
-                                                            margin: `${U(4.2)} 0 0`,
+                                                            margin: `${U(3.4)} 0 0`,
                                                             padding: 0,
                                                             display: "flex",
                                                             flexDirection: "column",
-                                                            gap: U(3),
+                                                            gap: U(2.4),
                                                         }}
                                                     >
                                                         {g.features.map((l) => {
                                                             const description = featureDescription(l);
                                                             return (
-                                                                <li key={l.id} style={{ display: "flex", alignItems: "flex-start", gap: U(3.6) }}>
+                                                                <li key={l.id} style={{ display: "flex", alignItems: "flex-start", gap: U(2.9) }}>
                                                                     <span
                                                                         aria-hidden
                                                                         style={{
-                                                                            width: U(5.6),
-                                                                            height: U(5.6),
-                                                                            marginTop: U(0.4),
+                                                                            width: U(4.5),
+                                                                            height: U(4.5),
+                                                                            marginTop: U(0.3),
                                                                             borderRadius: "50%",
                                                                             background: THEME.soft,
                                                                             color: THEME.check,
-                                                                            fontSize: U(2.8),
+                                                                            fontSize: U(2.2),
                                                                             display: "flex",
                                                                             alignItems: "center",
                                                                             justifyContent: "center",
@@ -875,11 +881,11 @@ export function MembershipPlanDetails({
                                                                         <CheckIcon />
                                                                     </span>
                                                                     <div style={{ minWidth: 0 }}>
-                                                                        <div style={{ fontSize: U(3.7), fontWeight: 700, lineHeight: 1.3 }}>
+                                                                        <div style={{ fontSize: U(3), fontWeight: 700, lineHeight: 1.3 }}>
                                                                             {l.feature.title}
                                                                         </div>
                                                                         {description && (
-                                                                            <div style={{ marginTop: U(0.6), fontSize: U(3.1), lineHeight: 1.45, color: BASE.grey }}>
+                                                                            <div style={{ marginTop: U(0.5), fontSize: U(2.5), lineHeight: 1.45, color: BASE.grey }}>
                                                                                 {description}
                                                                             </div>
                                                                         )}
@@ -893,6 +899,7 @@ export function MembershipPlanDetails({
                                         </div>
                                     )}
                                 </div>
+
                             )}
                         </div>
 

@@ -25,6 +25,7 @@ export interface MobileAdmirerSectionProps {
 function MobileAdmirerSection({
     onBoost,
     className = "",
+    fluid = false,
 }: MobileAdmirerSectionProps) {
     const { selectedId, selectAdmirer } = useAdmirersTab();
 
@@ -41,7 +42,7 @@ function MobileAdmirerSection({
                         <path d="M15 18l-6-6 6-6" />
                     </svg>
                 </button>
-                <AdmirersMain onBoost={onBoost} />
+                <AdmirersMain fluid={fluid} onBoost={onBoost} />
             </div>
         );
     }

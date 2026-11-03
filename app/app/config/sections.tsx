@@ -105,7 +105,7 @@ export type NavItem = NavIconItem | NavAvatarItem;
  */
 export const NAV_ITEMS: NavItem[] = [
   { kind: "avatar", section: "profile", label: "You" },
-  { kind: "icon", section: "home", label: "Home", icon: <House size={18} /> },
+  { kind: "icon", section: "home", label: "Home", icon: <House size={20} /> },
   {
     kind: "icon",
     section: "date-now",
@@ -122,7 +122,7 @@ export const NAV_ITEMS: NavItem[] = [
     kind: "icon",
     section: "chat",
     label: "Chats",
-    icon: <MessageSquare size={18} />,
+    icon: <MessageSquare size={20} />,
   },
   {
     kind: "icon",

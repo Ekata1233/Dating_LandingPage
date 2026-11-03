@@ -1,4 +1,4 @@
-// Saare On Boarding steps ka save endpoint
+// Saare On Boarding aur Edit Profile steps ka save endpoint
 "use client";
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
@@ -89,12 +89,12 @@ export interface BasicInfoRequest {
 }
 /* The profile editor's extras, PATCHed to `EDIT_BASIC_INFO_URL` — shown while
    editing, never during onboarding. The three option-list fields go back as
-   the API's own ids (mother tongue as a list, since that field is multi); the
-   static three as their enum values. `null` means "cleared". */
+   the API's own ids (mother tongue as a single id — the endpoint takes one);
+   the static three as their enum values. `null` means "cleared". */
 export interface EditBasicInfoRequest {
     religionId: number | null;
     communityId: number | null;
-    motherTongueId: number[] | null;
+    motherTongueId: number | null;
     zodiac: string | null;
     loveLanguage: string | null;
     communicationStyle: string | null;
@@ -327,32 +327,31 @@ export function ProfileProvider({
             const response = await axios.patch(BASIC_INFO_URL, data, {
                 headers: authHeader(),
             });
-            console.log("Sending Data : ",data)
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
-            console.log("Response : ",response)
-            setBasicInfoError(
-                response.data?.message ||
-                "Couldn't update basic information."
-            );
 
-            return null;
+            /* The message goes back with the failure, the way `createPhotos`
+               already does: `saveStep` shows `res.message` on the step's footer,
+               and a `null` here would leave it with nothing but the generic
+               fallback — the real reason for the rejection (visible in the
+               browser's network tab) would never reach the screen. */
+            const message =
+                response.data?.message ||
+                "Couldn't update basic information.";
+            setBasicInfoError(message);
+
+            return { success: false, message };
         } catch (err) {
             console.error("Update Basic Info Error:", err);
 
-            if (axios.isAxiosError(err)) {
-                setBasicInfoError(
-                    err.response?.data?.message ||
-                    "Something went wrong while updating basic information."
-                );
-            } else {
-                setBasicInfoError(
-                    "Something went wrong while updating basic information."
-                );
-            }
+            const message = axios.isAxiosError(err)
+                ? err.response?.data?.message ||
+                "Something went wrong while updating basic information."
+                : "Something went wrong while updating basic information.";
+            setBasicInfoError(message);
 
-            return null;
+            return { success: false, message };
         } finally {
             setBasicInfoLoading(false);
         }
@@ -363,14 +362,12 @@ export function ProfileProvider({
         try {
             setBasicInfoLoading(true);
             setBasicInfoError(null);
-            const response = await axios.patch(EDIT_BASIC_INFO_URL, data, {
+            const response = await axios.patch(EDIT_BASIC_INFO_URL, removeNullValues(data), {
                 headers: authHeader(),
             });
-            console.log("Sending Data : ",data)
             if (response.data?.success) {
                 return response.data as ProfileResponse;
             }
-            console.log("Response : ",response)
             setBasicInfoError(
                 response.data?.message ||
                 "Couldn't update basic information."
@@ -525,6 +522,12 @@ export function ProfileProvider({
     /* ---------------------------------------------------------------- */
     /* UPDATE CAREER / EDUCATION + WORK                                */
     /* ---------------------------------------------------------------- */
+    //Helper function for career and work
+    const removeNullValues = (obj:CareerRequest | EditBasicInfoRequest) => {
+        return Object.fromEntries(
+            Object.entries(obj).filter(([key, value]) => value !== null)
+        );
+    };
     const updateCareer = async (
         data: CareerRequest
     ): Promise<ProfileResponse | null> => {
@@ -532,11 +535,9 @@ export function ProfileProvider({
             setCareerLoading(true);
             setCareerError(null);
 
-            console.log("Sending Data", data)
-            const response = await axios.patch(CAREER_URL, data, {
+            const response = await axios.patch(CAREER_URL, removeNullValues(data), {
                 headers: authHeader(),
             });
-            console.log("Response", response)
 
             if (response.data?.success) {
                 return response.data as ProfileResponse;

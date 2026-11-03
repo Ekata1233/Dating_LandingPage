@@ -100,21 +100,17 @@ export function toBasicInfoRequest(data: StepData): BasicInfoRequest {
 /**
  * The edit-only extras, PATCHed to `/api/user/edit-profile/basic-info`.
  *
- * Mother tongue is multi, so the stored list is mapped id-by-id — calling
- * `Number()` on the array itself would collapse it to `NaN`. Blank or
- * unparseable ids go as `null` rather than `0`/`NaN`, which is how the
- * endpoint reads "cleared" (`text()` does the same for the enum strings).
+ * Mother tongue is a single select — the endpoint takes one id
+ * (`motherTongueId: number | null`), so the stored pick is parsed once.
+ * Blank or unparseable ids go as `null` rather than `0`/`NaN`, which is how
+ * the endpoint reads "cleared" (`text()` does the same for the enum strings).
  * A caste only travels with the religion that gives it meaning.
  */
 export function toEditBasicInfoRequest(data: StepData): EditBasicInfoRequest {
-  const tongues = (Array.isArray(data.motherTongue) ? data.motherTongue : [data.motherTongue])
-    .map((value) => Number.parseInt(str(value), 10))
-    .filter((value) => Number.isInteger(value) && value > 0);
-
   return {
     religionId: id(data.religion),
     communityId: id(data.religion) ? id(data.caste) : null,
-    motherTongueId: tongues.length > 0 ? tongues : null,
+    motherTongueId: id(data.motherTongue),
     zodiac: text(data.zodiac),
     loveLanguage: text(data.loveLanguage),
     communicationStyle: text(data.communicationStyle),
@@ -387,6 +383,28 @@ export function stepDataFromDetails(
 
   if (flows.STORY?.bio) {
     seed.bio = { bio: flows.STORY.bio };
+  }
+
+  if (Array.isArray(flows.PROMPT)) {
+    const answers = flows.PROMPT.map((entry) => {
+      const record = (entry ?? {}) as Record<string, unknown>;
+      const promptObj =
+        record.prompt && typeof record.prompt === "object"
+          ? (record.prompt as Record<string, unknown>)
+          : null;
+
+      return {
+        promptId: str(record.promptId || record.id || promptObj?.id).trim(),
+        question: str(
+          record.question || record.promptQuestion || promptObj?.question
+        ).trim(),
+        answer: str(record.answer || record.response).trim().slice(0, 200),
+      };
+    }).filter((prompt) => Boolean(prompt.promptId && prompt.answer));
+
+    if (answers.length > 0) {
+      seed.prompts = { answers };
+    }
   }
 
   if (location?.city) {

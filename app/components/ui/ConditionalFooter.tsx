@@ -1,5 +1,5 @@
 "use client";
-
+// This is to prevent showing of navbar on app/* routes
 import { usePathname } from "next/navigation";
 import Footer from "@/app/components/Footer/Footer";
 import { APP_ROOT } from "@/app/app/config/sections";

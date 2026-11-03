@@ -35,13 +35,14 @@ const css = `
 .onb-card {
   /*
    * One design unit = the smaller of 1% of the card width and 1% of its
-   * height (the card is square), scaled to the design's reference. It is
-   * clamped so the step content stays readable on a small phone and never
-   * balloons on a large screen. Everything in the card is expressed in this
-   * unit, so the chrome and the step content scale together — exactly like
-   * the fluid cards in the member app.
+   * height, taken straight off the card — which itself tracks the viewport
+   * (see --onb-card-side below). Like the /app shell there is no fixed-px
+   * ceiling: on a bigger screen the card grows and the content scales with
+   * it. The floor only keeps the step content readable on small phones.
+   * Everything in the card is expressed in this unit, so the chrome and
+   * the step content scale together.
    */
-  --onb-u: clamp(0.5px, calc(min(1cqw, 1cqh) * 0.12), 0.72px);
+  --onb-u: max(0.5px, calc(min(1cqw, 1cqh) * 0.12));
 
   /*
    * Re-point Tailwind's design tokens at that unit so every utility the steps
@@ -70,11 +71,13 @@ const css = `
   --onb-track: #F8DCE7;
 
   /*
-   * The card is a square: one side follows the viewport (capped so it never
-   * gets silly on tall displays, and never wider than the screen it is
-   * centred in) and width and height are locked to it.
+   * The card is a square sized straight off the screen, exactly like the
+   * /app cards (h-full + aspect ratio + max-w-full): its side is the
+   * smaller of the viewport width and the viewport height (minus page
+   * padding), with no fixed-px cap — so it fills a small phone and grows
+   * with a large desktop instead of freezing at a design-size maximum.
    */
-  --onb-card-side: min(92vw, 100dvh - 3rem, 600px);
+  --onb-card-side: min(92vw, 100dvh - 3rem);
   width: var(--onb-card-side);
   height: var(--onb-card-side);
 
@@ -317,7 +320,7 @@ const css = `
   }
 
   .onb-card {
-    --onb-card-side: min(96vw, 100dvh - 1.5rem, 600px);
+    --onb-card-side: min(96vw, 100dvh - 1.5rem);
   }
 }
 `;

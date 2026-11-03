@@ -4,7 +4,7 @@ import { ROSE_IMAGE } from "../shared/mockData";
 import { Loader, Notice } from "../shared/Loader";
 import { mapUsersToProfiles, mergeUserDetails } from "../shared/mapUser";
 import type { Profile, SwipeHandlers } from "../shared/types";
-import { useUserDetails, useUsersData } from "@/app/context/UsersContext";
+import { SwipeAction, useUserDetails, useUsersData } from "@/app/context/UsersContext";
 import ProfileDetailSections, { Section } from "./ProfileDetailSections";
 import {
   Astroid,
@@ -12,6 +12,7 @@ import {
   Calendar,
   Church,
   Heart,
+  Flame,
   Languages,
   LucideIcon,
   MapPin,
@@ -20,9 +21,37 @@ import {
   Users,
 } from "lucide-react";
 import ComplimentingModal, { GiftOption } from "@/app/components/ui/ComplimentingModal";
+import { useProfileData } from "@/app/context/OnBoardingApiContext";
 
 /** Horizontal drag distance (px) that commits a like / nope. */
 const SWIPE_THRESHOLD = 88;
+
+/** Remaining cards at which the deck tops itself up from the feed. */
+const FEED_TOP_UP_REMAINING = 5;
+
+/** Top-right package badge, keyed by the API `package.name`. */
+const PACKAGE_BADGES: Record<string, { icon: string; label: string; ring: string }> = {
+  PREMIUM: { icon: "🔥", label: "PREMIUM", ring: "border-orange-300/40" },
+  VIP: { icon: "👑", label: "VIP", ring: "border-amber-300/40" },
+  "VIP_ELITE": { icon: "💠", label: "VIP_ELITE", ring: "border-sky-300/40" },
+};
+
+const packageBadge = (name?: string | null) =>
+  PACKAGE_BADGES[(name ?? "").toUpperCase().trim().replace(/[\s_]+/g, " ")] ?? null;
+/** Flip around its own horizontal axis, then rest briefly before the next turn. */
+const FIRE_BADGE_CSS = `
+@keyframes fireFlipX {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,120,0,0)); }
+  50%      { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(255,120,0,.75)); }
+}
+.fire-badge-flip { animation: fireFlipX 1.8s ease-in-out infinite; }
+`;
+// const FIRE_BADGE_CSS = `@keyframes fireFlipY {
+//   0%   { transform: perspective(240px) rotateY(0deg); }
+//   60%  { transform: perspective(240px) rotateY(360deg); }
+//   100% { transform: perspective(240px) rotateY(360deg); }
+// }
+// .fire-badge-coin { animation: fireFlipY 3s ease-in-out infinite; }`
 
 /**
  * How long a card has to stay on screen before its deep profile is requested.
@@ -93,7 +122,7 @@ function HomeMain({
   const [roseOpen, setRoseOpen] = useState(false);
   const [swipeDir, setSwipeDir] = useState<SwipeDir | null>(null);
   const [drag, setDrag] = useState({ x: 0, y: 0, active: false });
-  const { users, loading, error, status, refetch } = useUsersData();
+  const { users, loading, error, status, refetch, hasMore, loadMore,swipe } = useUsersData();
 
   const swipeTimer = useRef<number | null>(null);
   function sendCompliment(text: string, gift: GiftOption) {
@@ -115,15 +144,28 @@ function HomeMain({
     [profilesProp, users]
   );
 
-  /* A new deck (first load, or a refetch) has to rewind the index. */
+  /* A new deck (first load, or a refetch) has to rewind the index — but an
+     appended feed page must not: the member stays on the card they're on. */
   const deckKey = profiles.map((p) => p.id).join("|");
   const [lastDeck, setLastDeck] = useState(deckKey);
   if (lastDeck !== deckKey) {
+    const prevIds = lastDeck ? lastDeck.split("|") : [];
+    const appended =
+      profiles.length > prevIds.length &&
+      prevIds.every((id, i) => profiles[i]?.id === id);
     setLastDeck(deckKey);
-    setCurrent(0);
+    if (!appended) setCurrent(0);
   }
 
   const profile: Profile | undefined = profiles[current];
+
+  /* Pagination: ask for the next page before the member runs out of cards. */
+  useEffect(() => {
+    const remaining = profiles.length - current;
+    if (profilesProp || status !== "success" || !hasMore) return;
+    if (remaining > FEED_TOP_UP_REMAINING) return;
+    void loadMore();
+  }, [profilesProp, profiles, current, status, hasMore, loadMore]);
 
   /* ------------------------------------------------------------------ */
   /*  Deep profile                                                      */
@@ -162,7 +204,6 @@ function HomeMain({
     () => (profile && details ? mergeUserDetails(profile, details) : profile),
     [profile, details]
   );
-
   /* (2) Scrolling into the card body is the clearest "open profile" signal. */
   const handleCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (e.currentTarget.scrollTop > DETAILS_SCROLL_TRIGGER_PX) requestDetails();
@@ -192,7 +233,11 @@ function HomeMain({
          from wherever the drag left it (an active drag pins an inline
          transform with transitions disabled). */
       setDrag((d) => ({ ...d, active: false }));
-      onSwipe?.(profile.id, dir);
+      //Handling the Like or Pass
+      if(dir==="left") {
+        swipe(profile.id,"PASS")
+      }
+      else if(dir==="right") {swipe(profile.id,"LIKE")}
       swipeTimer.current = window.setTimeout(resetCard, dir === "up" ? 480 : 380);
     },
     [swipeDir, profile, onSwipe, resetCard]
@@ -381,10 +426,11 @@ function HomeMain({
       {/* Card container – fills remaining height */}
       {roseOpen && (
         <ComplimentingModal
+          id={profiles[current].id}
           name={profiles[current].name}
           avatarUrl={profiles[current].image}
           onClose={() => setRoseOpen(false)}
-        // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
+          // onSend={(text:string, gift:GiftOption) => sendCompliment(text,gift)}
         />
       )}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
@@ -428,12 +474,39 @@ function HomeMain({
                 draggable={false}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-
+              {/* Plan badge — lives on the first photo, so it scrolls away
+                  with it instead of hovering over the card. */}
+              <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                <style>{FIRE_BADGE_CSS}</style>
+                {(() => {
+                  const pkg = enriched?.package;
+                  const badge = packageBadge(pkg?.name);
+                  const isFree = !pkg || (pkg.name ?? "").toUpperCase() === "FREE";
+                  if (isFree) {
+                    return (
+                      <div className="fire-badge-flip  h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg hidden">
+                        {/* <Flame className="h-5 w-5 text-orange-400" fill="currentColor" /> */}
+                      </div>
+                    );
+                  }
+                  if (!badge) return null;
+                  return (
+                    <div
+                      title={badge.label}
+                      className={`fire-badge-flip flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur-md border shadow-lg ${badge.ring}`}
+                    >
+                      <span className="text-[20px] leading-none" aria-label={badge.label}>
+                        {badge.icon}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
               {/* Info overlay – bottom */}
               <div className="absolute bottom-16 left-0 right-0 p-5 z-10">
                 {/* Live presence / boost chips */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  {isOnline && (
+                  {/* {isOnline && (
                     <span className="flex items-center gap-1.5 rounded-full bg-green-500/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                       <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       Online
@@ -443,7 +516,7 @@ function HomeMain({
                     <span className="rounded-full bg-[#a78bfa]/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                       Boosted
                     </span>
-                  )}
+                  )} */}
                   {typeof enriched.trust === "number" && (
                     <span className="rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[8px] font-bold uppercase tracking-wide text-white flex items-center gap-1">
                       <span className="bg-blue-400 rounded-full w-[5px] h-[5px]" />
@@ -555,10 +628,10 @@ function HomeMain({
               <span
                 aria-hidden
                 className={`text-[128px] leading-none drop-shadow-2xl ${swipeDir === "right"
-                    ? "swipe-emoji-like"
-                    : swipeDir === "left"
-                      ? "swipe-emoji-nope"
-                      : "swipe-emoji-rose"
+                  ? "swipe-emoji-like"
+                  : swipeDir === "left"
+                    ? "swipe-emoji-nope"
+                    : "swipe-emoji-rose"
                   }`}
               >
                 {swipeDir === "right" ? "\u2764\uFE0F" : swipeDir === "left" ? "\u274C" : "\u{1F339}"}

@@ -26,6 +26,9 @@ import { useAdmirersTab } from "@/app/context/AdmirersTabContext";
 /*  Received likes add the deck controls (`Reject` / `Accept`) and, while the  */
 /*  list is locked behind a package, hide the profile behind a blur with the   */
 /*  coin unlock. When the active tab has nobody, the Boost nudge takes over.   */
+/*                                                                            */
+/*  Every read from the API response is null-safe: `data` may be undefined,    */
+/*  null or not an array, and individual rows may be missing `user`.           */
 /* -------------------------------------------------------------------------- */
 
 export interface AdmirersMainProps {
@@ -39,25 +42,35 @@ export interface AdmirersMainProps {
     onReject?: (admirer: Admirer) => void;
     /** Coins charged by the unlock button on a locked profile. */
     revealCost?: number;
+    /** Fill the wrapper's height/width instead of a 100vh frame (mobile slot). */
+    fluid?: boolean;
 }
+
+/** A row is only usable if it has a user with an id. */
+const hasUser = (a: Admirer | null | undefined): a is Admirer =>
+    !!a && !!a.user && !!a.user.id;
 
 /**
  * A received/sent admirer only carries a handful of fields. Widen it into the
  * `Profile` the card renders; the details endpoint fills the rest in.
+ * Every field is read with a fallback so a partial row never throws.
  */
 function admirerToProfile(admirer: Admirer): Profile {
-    const image = admirer.user.profileImage || FALLBACK_AVATAR;
-    const distance = formatDistance(admirer.user.distanceKm);
+    const user = admirer.user;
+    const profileImage = user?.profileImage ?? "";
+    const image = profileImage || FALLBACK_AVATAR;
+    const distance = formatDistance(user?.distanceKm) ?? "";
 
     return {
-        id: admirer.user.id,
-        name: admirer.user.name,
-        age: admirer.user.age,
+        id: user?.id ?? "",
+        name: user?.name ?? "",
+        age: user?.age ?? 0,
         image,
-        gallery: admirer.user.profileImage ? [admirer.user.profileImage] : [],
+        gallery: profileImage ? [profileImage] : [],
         distance,
         birth_date: "",
         height: "",
+        package: { id: "", name: "FREE", startDate: null, endDate: null },
         location: "",
         lookingFor: "",
         religion: "",
@@ -71,7 +84,7 @@ function admirerToProfile(admirer: Admirer): Profile {
         prompts: [],
         family: [],
         networking: [],
-        matchScore: admirer.user.matchScore,
+        matchScore: user?.matchScore ?? 0,
     };
 }
 
@@ -81,6 +94,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     onAccept,
     onReject,
     revealCost = 50,
+    fluid = false,
 }) => {
     const { tab, selectedId, selectAdmirer } = useAdmirersTab();
 
@@ -101,12 +115,22 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const error = isReceived ? admirersReceivedError : admirersSentError;
     const refetch = isReceived ? refetchAdmirersReceived : refetchAdmirersSent;
 
-    const data = response?.data ?? [];
+    /* `data` can be undefined/null/non-array while loading or on error, and
+       rows without a user are dropped so nothing below has to re-check. */
+    const rawData = response?.data;
+    const data = useMemo<Admirer[]>(
+        () => (Array.isArray(rawData) ? rawData.filter(hasUser) : []),
+        [rawData]
+    );
+
     /* The admirer picked in the rail, else the first one in the tab. */
-    const target =
-        (selectedId ? data.find((a) => a.user.id === selectedId) : undefined) ??
-        data[0] ??
-        null;
+    const target = useMemo<Admirer | null>(() => {
+        if (data.length === 0) return null;
+        const picked = selectedId
+            ? data.find((a) => a.user.id === selectedId)
+            : undefined;
+        return picked ?? data[0] ?? null;
+    }, [data, selectedId]);
 
     const profile = useMemo(() => (target ? admirerToProfile(target) : null), [target]);
 
@@ -115,8 +139,8 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const [unlockedIds, setUnlockedIds] = useState<string[]>([]);
     const locked =
         isReceived &&
-        !!admirersReceived?.isLocked &&
-        !admirersReceived?.isPackageActive &&
+        !!response?.isLocked &&
+        !response?.isPackageActive &&
         !!profile &&
         !unlockedIds.includes(profile.id);
 
@@ -124,8 +148,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
     const goNext = () => {
         if (!target || data.length < 2) return;
         const index = data.findIndex((a) => a.user.id === target.user.id);
+        if (index === -1) return;
         const next = data[(index + 1) % data.length];
-        if (next) selectAdmirer(next.user.id);
+        if (next?.user?.id) selectAdmirer?.(next.user.id);
     };
 
     const handleAccept = () => {
@@ -142,9 +167,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (profile && locked) {
         return (
-            <div className="relative flex-1 flex flex-col h-screen overflow-hidden">
+            <div className="relative flex-1 flex flex-col h-full overflow-hidden">
                 <div className="flex-1 min-h-0 blur-2xl scale-105 pointer-events-none select-none">
-                    <ProfileMain profile={profile} />
+                    <ProfileMain profile={profile} fluid={fluid} />
                 </div>
 
                 {/* Lock / coin unlock, over the blurred profile */}
@@ -174,9 +199,9 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (profile) {
         return (
-            <div className="relative flex-1 flex flex-col h-screen overflow-hidden">
+            <div className="relative flex-1 flex flex-col h-full overflow-hidden">
                 <div className="flex-1 min-h-0">
-                    <ProfileMain profile={profile} />
+                    <ProfileMain profile={profile} fluid={fluid} />
                 </div>
 
                 {/* Received likes get deck controls, bottom-centre, drawn from
@@ -213,7 +238,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (loading) {
         return (
-            <main className="flex-1 flex flex-col relative h-screen">
+            <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
                 <Loader label="Loading admirers…" hint="Just a moment." />
             </main>
         );
@@ -221,7 +246,7 @@ const AdmirersMain: React.FC<AdmirersMainProps> = ({
 
     if (error) {
         return (
-            <main className="flex-1 flex flex-col relative h-screen">
+            <main className={`flex-1 flex flex-col relative ${fluid ? "h-full w-full" : "h-screen"}`}>
                 <Notice
                     title="Couldn't load admirers"
                     detail={error}

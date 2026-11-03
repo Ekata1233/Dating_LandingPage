@@ -1,5 +1,5 @@
 "use client";
-
+//FRONTEND ONLY - this is a frontend context which is used to manage which section is currently active this helps managing the sidebar and main section content rendering
 import {
   createContext,
   useCallback,

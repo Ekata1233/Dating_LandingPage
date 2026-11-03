@@ -4,7 +4,7 @@ import React from "react";
 import Screen from "@/app/app/shell/Screen";
 import { useRouter } from "next/navigation";
 import ComplimentsStore from "@/app/app/desktop/ComplimentsMain";
-
+// Complement Store to purchase the complements -> razor pay api integrated
 export default function Page() {
     const router = useRouter()
     const onBack = ()=>{

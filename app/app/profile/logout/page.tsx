@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-
+//log out the user
 import LogoutMain from "../../desktop/LogoutMain";
 import { useSectionBack } from "../../config/useSectionBack";
 import Screen from "../../shell/Screen";
@@ -15,6 +15,7 @@ export default function Page() {
   const router = useRouter()
   const handleLogout = async () => {
     await deleteSession();
+    sessionStorage.clear();
     router.push("/");
   };
   return (

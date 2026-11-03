@@ -4,7 +4,7 @@ import React from "react";
 import Screen from "@/app/app/shell/Screen";
 import { useRouter } from "next/navigation";
 import { MembershipPlanDetails } from "@/app/app/desktop/PlansMain";
-
+// Membership plans tabs
 export default function Page() {
     const router = useRouter()
     const onBack = ()=>{

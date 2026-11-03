@@ -58,6 +58,7 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
 
   const lookingFor = profile.lookingFor;
   const hasCareer = profile.career.length > 0;
+  const hasBigDream = profile.career.find((c) => c.label === "bigDreams");
   const hasLifestyle = profile.lifestyle.length > 0;
   const hasInterests = profile.interests.length > 0;
   const hasFamily = profile.family.length > 0;
@@ -181,11 +182,14 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
 
             ))}
           </div>
-          <div className="w-full h-[1px] mt-5 flex justify-evenly items-center">
-            <div className="w-[7rem] bg-[#8D6944] h-full"></div>
-            <Astroid size={10} color="#8D6944" fill="#8D6944" />
-            <div className="w-[7rem] bg-[#8D6944] h-full"></div>
-          </div>
+          {profile.career.some(
+            (fact) => fact.label === "Big dreams" && fact.value != null
+          ) && <div className="w-full h-[1px] mt-5 flex justify-evenly items-center">
+              <div className="w-[7rem] bg-[#8D6944] h-full"></div>
+              <Astroid size={10} color="#8D6944" fill="#8D6944" />
+              <div className="w-[7rem] bg-[#8D6944] h-full"></div>
+            </div>}
+
           {profile.career.filter((fact) => fact.label === "Big dreams").map((fact, index) => (<span key={index} className="w-full flex flex-col justify-center pt-3 text-[12px] items-center text-black"><span>BIG DREAM</span><span className="text-[#5F5A55]">{fact.value}</span></span>))}
         </Section >
       )}
@@ -239,8 +243,8 @@ const ProfileDetailSections: React.FC<ProfileDetailSectionsProps> = ({
                   className="px-3 py-1 rounded-full border  text-[12px] text-purple-800 bg-purple-100"
                 >
                   <div className="flex justify-center items-center gap-1">
-                    <CircleStar size={15} color="#8200db" fill="#FFFFFF"/>
-                  {fact.value}
+                    <CircleStar size={15} color="#8200db" fill="#FFFFFF" />
+                    {fact.value}
                   </div>
                 </span>
               ))}

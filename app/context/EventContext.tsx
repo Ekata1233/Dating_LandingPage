@@ -1,5 +1,5 @@
 "use client";
-
+//Event section related APIs are implemented here
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";

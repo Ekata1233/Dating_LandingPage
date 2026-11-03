@@ -201,6 +201,8 @@ export function mapUserToProfile(user: UserProfile): Profile {
     height: formatHeight(user.height),
     location,
     birth_date:user.birth_date,
+    /* The feed ships the member's plan; the card badge reads `package.name`. */
+    package: user.package ?? { id: "", name: "FREE", startDate: null, endDate: null },
     /* Not sent by the API yet. */
     lookingFor: "",
     religion: "",
@@ -548,6 +550,9 @@ export function mergeUserDetails(base: Profile, details: UserFeedDetails): Profi
     trust: details.trust ?? base.trust,
     replyTime: firstNonEmpty(details.replyTime) || base.replyTime,
 
+    /* The feed's own profile row carries the plan; onboarding does not. */
+    package: details.package?.name ? details.package : base.package,
+
     /* Chips. */
     gender: humanizeEnum(details.gender) || base.gender,
     community: firstNonEmpty(details.community) || base.community,
@@ -557,9 +562,10 @@ export function mergeUserDetails(base: Profile, details: UserFeedDetails): Profi
     communicationStyle: humanizeEnum(details.communicationStyle) || base.communicationStyle,
     loveLanguage: humanizeEnum(details.loveLanguage) || base.loveLanguage,
 
-    /* Detail-only sections, each falling back to whatever the feed had. */
+    /* Detail-only sections. Lifestyle trusts the details payload — an empty
+       array hides the section rather than falling back to presence facts. */
     career: detailCareer,
-    lifestyle: detailLifestyle.length ? detailLifestyle : base.lifestyle,
+    lifestyle: detailLifestyle,
     interests: detailInterests.length ? detailInterests : base.interests,
     prompts: (details.prompts ?? [])
       .filter((prompt) => firstNonEmpty(prompt?.answer))

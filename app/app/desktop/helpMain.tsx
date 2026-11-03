@@ -1,6 +1,7 @@
 import { Faq } from "@/app/context/AccountSettingsContext";
 import { useActiveSection } from "@/app/context/ActiveSectionContext";
 import React, { useCallback } from "react";
+import { toast } from "sonner";
 
 /* -------------------------------------------------------------------------- */
 /*  HelpSupport                                                               */
@@ -169,12 +170,14 @@ export default function HelpSupport({
     const [openIds, setOpenIds] = React.useState<string[]>(defaultOpenIds);
     const { setActiveSection } = useActiveSection();
     const contacts: ContactOption[] = [
+        //Chat option yet to be implemented 
         {
             id: "chat",
             icon: "chat",
             title: "Live Chat",
             description: "Chat with our support team",
             status: { text: "Online · ~2 min", tone: "success" },
+            onClick(){ toast.message("Comming Soon!") }
         },
         {
             id: "email",

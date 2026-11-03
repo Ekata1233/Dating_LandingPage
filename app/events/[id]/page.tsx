@@ -362,15 +362,15 @@ export default function EventDetailsPage() {
     if (!details || !price) return;
 
     if (!loggedIn || !getClientToken()) {
-      toast.error("Book karne ke liye pehle login karo.");
+      toast.error("Please log in to book this event..");
       return;
     }
     if (!myBucket) {
-      toast.error("Profile mein gender missing hai. Pehle profile complete karo.");
+      toast.error("Your gender is missing from your profile. Please complete your profile to continue.");
       return;
     }
     if (price.amount == null || price.amount <= 0) {
-      toast.error("Is event ke liye online payment available nahi hai.");
+      toast.error("Online payment is not available for this event.");
       return;
     }
     const left =
@@ -379,7 +379,7 @@ export default function EventDetailsPage() {
         ? details.bookingStats.totalCapacity - details.bookingStats.bookedCount
         : null);
     if (left != null && left <= 0) {
-      toast.error("Event full ho chuka hai.");
+      toast.error("Sorry, this event is fully booked.");
       return;
     }
 
@@ -417,7 +417,7 @@ export default function EventDetailsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center" style={{ background: C.bg }}>
-        <MoonLoader color={C.pink} speedMultiplier={2} />
+        <MoonLoader color={C.pink} speedMultiplier={2} size={20} />
       </div>
     );
   }
@@ -555,48 +555,12 @@ export default function EventDetailsPage() {
             <ArrowRight size={18} className="rotate-180" />
           </button>
 
-          <div className="flex items-center gap-2 hidden">
-            <button
-              type="button"
-              onClick={() => setSaved((v) => !v)}
-              aria-label="Save event"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white/90 shadow-md backdrop-blur transition hover:scale-105"
-              style={{ color: saved ? C.pink : C.ink }}
-            >
-              <Heart size={18} fill={saved ? C.pink : "none"} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setModal("share")}
-              aria-label="Share event"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-0 bg-white/90 shadow-md backdrop-blur transition hover:scale-105"
-              style={{ color: C.ink }}
-            >
-              <Share2 size={18} />
-            </button>
+          <div className="flex items-center gap-2">
+
           </div>
         </div>
 
         {/* hero badges */}
-        <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-[1100px] flex-wrap items-center gap-2 px-4 pb-5 sm:px-6">
-          {details.eventTag && (
-            <span
-              className="rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white"
-              style={{ background: C.pink }}
-            >
-              {details.eventTag}
-            </span>
-          )}
-          {fillingFast && (
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold"
-              style={{ background: C.amberBg, color: C.amber }}
-            >
-              <Flame size={13} />
-              {fillingFastText}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* --------------------------- CONTENT --------------------------- */}
@@ -615,11 +579,31 @@ export default function EventDetailsPage() {
               {intent}
             </span>
           )}
+          <div className="flex flex-wrap items-center gap-2 pb-2">
+            {details.eventTag && (
+              <span
+                className="rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-white"
+                style={{ background: C.pink }}
+              >
+                {details.eventTag}
+              </span>
+            )}
+            {/* {fillingFast && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold"
+              style={{ background: C.amberBg, color: C.amber }}
+            >
+              <Flame size={13} />
+              {fillingFastText}
+            </span>
+          )} */}
+          </div>
           <h1
             className="text-[26px] font-bold leading-tight sm:text-[38px]"
             style={{ fontFamily: "var(--font-brand-serif), Georgia, serif", color: C.ink }}
           >
             {details.title}
+
           </h1>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
@@ -1167,14 +1151,14 @@ export default function EventDetailsPage() {
           style={{ background: `linear-gradient(135deg, ${C.ctaFrom}, ${C.ctaTo})` }}
         >
           <Ticket size={16} />
-          Register
+          Book Now
         </button>
       </div>
 
       {/* -------------------------- LIGHTBOX -------------------------- */}
       {lightbox !== null && gallery[lightbox] && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 backdrop-blur-xs z-[1000] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightbox(null)}
         >
           <button

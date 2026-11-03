@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+
+import { useUserDetails } from "@/app/context/UsersContext";
 
 import HomeSidebar from "../panels/HomeSidebar";
 import ProfileSidebar from "../panels/ProfileSidebar";
@@ -61,6 +63,15 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
   const error = errorProp ?? live.error;
   const retry = onRetry ?? live.refetch;
 
+  /* Plan tier only comes from the per-user details endpoint. */
+  const { details: ownDetails, ensure: ensureOwnDetails } = useUserDetails(profile?.id);
+
+  useEffect(() => {
+    ensureOwnDetails();
+  }, [ensureOwnDetails]);
+
+  const pkg = ownDetails?.package?.name ?? profile?.package.name;
+
   if (loading) {
     return <Loader label="Loading your profile…" hint="Just a moment." />;
   }
@@ -93,9 +104,9 @@ const MobileProfileSection: React.FC<MobileProfileSectionProps> = ({
         avatarUrl={live.summary?.avatarUrl ?? profile.image}
         name={profile.name}
         age={profile.age}
+        pkg={profile.package.name}
         verified={live.summary?.verified ?? false}
         location={profile.location}
-        isPlatinumMember={live.summary?.isPlatinumMember ?? false}
         trustScore={live.summary?.trustScore ?? 0}
         completionPercent={live.summary?.completionPercent ?? 0}
         onEditProfile={onEditProfile}

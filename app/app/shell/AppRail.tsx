@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+
+import { useUserDetails } from "@/app/context/UsersContext";
 
 import type { ActiveSection } from "../config/sections";
 import { Loader, Notice } from "../shared/Loader";
@@ -29,7 +31,29 @@ export interface AppRailProps {
 }
 
 const AppRail: React.FC<AppRailProps> = ({ section }) => {
-  const { summary, loading, error, isEmpty, refetch } = useMyProfile();
+  const { profile, summary, loading, error, isEmpty, refetch } = useMyProfile();
+
+  /* Plan tier is not on the onboarding payload — the per-user details endpoint
+     is the only one that ships `package`, so the sidebar reads it from there. */
+  const isProfileSection =
+    section === "profile" ||
+    section === "edit-profile" ||
+    section === "refer-earn" ||
+    section === "callback" ||
+    section === "delete-account" ||
+    section === "account-status" ||
+    section === "help" ||
+    section === "logout";
+
+  const { details: ownDetails, ensure: ensureOwnDetails } = useUserDetails(
+    isProfileSection ? profile?.id : null
+  );
+
+  useEffect(() => {
+    ensureOwnDetails();
+  }, [ensureOwnDetails]);
+
+  const pkg = ownDetails?.package?.name ?? profile?.package.name;
 
   switch (section) {
     case "home":
@@ -82,6 +106,7 @@ const AppRail: React.FC<AppRailProps> = ({ section }) => {
           avatarUrl={summary.avatarUrl}
           name={summary.name}
           age={summary.age}
+          pkg={summary.pkg}
           verified={summary.verified}
           location={summary.location}
           isPlatinumMember={summary.isPlatinumMember}

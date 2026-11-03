@@ -37,6 +37,7 @@ const getReferralCodeFromUrl = (): string | null => {
         null
     );
 };
+
 const buildPlayStoreUrl = (referralCode: string | null): string => {
     if (!referralCode) {
         return PLAY_STORE_URL;

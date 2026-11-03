@@ -1,5 +1,5 @@
 import React from "react";
-
+//used on Home sidebar
 import type { Plan } from "@/app/context/AccountSettingsContext";
 import {
   featureLabel,

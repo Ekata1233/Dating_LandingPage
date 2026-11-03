@@ -246,6 +246,7 @@ export function mapMyProfile(details: OnboardingDetailsApi | null): Profile {
     distance: "",
     birth_date: formatBirthDate(basic?.dateOfBirth),
     height: formatHeight(basic?.height),
+    package: { id: "", name: "FREE", startDate: null, endDate: null },
     location: [area, locationLine].filter(Boolean).join(", "),
     lookingFor: str(flows.LOOKING_FOR?.intention?.option),
     religion: "",
@@ -299,6 +300,7 @@ export function mapMyProfileSummary(
     location: profile.location,
     /* Neither plan tier nor trust score is part of this endpoint yet. */
     isPlatinumMember: false,
+    pkg:profile.package.name,
     trustScore: 0,
     completionPercent: clampPercent(flows.REVIEW_FINISH?.profileCompletion),
   };

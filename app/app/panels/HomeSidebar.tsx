@@ -12,6 +12,7 @@ import type { BalanceItem, DatePlansSummary } from '../shared/types'
 import { useUserProfileData, type UserBalances } from '@/app/context/UserProfileDataContext'
 import { useAccountSettings, type Plan } from '@/app/context/AccountSettingsContext'
 import { useActiveSection } from '@/app/context/ActiveSectionContext';
+import { sortPlansByTier } from '@/utils/planOrder'
 
 export type WalletTab = "wallet" | "plans";
 
@@ -74,9 +75,10 @@ function HomeSidebar({
     )
 
     /* Cards take the API plan as-is — slug picks the card, planUtils formats
-       the price and picks each card's first five features. */
+       the price and picks each card's first five features. Always ordered
+       Premium → VIP → VIP Elite, whatever order the API returns. */
     const planItems = useMemo(
-        () => plans ?? apiPlans,
+        () => sortPlansByTier(plans ?? apiPlans ?? []),
         [plans, apiPlans]
     )
 

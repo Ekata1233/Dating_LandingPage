@@ -28,7 +28,6 @@ const MobileDateNowSection: React.FC<MobileDateNowSectionProps> = ({
   dateType,
   onAvailabilityChange,
   onDateTypeChange,
-  count = 3,
 }) => (
   <div className="flex flex-col h-full w-full min-h-0" style={{ background: BRAND.white }}>
     <div
@@ -50,7 +49,7 @@ const MobileDateNowSection: React.FC<MobileDateNowSectionProps> = ({
     </div>
 
     <div className="flex-1 min-h-0">
-      <DateNowMain fluid count={count} />
+      <DateNowMain fluid />
     </div>
   </div>
 );

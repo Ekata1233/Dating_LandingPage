@@ -32,6 +32,11 @@ const C = {
     white: "#ffffff",
 };
 
+/* Hides the scrollbar in Firefox, old Edge/IE and Chrome/Safari while keeping
+   the container scrollable (wheel, touch, keyboard). */
+const NO_SCROLLBAR =
+    "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
 export interface AdmiererSidebarProps {
     received?: AdmirerReceived[];
     sent?: AdmirerSent[];
@@ -52,42 +57,56 @@ export interface AdmiererSidebarProps {
 /*  The context keeps the whole `/api/user/admirers` response (so screens can   */
 /*  also read `isLocked` / `isPackageActive` / `count`), while the cards want    */
 /*  their own flat props. This is the one place the two shapes meet.            */
+/*                                                                            */
+/*  Everything here is null-safe: `data` may be undefined/null/non-array and    */
+/*  a row may arrive without `user`; such rows are dropped before mapping.      */
 /* -------------------------------------------------------------------------- */
 
-function formatDistance(distanceKm: number): string {
-    if (!Number.isFinite(distanceKm) || distanceKm <= 0) return "Nearby";
+/** A row is only usable if it has a user with an id. */
+const hasUser = (a: Admirer | null | undefined): a is Admirer =>
+    !!a && !!a.user && !!a.user.id;
+
+/** Safe list of usable rows from an API response's `data`. */
+const usableRows = (data: unknown): Admirer[] =>
+    Array.isArray(data) ? (data as Admirer[]).filter(hasUser) : [];
+
+function formatDistance(distanceKm?: number | null): string {
+    if (distanceKm == null || !Number.isFinite(distanceKm) || distanceKm <= 0) return "Nearby";
     if (distanceKm < 1) return "Nearby";
     return `${Math.round(distanceKm)} km`;
 }
 
 function toReceivedCard(admirer: Admirer, revealed: boolean): AdmirerReceived {
+    const user = admirer.user;
     return {
-        imageUrl: admirer.user.profileImage,
-        name: admirer.user.name,
-        age: admirer.user.age,
-        matchPercent: Math.round(admirer.user.matchScore ?? 0),
-        distance: formatDistance(admirer.user.distanceKm),
+        imageUrl: user?.profileImage ?? "",
+        name: user?.name ?? "",
+        age: user?.age ?? 0,
+        matchPercent: Math.round(user?.matchScore ?? 0),
+        distance: formatDistance(user?.distanceKm),
         revealed,
     };
 }
 
 function toSentCard(admirer: Admirer): AdmirerSent {
+    const user = admirer.user;
+    const likeStatus = admirer.likeStatus;
     return {
-        avatarUrl: admirer.user.profileImage,
-        name: admirer.user.name,
-        age: admirer.user.age,
-        id:admirer.user.id,
-        gender:admirer.user.gender,
-        matchPercent: Math.round(admirer.user.matchScore ?? 0),
-        location: formatDistance(admirer.user.distanceKm),
+        avatarUrl: user?.profileImage ?? "",
+        name: user?.name ?? "",
+        age: user?.age ?? 0,
+        id: user?.id ?? "",
+        gender: user?.gender,
+        matchPercent: Math.round(user?.matchScore ?? 0),
+        location: formatDistance(user?.distanceKm),
         matchedAgo: admirer.timeAgo,
-        likeStatus: admirer.likeStatus,
-        status: admirer.likeStatus.matched
+        likeStatus,
+        status: likeStatus?.matched
             ? "matched"
-            : admirer.likeStatus.seen
+            : likeStatus?.seen
                 ? "seen"
                 : "sent",
-    };
+    } as AdmirerSent;
 }
 
 function AdmiererSidebar({
@@ -115,7 +134,6 @@ function AdmiererSidebar({
         refetchAdmirersSent,
         sendRose,
     } = useUserProfileData();
-
     const select = (next: AdmirersTab) => {
         if (tab === undefined) setTab(next);
         onTabChange?.(next);
@@ -123,8 +141,8 @@ function AdmiererSidebar({
 
     /* Received likes are blurred until the user owns an active package (or the
        list isn't locked at all). */
-    const receivedRevealed = !!admirersReceived
-        ? admirersReceived.isPackageActive || !admirersReceived.isLocked
+    const receivedRevealed = admirersReceived
+        ? !!admirersReceived.isPackageActive || !admirersReceived.isLocked
         : false;
 
     /* Keep the source admirer's id alongside each card so a tap can tell the
@@ -132,17 +150,17 @@ function AdmiererSidebar({
     type CardItem<T> = { key: string; card: T; id?: string };
 
     const receivedItems: CardItem<AdmirerReceived>[] = received
-        ? received.map((card, index) => ({ key: card.imageUrl + index, card }))
-        : (admirersReceived?.data ?? []).map((a, index) => ({
-              key: a.user.id + index,
+        ? received.map((card, index) => ({ key: `${card.imageUrl}-${index}`, card }))
+        : usableRows(admirersReceived?.data).map((a, index) => ({
+              key: `${a.user.id}-${index}`,
               card: toReceivedCard(a, receivedRevealed),
               id: a.user.id,
           }));
 
     const sentItems: CardItem<AdmirerSent>[] = sent
-        ? sent.map((card, index) => ({ key: card.avatarUrl + index, card }))
-        : (admirersSent?.data ?? []).map((a, index) => ({
-              key: a.user.id + index,
+        ? sent.map((card, index) => ({ key: `${card.avatarUrl}-${index}`, card }))
+        : usableRows(admirersSent?.data).map((a, index) => ({
+              key: `${a.user.id}-${index}`,
               card: toSentCard(a),
               id: a.user.id,
           }));
@@ -192,22 +210,31 @@ function AdmiererSidebar({
                         className="flex-1 min-h-0"
                     />
                 ) : receivedItems.length ? (
-                    <div className="grid grid-cols-2 auto-rows-fr gap-[2.703cqw] pt-[1.778cqh] p-[2.703cqw] overflow-y-auto w-full flex-1 min-h-0">
+                    <div
+                        className={`grid grid-cols-2 auto-rows-min content-start items-start gap-[2.703cqw] px-[2.703cqw] pt-[1.778cqh] pb-[2.703cqw] w-full flex-1 min-h-0 overflow-y-auto ${NO_SCROLLBAR}`}
+                    >
                         {receivedItems.map((item) => (
-                            <AdmirerReciveCard
+                            /* The wrapper owns the card's size (4:5 portrait). Whatever
+                               height the card sets for itself is overridden to fill the
+                               wrapper, so cards can never grow into the row below. */
+                            <div
                                 key={item.key}
-                                {...item.card}
-                                className={
-                                    item.id && item.id === selectedId
-                                        ? "ring-2 ring-inset ring-[#C21559]"
-                                        : ""
-                                }
-                                onOpenProfile={
-                                    item.id ? () => selectAdmirer(item.id!) : undefined
-                                }
-                                onReject={() => onReject?.(item.card)}
-                                onLike={() => onLike?.(item.card)}
-                            />
+                                className="relative w-full min-w-0 shrink-0 aspect-[4/5] [&>*]:!h-full [&>*]:!w-full [&>*]:!max-h-full"
+                            >
+                                <AdmirerReciveCard
+                                    {...item.card}
+                                    className={
+                                        item.id && item.id === selectedId
+                                            ? "ring-2 ring-inset ring-[#C21559]"
+                                            : ""
+                                    }
+                                    onOpenProfile={
+                                        item.id ? () => selectAdmirer(item.id!) : undefined
+                                    }
+                                    onReject={() => onReject?.(item.card)}
+                                    onLike={() => onLike?.(item.card)}
+                                />
+                            </div>
                         ))}
                     </div>
                 ) : (
@@ -226,7 +253,9 @@ function AdmiererSidebar({
                     className="flex-1 min-h-0"
                 />
             ) : sentItems.length ? (
-                <div className="grid grid-cols-1 auto-rows-[47.297cqw] gap-[2.703cqw] p-[2.703cqw] overflow-y-auto w-full flex-1 min-h-0">
+                <div
+                    className={`grid grid-cols-1 content-start gap-[2.703cqw] auto-rows-[47.297cqw] px-[2.703cqw] pt-[1.778cqh] pb-[2.703cqw] w-full flex-1 min-h-0 overflow-y-auto ${NO_SCROLLBAR}`}
+                >
                     {sentItems.map((item) => (
                         <AdmirerSentCard
                             key={item.key}

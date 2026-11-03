@@ -12,9 +12,12 @@ export default function Page() {
   function handleOnBoost() {
     router.push("/app/home/myBalances/myboosts")
   }
+  function handleImprove() {
+    router.push("/app/profile")
+  }
   return (
     <Screen
-      desktop={<AdmirersMain onBoost={handleOnBoost} />}
+      desktop={<AdmirersMain onBoost={handleOnBoost} onImproveProfile={handleImprove} />}
       mobile={<MobileAdmirerSection fluid onBoost={handleOnBoost} />}
     />
   );

@@ -30,6 +30,12 @@ export interface ProfileFact {
  * A person shown on a card. The same shape backs the discovery feed and the
  * logged-in user's own profile, so both screens can share one renderer.
  */
+export interface packageType{
+  id:string;
+  name:string;
+  startDate:string | null;
+  endDate:string | null;
+}
 export interface Profile {
   id: string;
   name: string;
@@ -39,6 +45,7 @@ export interface Profile {
   distance: string;
   birth_date:string;
   height: string;
+  package:packageType;
   location: string;
   lookingFor: string;
   religion: string;
@@ -140,7 +147,7 @@ export type AdmirerSent = AdmirerSentCardProps;
 
 /* ------------------------------- date plans -------------------------------- */
 
-export type DateAvailability = "today" | "tomorrow" | "weekend";
+export type DateAvailability = "all" | "today" | "tomorrow" | "weekend";
 
 export type DateType = "all-events" | "coffee" | "dinner" | "drinks";
 
@@ -161,6 +168,7 @@ export interface MyProfile {
   name: string;
   age: number;
   verified: boolean;
+  pkg:string;
   location: string;
   isPlatinumMember: boolean;
   trustScore: number;

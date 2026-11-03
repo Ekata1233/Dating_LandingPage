@@ -8,6 +8,9 @@ import { Event_Type } from "@/app/context/EventContext";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import EventCard from "../ui/EventCard";
+/* ------------------------------------------------------------------ */
+/*  This is the shows about Events section -> the data here is comming from backend  */
+/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Brand colors inline                                                */
@@ -29,7 +32,7 @@ export function formattedDate(date: Date) {
     });
 }
 
-// Events (Static for now, needs to be dynamic)
+// These are static fallback if no data came from api or there are no events
 const EventsFallback: Event_Type[] = [
     {
         id: "1",

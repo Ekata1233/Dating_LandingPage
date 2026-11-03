@@ -141,7 +141,7 @@ export default function OpenInAppModal({
                         ref={primaryRef}
                         type="button"
                         onClick={handleOpenApp}
-                        className="group relative overflow-hidden rounded-full px-6 py-3.5 text-base font-bold text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4"
+                        className="group relative cursor-pointer overflow-hidden rounded-full px-6 py-3.5 text-base font-bold text-white transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4"
                         style={{
                             background: `linear-gradient(135deg, #F2628F, ${BRAND})`,
                             boxShadow: `0 10px 22px -8px ${BRAND}cc`,
@@ -155,7 +155,7 @@ export default function OpenInAppModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-full px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-[#E7477D]/10 focus-visible:outline-none focus-visible:ring-4"
+                        className="rounded-full cursor-pointer px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-[#E7477D]/10 focus-visible:outline-none focus-visible:ring-4"
                         style={{ color: BRAND, ['--tw-ring-color' as string]: `${BRAND}33` }}
                     >
                         Maybe later

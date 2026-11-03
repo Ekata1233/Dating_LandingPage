@@ -426,7 +426,7 @@ function Navbar({ logoSrc }: NavbarProps) {
                 }}
                 className="group relative overflow-hidden rounded-full px-5 py-2.5 text-center text-[15px] font-semibold cursor-pointer transition-all duration-300 active:scale-95"
                 style={{
-                  background: `linear-gradient(135deg, ${COLORS.ctaFrom}, ${COLORS.ctaTo})`,
+                  background: "linear-gradient(135deg, #F26FA6 0%, #E11D63 100%)",
                   color: "white",
                 }}
               >

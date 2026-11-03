@@ -1,5 +1,5 @@
 "use client";
-
+// OnBoarding Section and My Profile Section GET APIs are implemented here
 import React, {
     createContext,
     useCallback,

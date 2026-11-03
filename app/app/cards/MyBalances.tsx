@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-
+//My balances is used on the Home Sidebar
 import { MOCK_BALANCES, MOCK_DATE_PLANS_SUMMARY } from "../shared/mockData";
 import type { BalanceItem, DatePlansSummary } from "../shared/types";
 import { UserBalances, useUserProfileData } from "@/app/context/UserProfileDataContext";
@@ -74,7 +74,7 @@ export default function MyBalances({
         MY BALANCES
       </div>
 
-      <div className="overflow-x-hidden"
+      <div className="overflow-x-hidden px-2 py-2"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",

@@ -393,6 +393,8 @@ export default function BoostStore({
         boostsLoading: boostLoading,
         boostsError: boostError,
         refetchBoosts: boostReload,
+        applyResourceCredit,
+        refetchBalances,
     } = useUserProfileData();
     const {
         superBoosts: superBoostData,
@@ -515,6 +517,15 @@ export default function BoostStore({
 
         if (res.ok) {
             toast.success(`${pack.quantity} ${packWord(packTab, pack.quantity)} added to your account ⚡`);
+            /* The sidebar has one "My Boosts" bucket; regular boosts feed it
+               directly. Super boosts may be tracked separately server-side, so
+               just pull the balances and let the server decide. */
+            router.push("/app/home")
+            if (packTab === "BOOST") {
+                void applyResourceCredit("boosts", pack.quantity);
+            } else {
+                void refetchBalances();
+            }
             refreshBoosts();
             onPurchased?.(pack, packTab);
             return;

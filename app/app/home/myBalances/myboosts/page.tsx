@@ -4,6 +4,7 @@ import React from "react";
 import Screen from "@/app/app/shell/Screen";
 import { useRouter } from "next/navigation";
 import BoostStore from "@/app/app/desktop/MyBoostsMain";
+// MyBoosts Store to purchase the Boosts/Super Boosts -> razor pay api integrated
 
 export default function Page() {
     const router = useRouter()

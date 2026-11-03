@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import { formatDayHeading } from "../shared/chatMessages";
 
 /* -------------------------------------------------------------------------- */
 /*  ChatConversation                                                           */
@@ -9,6 +12,9 @@ import React, { useCallback, useEffect, useState } from "react";
 /*         • GiftCard       (image, "You sent … a gift", reply progress)       */
 /*         • RoseCard       (ribbon, rose, progress bar, coins)                */
 /*         • ComplimentCard (blue chip, quoted text)                           */
+/*         • LockedBubble   (glittering placeholder — anything that is not     */
+/*                           plain text never shows its content on the web,    */
+/*                           the bubble points the member at the app)          */
 /*    3. Composer — emoji, message input, Try, attach, gift, mic/send          */
 /*    4. Dropdown menu opened from the 3 dots (Report / Block / Unmatch /      */
 /*       Clear Chat / Delete Conversation)                                     */
@@ -24,7 +30,7 @@ import React, { useCallback, useEffect, useState } from "react";
 /* ---------------------------------- types ---------------------------------- */
 export type ChatTab = "all" | "gifts" | "compliments" | "dateInvites";
 
-export type MessageKind = "text" | "gift" | CardMessage["kind"];
+export type MessageKind = "text" | "gift" | "locked" | CardMessage["kind"];
 
 export interface TextMessage {
     kind: "text";
@@ -32,6 +38,9 @@ export interface TextMessage {
     from: "me" | "them";
     text: string;
     time: string;
+    dayKey?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
 }
 
@@ -41,7 +50,7 @@ export interface GiftMessage {
     from: "me" | "them";
     imageUrl?: string;
     giftName: string;
-    triggerLine?:string;
+    triggerLine?: string;
     /** Emoji shown before the gift name, e.g. "☕" */
     giftEmoji?: string;
     /** Italic quoted line under the title */
@@ -51,6 +60,9 @@ export interface GiftMessage {
     /** Coins the gift unlocks for the receiver */
     coinsSpent?: number;
     time: string;
+    dayKey?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
 }
 
@@ -62,16 +74,19 @@ export interface GiftMessage {
  *  - image / event: generic badge card.
  */
 export interface CardMessage {
-    kind: "rose" | "compliment" | "image" | "event";
+    kind: "rose" | "compliment" | "image" | "event" | "relationshipTag" | "date";
     id: string | number;
     from: "me" | "them";
     title: string;
-    triggerLine?:string;
+    triggerLine?: string;
     subtitle?: string;
     imageUrl?: string;
     time: string;
+    dayKey?: string;
     /** Shown under generic cards: Sent / Delivered / Read / Received. */
     status?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
     read?: boolean;
     /** rose only */
     repliesDone?: number;
@@ -79,10 +94,30 @@ export interface CardMessage {
     coins?: number;
 }
 
-export type ChatMessage = TextMessage | GiftMessage | CardMessage;
+/**
+ * Placeholder for every message that is not plain text (photo, gift, rose,
+ * compliment, system event). The content itself is never rendered on the web —
+ * the bubble just glitters and points the member at the app.
+ */
+export interface LockedMessage {
+    kind: "locked";
+    id: string | number;
+    from: "me" | "them";
+    /** What is hidden behind the placeholder, e.g. "Photo", "Gift", "Rose". */
+    label: string;
+    time: string;
+    dayKey?: string;
+    /** Sent / Delivered / Read / Received, same as the rich cards. */
+    status?: string;
+    /** Receipt: reached the counterpart's device (✓✓ grey, before `read`). */
+    delivered?: boolean;
+    read?: boolean;
+}
+
+export type ChatMessage = TextMessage | GiftMessage | CardMessage | LockedMessage;
 
 export interface ChatConversationProps {
-    userId:string,
+    userId: string,
     avatarUrl?: string;
     name?: string;
     age?: number;
@@ -271,6 +306,11 @@ const MicIcon = () => (
         <path d="M12 18v3" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
+const SendIcon = () => (
+    <svg viewBox="0 0 24 24" style={svgBase} fill="#fff">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+    </svg>
+);
 
 /** Gold coin with a little bank/treasury mark, as in the gift + rose cards. */
 const CoinIcon = () => (
@@ -405,6 +445,30 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
 ];
 
 /* --------------------------------- bubbles ----------------------------------- */
+const DayHeading = ({ dayKey }: { dayKey: string }) => (
+    <div
+        style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%",
+            margin: `${U(3)} 0 ${U(1.5)}`,
+        }}
+    >
+        <span
+            style={{
+                fontSize: U(2.7),
+                fontWeight: 600,
+                color: C.grey,
+                background: C.bubbleTheirs,
+                padding: `${U(0.9)} ${U(3)}`,
+                borderRadius: U(6),
+            }}
+        >
+            {formatDayHeading(dayKey)}
+        </span>
+    </div>
+);
+
 const TextBubble = ({ msg }: { msg: TextMessage }) => {
     const mine = msg.from === "me";
     return (
@@ -427,9 +491,11 @@ const TextBubble = ({ msg }: { msg: TextMessage }) => {
                     borderBottomLeftRadius: mine ? U(5) : U(1.2),
                     background: mine ? C.bubbleMine : C.bubbleTheirs,
                     color: C.ink,
+                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
                 }}
             >
-                <span style={{ fontSize: U(3.6), lineHeight: 1.4 }}>{msg.text}</span>
+                <span style={{ fontSize: U(3.6), lineHeight: 1.4, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.text}</span>
                 <span
                     style={{
                         flexShrink: 0,
@@ -444,7 +510,139 @@ const TextBubble = ({ msg }: { msg: TextMessage }) => {
                     {msg.time}
                     {mine && msg.read !== undefined && (
                         <span style={{ fontSize: U(3.2), display: "flex" }}>
-                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
+                        </span>
+                    )}
+                </span>
+            </div>
+        </div>
+    );
+};
+
+/* ------------------------------- locked (glitter) bubble ------------------------------- */
+/** Four-point sparkle + a little companion star, both twinkling in place. */
+const SparkleIcon = () => (
+    <svg viewBox="0 0 24 24" style={svgBase} fill="currentColor">
+        <path d="M10 2l1.8 6.2L18 10l-6.2 1.8L10 18l-1.8-6.2L2 10l6.2-1.8L10 2Z" />
+        <path d="M19 15.4l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7.7-1.9Z" opacity=".65" />
+    </svg>
+);
+
+/**
+ * Everything that is not a plain text message renders here: a shimmering
+ * bubble that hides the content and tells the member to open the app.
+ */
+const LockedBubble = ({ msg }: { msg: LockedMessage }) => {
+    const mine = msg.from === "me";
+    return (
+        <div
+            style={{
+                display: "flex",
+                justifyContent: mine ? "flex-end" : "flex-start",
+                padding: `${U(1)} ${U(5)}`,
+            }}
+        >
+            <div
+                style={{
+                    position: "relative",
+                    overflow: "hidden",
+                    maxWidth: "78%",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: U(1.4),
+                    padding: `${U(2.8)} ${U(4)}`,
+                    borderRadius: U(5),
+                    borderBottomRightRadius: mine ? U(1.2) : U(5),
+                    borderBottomLeftRadius: mine ? U(5) : U(1.2),
+                    background: mine ? C.bubbleMine : C.bubbleTheirs,
+                    border: `${HAIR} solid ${mine ? C.pinkBorder : C.border}`,
+                }}
+            >
+                {/* glitter sweep */}
+                <span
+                    aria-hidden
+                    className="chat-locked-sheen"
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        width: "45%",
+                        transform: "translateX(-140%)",
+                        pointerEvents: "none",
+                        background:
+                            "linear-gradient(100deg, transparent, rgba(255,255,255,.92), rgba(255,214,232,.7), transparent)",
+                    }}
+                />
+
+                <span
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: U(1.6),
+                        fontSize: U(3),
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        color: C.grey,
+                    }}
+                >
+                    <span
+                        className="chat-locked-spark "
+                        style={{ display: "flex", fontSize: U(4.8), color: C.pinkText }}
+                    >
+                        <SparkleIcon />
+                    </span>
+                    {msg.label}
+                </span>
+                    <span
+                        className="chat-locked-glitter cursor-default"
+                        style={{
+                            fontSize: U(3.4),
+                            fontWeight: 700,
+                            lineHeight: 1.35,
+                            background:
+                                "linear-gradient(90deg, #8a6a80, #e0355f, #f1b400, #e0355f, #8a6a80)",
+                            backgroundSize: "300% 100%",
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            color: "transparent",
+                        }}
+                    >
+                        Open the Welvors app to view this message
+
+                    </span>
+
+                <span
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: U(1.4),
+                        fontSize: U(2.5),
+                        color: C.greyLight,
+                    }}
+                >
+                    {msg.status && (
+                        <span style={{ color: mine ? C.pinkText : C.greyLight }}>{msg.status}</span>
+                    )}
+                    {msg.time}
+                    {mine && msg.read !== undefined && (
+                        <span style={{ fontSize: U(3.2), display: "flex" }}>
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
                         </span>
                     )}
                 </span>
@@ -642,7 +840,13 @@ const GiftCard = ({ msg, otherName }: { msg: GiftMessage; otherName: string }) =
                         {msg.time}
                         {mine && (
                             <span style={{ fontSize: U(4), display: "flex" }}>
-                                {msg.read ? <CheckDouble color="#a9a6ae" /> : <CheckSingle color="#a9a6ae" />}
+                                {msg.read ? (
+                                    <CheckDouble color={C.pinkText} />
+                                ) : msg.delivered ? (
+                                    <CheckDouble color="#9aa4b2" />
+                                ) : (
+                                    <CheckSingle color="#a9a6ae" />
+                                )}
                             </span>
                         )}
                     </div>
@@ -726,8 +930,8 @@ const RoseCard = ({ msg, name }: { msg: CardMessage, name: string }) => {
                         </div>
                     )} */}
                 </div>
-                <div className="italic w-60" style={{ fontSize: U(3.2)}}>
-                    {msg.from==="me" ? `I read your whole profile before this. The ambition bit got me.` : `Sent this hoping you'd write back. The ambition bit got me.`}
+                <div className="italic w-60" style={{ fontSize: U(3.2) }}>
+                    {msg.from === "me" ? `I read your whole profile before this. The ambition bit got me.` : `Sent this hoping you'd write back. The ambition bit got me.`}
                 </div>
 
                 <div style={{ marginTop: U(4) }}>
@@ -806,16 +1010,16 @@ const ComplimentCard = ({ msg }: { msg: CardMessage }) => {
                     }}
                 >
                     <span style={{ fontSize: U(2.5), lineHeight: 1 }}>💝</span>
-                    <span style={{ fontSize: U(2.5),minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: U(2.5), minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         COMPLIMENT SENT
                     </span>
                 </span>
 
                 {/* quote */}
-                <div className="p-2 italic flex flex-row gap-2" style={{fontSize: U(3.9)}}>
-                        <span className="bg-pink-500 rounded-full h-5 w-1"></span>
-                        <span>{msg.title}</span>
-                    </div>
+                <div className="p-2 italic flex flex-row gap-2" style={{ fontSize: U(3.9) }}>
+                    <span className="bg-pink-500 rounded-full h-5 w-1"></span>
+                    <span>{msg.title}</span>
+                </div>
                 {msg.subtitle && (
                     <div
                         style={{
@@ -944,9 +1148,15 @@ const CardBubble = ({ msg }: { msg: CardMessage }) => {
                 >
                     {msg.status && <span style={{ color: mine ? C.pinkText : C.greyLight }}>{msg.status}</span>}
                     {msg.time}
-                    {mine && (
+                    {mine && msg.read !== undefined && (
                         <span style={{ fontSize: U(3.2), display: "flex" }}>
-                            {msg.read ? <CheckDouble color={C.pinkText} /> : <CheckSingle />}
+                            {msg.read ? (
+                                <CheckDouble color={C.pinkText} />
+                            ) : msg.delivered ? (
+                                <CheckDouble color="#9aa4b2" />
+                            ) : (
+                                <CheckSingle />
+                            )}
                         </span>
                     )}
                 </span>
@@ -1054,6 +1264,55 @@ export default function ChatMain({
     const [tab, setTab] = useState<ChatTab>(activeTab);
     const [draft, setDraft] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const [emojiOpen, setEmojiOpen] = useState(false);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const caretRef = useRef<{ start: number; end: number } | null>(null);
+    const emojiWrapRef = useRef<HTMLDivElement>(null);
+    const pickerPanelRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = useCallback((smooth = false) => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+        }
+    }, []);
+
+    // Scroll to bottom when opening chat or when messages count changes
+    useEffect(() => {
+        scrollToBottom(false);
+    }, [userId, scrollToBottom]);
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            scrollToBottom(true);
+        }
+    }, [messages.length, scrollToBottom]);
+
+    // Reset draft and menu when switching user
+    useEffect(() => {
+        setDraft("");
+        setMenuOpen(false);
+        setEmojiOpen(false);
+        caretRef.current = null;
+    }, [userId]);
+
+    // The picker panel is pinned to the composer with left/right in CSS, so it
+    // grows and shrinks with the main screen on its own.
+
+    // Click outside the button/picker closes the picker
+    useEffect(() => {
+        if (!emojiOpen) return;
+        const onPointerDown = (e: PointerEvent) => {
+            const target = e.target as Node | null;
+            if (!target) return;
+            if (emojiWrapRef.current?.contains(target)) return;
+            if (pickerPanelRef.current?.contains(target)) return;
+            setEmojiOpen(false);
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, [emojiOpen]);
 
     const handleTab = useCallback(
         (key: ChatTab) => {
@@ -1068,9 +1327,11 @@ export default function ChatMain({
         if (!trimmed) return;
         onSend?.(trimmed);
         setDraft("");
+        caretRef.current = null;
     };
 
     const toggleMenu = () => {
+        setEmojiOpen(false);
         setMenuOpen((open) => {
             if (!open) onMenu?.();
             return !open;
@@ -1082,40 +1343,60 @@ export default function ChatMain({
         fn?.();
     };
 
+    /* ------------------------------- emoji ------------------------------- */
+
+    // Remember where the caret sits, so an emoji lands there — not at the end.
+    const captureCaret = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        const start = el.selectionStart ?? draft.length;
+        const end = el.selectionEnd ?? start;
+        caretRef.current = { start, end };
+    };
+
+    const insertEmoji = (emoji: string) => {
+        if (!emoji) return;
+        const { start, end } = caretRef.current ?? {
+            start: draft.length,
+            end: draft.length,
+        };
+        const from = Math.min(start, draft.length);
+        const to = Math.min(Math.max(end, from), draft.length);
+        const next = draft.slice(0, from) + emoji + draft.slice(to);
+        const caret = from + emoji.length;
+        caretRef.current = { start: caret, end: caret };
+        setDraft(next);
+        // Put the caret back after React writes the new value (the browser
+        // jumps it to the end otherwise). No focus() — that would pop the
+        // keyboard open on mobile after every tap.
+        requestAnimationFrame(() => {
+            const el = inputRef.current;
+            if (!el) return;
+            try {
+                el.setSelectionRange(caret, caret);
+            } catch {
+                /* input may not be focusable in this state */
+            }
+        });
+    };
+
+    const handleEmojiClick = (data: EmojiClickData) => {
+        insertEmoji(data.emoji);
+    };
+
     // close on Escape
     useEffect(() => {
-        if (!menuOpen) return;
+        if (!menuOpen && !emojiOpen) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") setMenuOpen(false);
+            if (e.key !== "Escape") return;
+            setMenuOpen(false);
+            setEmojiOpen(false);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [menuOpen]);
+    }, [menuOpen, emojiOpen]);
 
     const menuItems: MenuItem[] = [
-        {
-            key: "report",
-            title: "Report User",
-            subtitle: "Report inappropriate behavior or safety concerns",
-            icon: <FlagIcon />,
-            onClick: onReport,
-        },
-        {
-            key: "block",
-            title: `Block ${name}`,
-            subtitle: "Prevent them from contacting you",
-            icon: <BanIcon />,
-            danger: true,
-            onClick: onBlock,
-        },
-        {
-            key: "unmatch",
-            title: "Unmatch",
-            subtitle: "Removes the match and this chat",
-            icon: <BrokenHeartIcon />,
-            danger: true,
-            onClick: onUnmatch,
-        },
         {
             key: "clear",
             title: "Clear Chat",
@@ -1171,7 +1452,13 @@ export default function ChatMain({
         .chat-input::placeholder { color: ${C.greyLight}; }
         .chat-input:focus-visible { outline: none; }
         @keyframes chat-menu-in { from { opacity: 0; transform: translateY(-1.2cqw) scale(.98); } to { opacity: 1; transform: none; } }
-        @media (prefers-reduced-motion: reduce) { .chat-menu-panel { animation: none !important; } }
+        .chat-locked-glitter { animation: chat-glitter 2.6s linear infinite; }
+        .chat-locked-sheen { animation: chat-sheen 3s ease-in-out infinite; }
+        .chat-locked-spark { animation: chat-spark 1.8s ease-in-out infinite; }
+        @keyframes chat-glitter { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+        @keyframes chat-sheen { 0% { transform: translateX(-140%); } 55%, 100% { transform: translateX(360%); } }
+        @keyframes chat-spark { 0%, 100% { transform: scale(.72) rotate(-14deg); opacity: .55; } 50% { transform: scale(1.18) rotate(16deg); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .chat-menu-panel, .chat-locked-glitter, .chat-locked-sheen, .chat-locked-spark { animation: none !important; } }
       `}</style>
 
                         {/* click-away layer for the dropdown */}
@@ -1236,7 +1523,7 @@ export default function ChatMain({
                                         >
                                             {name}, {age}
                                         </span>
-                                        <span
+                                        {/* <span
                                             style={{
                                                 flexShrink: 0,
                                                 padding: `${U(0.7)} ${U(2.2)}`,
@@ -1249,7 +1536,7 @@ export default function ChatMain({
                                             }}
                                         >
                                             {planLabel}
-                                        </span>
+                                        </span> */}
                                     </div>
                                     <div style={{ display: "flex", alignItems: "center", gap: U(1.4), marginTop: U(0.6) }}>
                                         <span
@@ -1318,6 +1605,7 @@ export default function ChatMain({
 
                         {/* thread */}
                         <div
+                            ref={scrollContainerRef}
                             className="chat-scroll"
                             style={{
                                 flex: 1,
@@ -1416,12 +1704,23 @@ export default function ChatMain({
                                             </button>
                                         </div>
                                     )}
-                                    {messages.map((m) => {
-                                        if (m.kind === "text") return <TextBubble key={m.id} msg={m} />;
-                                        if (m.kind === "gift") return <GiftCard key={m.id} msg={m} otherName={name} />;
-                                        if (m.kind === "rose") return <RoseCard name={name} key={m.id} msg={m} />;
-                                        if (m.kind === "compliment") return <ComplimentCard key={m.id} msg={m} />;
-                                        return <CardBubble key={m.id} msg={m} />;
+                                    {messages.map((m, i) => {
+                                        const prev = i > 0 ? messages[i - 1] : undefined;
+                                        let bubble: React.ReactNode;
+                                        if (m.kind === "text") bubble = <TextBubble msg={m} />;
+                                        else if (m.kind === "locked") bubble = <LockedBubble msg={m} />;
+                                        else if (m.kind === "gift") bubble = <GiftCard msg={m} otherName={name} />;
+                                        else if (m.kind === "rose") bubble = <RoseCard name={name} msg={m} />;
+                                        else if (m.kind === "compliment") bubble = <ComplimentCard msg={m} />;
+                                        else bubble = <CardBubble msg={m} />;
+                                        return (
+                                            <React.Fragment key={m.id}>
+                                                {m.dayKey && m.dayKey !== prev?.dayKey && (
+                                                    <DayHeading dayKey={m.dayKey} />
+                                                )}
+                                                {bubble}
+                                            </React.Fragment>
+                                        );
                                     })}
                                     {messagesError && (
                                         <div
@@ -1435,6 +1734,7 @@ export default function ChatMain({
                                             {messagesError}
                                         </div>
                                     )}
+                                    <div ref={messagesEndRef} />
                                 </>
                             )}
                         </div>
@@ -1442,6 +1742,7 @@ export default function ChatMain({
                         {/* composer */}
                         <div
                             style={{
+                                position: "relative",
                                 flexShrink: 0,
                                 display: "flex",
                                 alignItems: "center",
@@ -1450,9 +1751,33 @@ export default function ChatMain({
                                 borderTop: `${HAIR} solid ${C.border}`,
                             }}
                         >
-                            <span style={{ fontSize: U(5.2), color: "#4a4750", display: "flex", flexShrink: 0 }}>
-                                <SmileyIcon />
-                            </span>
+                            <div
+                                ref={emojiWrapRef}
+                                style={{ flexShrink: 0, display: "flex" }}
+                            >
+                                <button
+                                    type="button"
+                                    className="chat-btn"
+                                    aria-label={emojiOpen ? "Close emoji picker" : "Emoji"}
+                                    aria-expanded={emojiOpen}
+                                    aria-haspopup="dialog"
+                                    onClick={() => {
+                                        setMenuOpen(false);
+                                        setEmojiOpen((open) => !open);
+                                    }}
+                                    style={{
+                                        fontSize: U(5.2),
+                                        color: emojiOpen ? C.pink : "#4a4750",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        lineHeight: 0,
+                                        padding: 0,
+                                    }}
+                                >
+                                    <SmileyIcon />
+                                </button>
+                            </div>
 
                             <div
                                 style={{
@@ -1468,11 +1793,24 @@ export default function ChatMain({
                                 }}
                             >
                                 <input
+                                    ref={inputRef}
                                     className="chat-input"
                                     value={draft}
-                                    onChange={(e) => setDraft(e.target.value)}
+                                    onChange={(e) => {
+                                        setDraft(e.target.value);
+                                        caretRef.current = {
+                                            start: e.target.selectionStart ?? e.target.value.length,
+                                            end: e.target.selectionEnd ?? e.target.value.length,
+                                        };
+                                    }}
+                                    onClick={captureCaret}
+                                    onKeyUp={captureCaret}
+                                    onBlur={captureCaret}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleSend();
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSend();
+                                        }
                                     }}
                                     placeholder={messagePlaceholder}
                                     aria-label="Message"
@@ -1488,7 +1826,7 @@ export default function ChatMain({
                                 />
                             </div>
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 onClick={onTry}
@@ -1509,9 +1847,9 @@ export default function ChatMain({
                                     <BulbIcon />
                                 </span>
                                 Try
-                            </button>
+                            </button> */}
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 aria-label="Attach"
@@ -1524,9 +1862,9 @@ export default function ChatMain({
                                 }}
                             >
                                 <PaperclipIcon />
-                            </button>
+                            </button> */}
 
-                            <button
+                            {/* <button
                                 type="button"
                                 className="chat-btn"
                                 aria-label="Send a gift"
@@ -1538,13 +1876,13 @@ export default function ChatMain({
                                 }}
                             >
                                 <GiftInputIcon />
-                            </button>
+                            </button> */}
 
                             <button
                                 type="button"
                                 className="chat-btn"
-                                aria-label={draft.trim() ? "Send message" : "Record voice message"}
-                                onClick={draft.trim() ? handleSend : undefined}
+                                aria-label={"Send message"}
+                                onClick={handleSend}
                                 style={{
                                     flexShrink: 0,
                                     width: U(10.6),
@@ -1556,10 +1894,34 @@ export default function ChatMain({
                                     justifyContent: "center",
                                     fontSize: U(4.4),
                                     boxShadow: `0 ${U(1)} ${U(2.6)} rgba(226,58,106,.35)`,
+                                    transition: "transform 0.15s ease",
                                 }}
                             >
-                                <MicIcon />
+                                {<SendIcon />}
                             </button>
+
+                            {/* picker spans the main screen's full width and
+                                follows it in and out as the screen resizes */}
+                            {emojiOpen && (
+                                <div
+                                    ref={pickerPanelRef}
+                                    style={{
+                                        position: "absolute",
+                                        left: 0,
+                                        right: 0,
+                                        bottom: "calc(100% + 1cqw)",
+                                        zIndex: 25,
+                                        lineHeight: 0,
+                                    }}
+                                >
+                                    <EmojiPicker
+                                        onEmojiClick={handleEmojiClick}
+                                        height={360}
+                                        style={{ width: "100%" }}
+                                        previewConfig={{ showPreview: false }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

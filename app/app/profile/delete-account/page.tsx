@@ -8,7 +8,7 @@ import { useAccountSettings } from "@/app/context/AccountSettingsContext";
 import { useRouter } from "next/navigation";
 import { deleteSession } from "@/lib/sessions";
 import { toast } from "sonner";
-
+//Delete account 
 export default function Page() {
     /* The screen draws its own back row, so the top bar's chevron is not the only
        way out of here. */
@@ -20,6 +20,7 @@ export default function Page() {
             if (response?.success) {
                 toast.success(response.message || "Account deleted successfully.");
                 await deleteSession();
+                sessionStorage.clear();
                 router.push("/");
             }
             else {
