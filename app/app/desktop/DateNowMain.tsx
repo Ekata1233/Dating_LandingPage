@@ -1,60 +1,178 @@
+
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DateNowCard from '../cards/DateNowCard';
 import { useDatePlans } from '@/app/context/DateNowContext';
 import OpenInAppModal from '@/components/ui/OpenInAppModal';
 import { Loader } from '../shared/Loader';
 
-// Replace with your real deep link / store links
+const REFERRAL_STORAGE_KEY = 'welvors_referral';
+
+const PLAY_STORE_URL =
+    'https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share';
+
+const getReferralCodeFromUrl = (): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    const pathname = window.location.pathname;
+
+    // Example: /refer/QUSIV32R
+    const match = pathname.match(/^\/refer\/([^/]+)\/?$/i);
+
+    if (match) {
+        try {
+            return decodeURIComponent(match[1]).trim() || null;
+        } catch {
+            return null;
+        }
+    }
+
+    // Also support query parameters
+    const params = new URLSearchParams(window.location.search);
+
+    return (
+        params.get('referralCode')?.trim() ||
+        params.get('ref')?.trim() ||
+        null
+    );
+};
+const buildPlayStoreUrl = (referralCode: string | null): string => {
+    if (!referralCode) {
+        return PLAY_STORE_URL;
+    }
+
+    const url = new URL(PLAY_STORE_URL);
+
+    // URLSearchParams automatically encodes '=' as %3D
+    url.searchParams.set(
+        'referrer',
+        `welvors_referral=${referralCode}`
+    );
+
+    return url.toString();
+};
 
 export interface DateNowMainProps {
     /** Fill the parent and scroll one card at a time (mobile). */
     fluid?: boolean;
-    /** Optional cap on how many plan cards to render. Renders all if omitted. */
+
+    /** Optional cap on how many plan cards to render. */
     count?: number;
 }
 
 function DateNowMain({ fluid = false, count }: DateNowMainProps) {
-    const { filter, datePlans, loading, error, status, hasSession, refetch } = useDatePlans();
-    const [selectedPlanId, setSelectedPlanId] = useState<string | number | null>(null);
+    const {
+        filter,
+        datePlans,
+        loading,
+        error,
+        status,
+        hasSession,
+        refetch,
+    } = useDatePlans();
+
+    const [selectedPlanId, setSelectedPlanId] = useState<
+        string | number | null
+    >(null);
+
+const [referralCode] = useState<string | null>(() => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const urlCode = getReferralCodeFromUrl();
+
+    if (urlCode) {
+        return urlCode;
+    }
+
+    return sessionStorage.getItem(REFERRAL_STORAGE_KEY);
+});
     const listRef = useRef<HTMLDivElement>(null);
 
-    /* The card list owns its own scroll, so scrolling the window did nothing.
-       Reset the list to the top whenever the sidebar applies a new filter. */
-    useEffect(() => {
-        listRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [filter]);
-    const isModalOpen = selectedPlanId !== null;
-    const plans = (datePlans ?? []).slice(0, count);
-    const cardClass = fluid ? 'shrink-0 snap-start snap-always' : 'shrink-0';
+    // ============================================
+    // 1. GET AND SAVE REFERRAL CODE
+    // ============================================
 
-    /* "idle" means nothing has been requested yet. With a session the request
-       is about to start, so keep the spinner. Without one it never will. */
-    const waiting = loading && !(status === 'idle' && hasSession === false);
-    /* Nothing to show: the filter came back empty, or there is no session. */
-    const empty = !waiting && !error && plans.length === 0;
+ useEffect(() => {
+    if (!referralCode) return;
+
+    sessionStorage.setItem(
+        REFERRAL_STORAGE_KEY,
+        referralCode
+    );
+}, [referralCode]);
+
+    // ============================================
+    // 2. DYNAMIC GOOGLE PLAY STORE LINK
+    // ============================================
+
+    const playStoreUrl = useMemo(() => {
+        return buildPlayStoreUrl(referralCode);
+    }, [referralCode]);
+
+    // ============================================
+    // 3. RESET SCROLL WHEN FILTER CHANGES
+    // ============================================
+
+    useEffect(() => {
+        listRef.current?.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }, [filter]);
+
+    // ============================================
+    // 4. EXISTING DATE PLAN LOGIC
+    // ============================================
+
+    const isModalOpen = selectedPlanId !== null;
+
+    const plans = (datePlans ?? []).slice(0, count);
+
+    const cardClass = fluid
+        ? 'shrink-0 snap-start snap-always'
+        : 'shrink-0';
+
+    const waiting =
+        loading && !(status === 'idle' && hasSession === false);
+
+    const empty =
+        !waiting && !error && plans.length === 0;
+
+    // ============================================
+    // 5. RENDER
+    // ============================================
 
     return (
-        <main className={`flex-1 flex flex-col relative ${fluid ? 'h-full w-full' : 'h-screen'}`}>
+        <main
+            className={`flex-1 flex flex-col relative ${
+                fluid ? 'h-full w-full' : 'h-screen'
+            }`}
+        >
+            {/* Dynamic referral Google Play Store link */}
             <OpenInAppModal
                 open={isModalOpen}
                 onClose={() => setSelectedPlanId(null)}
                 featureName="request this date"
-                appUrl="https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
+                appUrl={playStoreUrl}
             />
 
             <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
                 <div
                     ref={listRef}
-
                     className={
                         fluid
                             ? 'flex flex-col w-full h-full overflow-y-auto snap-y snap-mandatory py-3 px-3 gap-5 [&::-webkit-scrollbar]:hidden'
                             : 'flex flex-col h-full aspect-[300/520] max-w-full rounded-2xl overflow-y-auto shadow-2xl transition-all duration-500 ease-out py-5 px-3.5 gap-5 [&::-webkit-scrollbar]:hidden'
                     }
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}
                 >
+                    {/* Loading */}
                     {waiting && (
                         <Loader
                             label="Finding date plans…"
@@ -62,9 +180,13 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                         />
                     )}
 
+                    {/* Error */}
                     {!waiting && error && (
                         <div className="m-auto flex flex-col items-center gap-3 text-center">
-                            <p className="text-sm">Something went wrong loading plans.</p>
+                            <p className="text-sm">
+                                Something went wrong loading plans.
+                            </p>
+
                             <button
                                 type="button"
                                 onClick={() => refetch()}
@@ -75,9 +197,13 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                         </div>
                     )}
 
+                    {/* Empty */}
                     {empty && (
                         <div className="m-auto flex flex-col items-center gap-2 px-6 text-center">
-                            <p className="text-sm font-semibold">No date plans found</p>
+                            <p className="text-sm font-semibold">
+                                No date plans found
+                            </p>
+
                             <p className="text-xs opacity-70">
                                 {hasSession === false
                                     ? 'Sign in to see plans near you.'
@@ -86,6 +212,7 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                         </div>
                     )}
 
+                    {/* Date Plan Cards */}
                     {!waiting &&
                         !error &&
                         plans.map((d) => (
@@ -103,7 +230,9 @@ function DateNowMain({ fluid = false, count }: DateNowMainProps) {
                                 duration={d.duration}
                                 whoPays={d.whoPays}
                                 className={cardClass}
-                                onRequest={() => setSelectedPlanId(d.id)}
+                                onRequest={() =>
+                                    setSelectedPlanId(d.id)
+                                }
                             />
                         ))}
                 </div>

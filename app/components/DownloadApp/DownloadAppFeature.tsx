@@ -255,6 +255,49 @@ const BADGES = [
   },
 ];
 
+// Build the Play Store link only when clicked (no React effect or state needed).
+const getReferralPlayStoreUrl = (): string => {
+  const url = new URL(
+    "https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
+  );
+
+  if (typeof window === "undefined") return url.toString();
+
+  const match = window.location.pathname.match(/^\/refer\/([^/]+)\/?$/i);
+  let pathCode: string | null = null;
+
+  if (match) {
+    try {
+      pathCode = decodeURIComponent(match[1]).trim() || null;
+    } catch {
+      pathCode = null;
+    }
+  }
+
+  const query = new URLSearchParams(window.location.search);
+  const queryCode = query.get("referralCode")?.trim() || query.get("ref")?.trim() || null;
+
+  let storedCode: string | null = null;
+  try {
+    storedCode = window.sessionStorage.getItem("welvors_referral");
+  } catch {
+    // Browser storage may be unavailable; the URL still works.
+  }
+
+  const referralCode = pathCode || queryCode || storedCode;
+
+  if (referralCode) {
+    try {
+      window.sessionStorage.setItem("welvors_referral", referralCode);
+    } catch {
+      // Storage is optional for this click.
+    }
+    url.searchParams.set("referrer", `welvors_referral=${referralCode}`);
+  }
+
+  return url.toString();
+};
+
 function DownloadAppFeature() {
   const [stripRef, stripVisible] = useScrollReveal({ threshold: 0.1 });
   const [phoneRef, phoneVisible] = useScrollReveal({ threshold: 0.05 });
@@ -407,6 +450,10 @@ function DownloadAppFeature() {
               </Link>
               <Link
                 href="https://play.google.com/store/apps/details?id=com.infynod.welvors&pcampaignid=web_share"
+                onClick={(event) => {
+                  event.preventDefault();
+                  window.location.assign(getReferralPlayStoreUrl());
+                }}
                 className="inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 style={{ background: C.btnBg }}
               >
